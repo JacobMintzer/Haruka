@@ -1,3 +1,4 @@
+import requests
 import time
 import discord
 from discord.ext import commands
@@ -8,14 +9,31 @@ import os
 import json
 import datetime
 import pytz
+import Music
+from saucenao import SauceNao
 
-bot = commands.Bot(command_prefix=['!'], description='NijigasakiBot')
+bot = commands.Bot(command_prefix=['$'], description='NijigasakiBot')
 global deletedMessages
 deletedMessages=[]
 global target
 target=None
+
+cogList=['Music']
+
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
+asar=config["asar"]
+
+songList=os.listdir("../Haruka/music/")
+songList.sort()
+if not discord.opus.is_loaded():
+        # the 'opus' library here is opus.dll on windows
+        # or libopus.so on linux in the current directory
+        # you should replace this with the location the
+        # opus library is located in and with the proper filename.
+        # note that on windows this DLL is automatically provided for you
+        discord.opus.load_opus('opus')
+
 
 def is_admin(ctx):
 	try:
@@ -25,34 +43,36 @@ def is_admin(ctx):
 	except Exception as e:
 		print(e)
 		return False
-	
 @bot.event
 async def on_ready():
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
+	for cog in cogList:
+		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata", type=1))
 
-#@bot.event
+@bot.event
 async def on_member_join(member):
-	general = bot.get_channel(config["generalCh"])
+	#print(member)
+	welcomeCh = bot.get_channel(config["welcomeCh"])
 	rules = bot.get_channel(config["rulesCh"])
 	guild = bot.get_guild(config["nijiCord"])
-	await general.send(config["welcome"].format(member.display_name, rules.mention))
+	await welcomeCh.send(config["welcome"].format(member.display_name, rules.mention))
 	log=bot.get_channel(config["logCh"])
 	baseRole=discord.utils.find(lambda x: x.name == "Idol Club Applicant", guild.roles)
 	await member.add_roles(baseRole)
 	await log.send(embed=genLog(member,"has joined the server."))
 
-#@bot.event
+@bot.event
 async def on_member_remove(member):
 	log=bot.get_channel(config["logCh"])
 	await log.send(embed=genLog(member,"has left the server."))
 
-#@bot.event
+@bot.event
 async def on_message_delete(message):
 	log=bot.get_channel(config["logCh"])
 	await log.send("{0} deleted the message:\n{1}".format(message.author.display_name,message.content))
-	print("{0} deleted the message:\n{1}".format(message.author.display_name,message.content))
-	
+	#print("{0} deleted the message:\n{1}".format(message.author.display_name,message.content))
+
 
 def inBotMod(msg):
 	return msg.channel.id==config["ModBotCH"]
@@ -149,38 +169,101 @@ async def prune(ctx,*,person: discord.Member):
 				for ch in ctx.message.guild.text_channels:
 					await ch.purge(check=isTarget)
 				target=None
-				await ctx.send("purge complete")
 			elif str(rxn.emoji)=="🚫":
 				await ctx.send("cancelling prune")
 		except asyncio.TimeoutError:
 			await rxnMsg.delete()
 		return
 
-#@bot.command(hidden=True)
+@bot.command(hidden=True)
 @commands.check(is_admin)
-async def undelete(ctx, number=5):
-	num=int(number)
-	if len(deletedMessages)<1:
-		await ctx.send("no messages since my last restart")
-	for msg in deletedMessages[-1*num:]:
-		await ctx.send(content = "{0} sent:\n`{1}`\n with attachments:\n{2}".format( msg.author.display_name, msg.clean_content, "\n".join( map( lambda x: x.url, msg.attachments))))
-
+async def blacklist(ctx,*,id):
+	print(id)
 #@bot.command()
 async def uwu(ctx):
 	msg=genLog(ctx.message.author,"has left the guild.")
 	await ctx.send(embed=msg)
 
-#@bot.command()
+
+@bot.command()
+async def sauce(ctx, url: str=""):
+	try:
+		if (len(ctx.message.attachments)>0):
+			url=ctx.message.attachments[0].url
+		file="image."+url.split('.')[-1]
+		if (os.path.exists(file)):
+			os.remove(file)
+		request=requests.get(url,allow_redirects=True)
+		print (file)
+		open(file,'wb').write(request.content)
+	except:
+		await ctx.send("error downloading file")
+		return
+	#print ("uwu")
+	foundSauce=""
+	output=SauceNao(directory='./', api_key=config["sauce"])
+	result=output.check_file(file_name=file)
+	#print (result)
+	if (len(result)<1):
+		await ctx.send("no source found")
+		return
+	for source in result:
+		if (float(source["header"]["similarity"])<90):
+			break
+		if "Pixiv ID" in source["data"]["content"][0]:
+			await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+source["data"]["content"][0].split("Pixiv ID: ")[1].split("\n")[0])
+			return
+		elif "Source: Pixiv" in source["data"]["content"][0]:
+			stuff=source["data"]["content"][0].split("\n")[0]
+			#print (stuff)
+			id=stuff.split("Source: Pixiv #")[1]
+			await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+id)
+			return
+		elif "dA ID" in source["data"]["content"][0]:
+			foundSauce=("I believe the source is:\nhttps://deviantart.com/view/"+source["data"]["content"][0].split("dA ID: ")[1].split("\n")[0])
+		elif "Seiga ID:" in source["data"]["content"][0]:
+			foundSauce=("I believe the source is:\nhttps://seiga.nicovideo.jp/seiga/im"+source["data"]["content"][0].split("Seiga ID: ")[1].split("\n")[0])
+	if (foundSauce!=""):
+		await ctx.send(foundSauce)
+		return
+	if len(result[0]["data"]["ext_urls"])>0:
+		#print(result[0]["data"]["content"][0])
+		await ctx.send("I couldn't find the exact link, but this might help you find it:\n"+"\n".join(result[0]["data"]["ext_urls"]))
+		return
+	await ctx.send("sorry, I'm not sure what the source for this is.")
+
+@bot.command()
 async def info(ctx, member: discord.Member = None):
+	"""$info for information on yourself"""
 	if member == None:
 		await ctx.send(embed=genLog(ctx.message.author, "Info on {0}".format(ctx.message.author.display_name)))
 	else:
 		await ctx.send(embed=genLog(member, "info on {0}".format(member.display_name)))
 
+@bot.command()
+async def sinfo(ctx):
+        """$sinfo if you want me to tell you information about this server"""
+        embd=discord.Embed()
+        embd.title=ctx.guild.name
+        embd.description="information on "+ctx.guild.name
+        embd=embd.set_thumbnail (url=ctx.guild.icon_url)
+        embd.type="rich"
+        embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
+        dt = ctx.guild.created_at
+        embd=embd.add_field(name = 'Date Created', value = str(dt.date())+" at "+str(dt.time().isoformat('minutes')))
+        embd=embd.add_field(name = 'ID', value = ctx.guild.id)
+        embd=embd.add_field(name = 'Owner', value = str(ctx.guild.owner))
+        embd=embd.add_field(name = 'Total Boosters', value = ctx.guild.premium_subscription_count)
+        embd=embd.add_field(name = 'Total Channels', value = len(ctx.guild.channels))
+        embd=embd.add_field(name = 'Total Members', value = ctx.guild.member_count)
+        await ctx.send(embed=embd)
+
 @bot.command(name="best")
 async def best(ctx, *, role):
-	print (role)
+	"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role."""
 	roleNames=config["girls"]
+	if role.lower()=="girl":
+		role="haruka"
 	if role.title() not in roleNames:
 		await ctx.send("Not a valid role.")
 		return
@@ -189,34 +272,60 @@ async def best(ctx, *, role):
 	roles = list(filter(lambda x: x.name.title() in roleNames, ctx.guild.roles))
 	await member.remove_roles(*roles, atomic=True)
 	await member.add_roles(requestedRole)
+	if role.lower()=="haruka":
+		await ctx.message.add_reaction("❤")
+	else:
+		await ctx.message.add_reaction("👍")
 
+@bot.command(name="iam")
+async def Iam(ctx, arole=''):
+	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
+	if arole.lower() in asar:
+		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
+		await ctx.message.author.add_roles(role)
+		await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+	else:
+		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
 
+@bot.command(name="iamn")
+async def Iamn(ctx, arole=''):
+	"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
+	if arole.lower() in asar:
+		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
+		await ctx.message.author.remove_roles(role)
+		await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+	else:
+		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
 
+@bot.command(name="asar")
+async def Asar(ctx):
+	"""Use this command to list all self-assignable roles. Roles can be assigned with the $iam command, and removed using the $iamn command"""
+	await ctx.send(str(asar))
 
-#@bot.command(name="pronoun")
-async def Pronoun(ctx, action="", pronoun=""):
-	"""please say '!pronoun add ' or '!pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
-	print(action)
-	print(pronoun)
+@bot.command(name="pronoun")
+async def Pronoun(ctx, action='', pronoun=''):
+	"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
+	member=ctx.message.author
 	if action=="" or pronoun=="":
-		await ctx.send("please say '!pronoun add ' or '!pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+		await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 		return
-	
+
 	if pronoun.lower().strip() == 'they':
-		role = discord.utils.find(lambda x: x.name == "They/Them")
+		role = discord.utils.find(lambda x: x.name == "p:they/them", ctx.guild.roles)
 	elif pronoun.lower().strip() == 'she':
-		role = discord.utils.find(lambda x: x.name == "She/Her")
+		role = discord.utils.find(lambda x: x.name == "p:she/her", ctx.guild.roles)
 	elif pronoun.lower().strip() == 'he':
-		role = discord.utils.find(lambda x: x.name == "He/Him")
+		role = discord.utils.find(lambda x: x.name == "p:he/him", ctx.guild.roles)
 	else:
-		await ctx.send("please say '!pronoun add ' or '!pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-	
+		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+		return
+
 	if action.strip().lower() == "add":
-		await ctx.member.add_roles(role)
+		await member.add_roles(role)
 	elif action.strip().lower() == "remove":
-		await ctx.member.remove_roles(role)
+		await member.remove_roles(role)
 	else:
-		await ctx.send("please say '!pronoun add ' or '!pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 
 with open("token.txt","r") as file_object:
 	bot.run(file_object.read().strip())
