@@ -6,6 +6,7 @@ import asyncio
 import re
 import random
 import os
+import io
 import json
 import datetime
 import pytz
@@ -17,6 +18,9 @@ global deletedMessages
 deletedMessages=[]
 global target
 target=None
+global cooldown
+cooldown=False
+cdTime=127
 
 cogList=['Music']
 
@@ -26,6 +30,7 @@ asar=config["asar"]
 
 songList=os.listdir("../Haruka/music/")
 songList.sort()
+"""
 if not discord.opus.is_loaded():
         # the 'opus' library here is opus.dll on windows
         # or libopus.so on linux in the current directory
@@ -33,7 +38,7 @@ if not discord.opus.is_loaded():
         # opus library is located in and with the proper filename.
         # note that on windows this DLL is automatically provided for you
         discord.opus.load_opus('opus')
-
+"""
 
 def is_admin(ctx):
 	try:
@@ -70,8 +75,42 @@ async def on_member_remove(member):
 @bot.event
 async def on_message_delete(message):
 	log=bot.get_channel(config["logCh"])
-	await log.send("{0} deleted the message:\n{1}".format(message.author.display_name,message.content))
-	#print("{0} deleted the message:\n{1}".format(message.author.display_name,message.content))
+	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
+	await log.send("{0}'s message was deleted from {2}. The message:\n{1}".format(message.author.display_name, message.content, message.channel),files=fileList)
+
+@bot.event
+async def on_message(message):
+	global cooldown
+	if not cooldown:
+		await meme(message)
+	if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
+		await message.channel.send("No")
+		await message.delete()
+	await bot.process_commands(message)
+
+async def meme(message):
+	global cooldown
+	if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):
+		kasuGun=discord.utils.get(message.guild.emojis,name="KasuGun")
+		await message.add_reaction(kasuGun)
+		if cooldown:
+			return
+		await message.channel.send("KA! SU! MIN! DESU!!!")
+		cooldown=True
+		await asyncio.sleep(cdTime)
+	elif "yoshiko" in message.content.lower():
+		cooldown=True
+		await message.channel.send("Dakara Yohane Yo!!!")
+		await asyncio.sleep(cdTime)
+	elif message.content.lower()=="chun":
+		cooldown=True
+		await message.channel.send("Chun(・8・)Chun~")
+		await asyncio.sleep(cdTime)
+	else:
+		return
+	cooldown=False
+
+
 
 
 def inBotMod(msg):

@@ -37,6 +37,7 @@ class Music(commands.Cog):
 		self.current="nothing"
 		self.message=0
 		self.requests=[]
+		self.config=json.load(open('Resources.json'))
 
 	@commands.command(hidden=True)
 	async def update(self,ctx):
@@ -75,8 +76,7 @@ class Music(commands.Cog):
 
 	async def play(self,ctx):
 		await ctx.bot.wait_until_ready()
-		channel=open("channel.txt","r")
-		ch=self.get_vc(ctx,int(channel.read().strip()))
+		ch=self.get_vc(ctx,int(self.config["musicCh"]))
 		#ch=bot.get_channel(int(channel.read().strip()))
 		self.voice = await ch.connect()
 		songs=self.shuff()
