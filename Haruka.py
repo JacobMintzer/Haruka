@@ -11,6 +11,7 @@ import json
 import datetime
 import pytz
 import Music
+import MessageHandler
 from saucenao import SauceNao
 
 bot = commands.Bot(command_prefix=['$'], description='NijigasakiBot')
@@ -23,7 +24,7 @@ cooldown=False
 cdTime=127
 
 cogList=['Music']
-
+messageHandler=MessageHandler.MessageHandler()
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
 asar=config["asar"]
@@ -80,6 +81,8 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_message(message):
+	await messageHandler.handleMessage(message,bot)
+	return
 	global cooldown
 	if not cooldown:
 		await meme(message)
@@ -135,6 +138,11 @@ def isTarget(msg):
 	if msg.author==target:
 		return True
 	return False
+
+@bot.command(hidden=True)
+@commands.check(is_admin)
+async def export(ctx):
+	await ctx.send(await messageHandler.getPB())
 
 @bot.command(hidden=True)
 @commands.check(is_admin)
