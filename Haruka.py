@@ -83,37 +83,6 @@ async def on_message_delete(message):
 async def on_message(message):
 	await messageHandler.handleMessage(message,bot)
 	return
-	global cooldown
-	if not cooldown:
-		await meme(message)
-	if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
-		await message.channel.send("No")
-		await message.delete()
-	await bot.process_commands(message)
-
-async def meme(message):
-	global cooldown
-	if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):
-		kasuGun=discord.utils.get(message.guild.emojis,name="KasuGun")
-		await message.add_reaction(kasuGun)
-		if cooldown:
-			return
-		await message.channel.send("KA! SU! MIN! DESU!!!")
-		cooldown=True
-		await asyncio.sleep(cdTime)
-	elif "yoshiko" in message.content.lower():
-		cooldown=True
-		await message.channel.send("Dakara Yohane Yo!!!")
-		await asyncio.sleep(cdTime)
-	elif message.content.lower()=="chun":
-		cooldown=True
-		await message.channel.send("Chun(・8・)Chun~")
-		await asyncio.sleep(cdTime)
-	else:
-		return
-	cooldown=False
-
-
 
 
 def inBotMod(msg):
