@@ -27,7 +27,7 @@ class MessageHandler():
 		self.db.execute("Select Name,Score FROM memberScores2 ORDER BY Score Desc")
 		response=self.db.fetchall()
 		result=result+(pd.DataFrame(response).to_string())
-		link=self.api.paste(self.user_key,title='activity',raw_code=result,private=None,expire_date=None)
+		link=self.api.paste(self.user_key,title='activity',raw_code=result,private=1,expire_date=None)
 		return link
 	async def handleMessage(self,message,bot):
 		content=message.content
@@ -43,20 +43,20 @@ class MessageHandler():
 		if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):
 			kasuGun=discord.utils.get(message.guild.emojis,name="KasuGun")
 			await message.add_reaction(kasuGun)
-			cooldown=True
+			self.cooldown=True
 			await message.channel.send("KA! SU! MIN! DESU!!!")
 			await asyncio.sleep(cdTime)
 		elif "yoshiko" in message.content.lower():
-			cooldown=True
+			self.cooldown=True
 			await message.channel.send("Dakara Yohane Yo!!!")
 			await asyncio.sleep(cdTime)
 		elif message.content.lower()=="chun":
-			cooldown=True
+			self.cooldown=True
 			await message.channel.send("Chun(・8・)Chun~")
 			await asyncio.sleep(cdTime)
 		else:
 			return
-		cooldown=False
+		self.cooldown=False
 	async def score(self,author):
 		if not author.id in self.MRU:
 			self.db.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))

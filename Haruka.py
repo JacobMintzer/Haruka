@@ -99,7 +99,8 @@ def genLog(member, what):
 	embd=embd.add_field(name = 'id', value = member.id)
 	embd=embd.add_field(name = 'Joined', value = member.joined_at)
 	embd=embd.add_field(name = 'Roles', value = ', '.join(map(lambda x: x.name, member.roles)))
-	embd=embd.add_field(name = 'AccountCreated', value = member.created_at)
+	embd=embd.add_field(name = 'Account Created', value = member.created_at)
+	embd=embd.add_field(name = 'Profile Picture', value = member.avatar_url)
 	return embd
 
 def isTarget(msg):
@@ -200,6 +201,9 @@ async def uwu(ctx):
 	msg=genLog(ctx.message.author,"has left the guild.")
 	await ctx.send(embed=msg)
 
+@bot.command()
+async def git(ctx):
+	await ctx.send("You can find my source code here: https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message `Junior Mints#2525`, or submit a pull request if you have any improvements.")
 
 @bot.command()
 async def sauce(ctx, url: str=""):
@@ -276,22 +280,71 @@ async def sinfo(ctx):
 
 @bot.command(name="best")
 async def best(ctx, *, role):
-	"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role."""
+	"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 	roleNames=config["girls"]
 	if role.lower()=="girl":
 		role="haruka"
-	if role.title() not in roleNames:
+	elif role.lower()=="clear":
+		role="clear"
+	elif role.title() not in roleNames:
 		await ctx.send("Not a valid role.")
 		return
 	member = ctx.message.author
 	requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
 	roles = list(filter(lambda x: x.name.title() in roleNames, ctx.guild.roles))
 	await member.remove_roles(*roles, atomic=True)
-	await member.add_roles(requestedRole)
+	if not(role=="clear"):
+		await member.add_roles(requestedRole)
 	if role.lower()=="haruka":
 		await ctx.message.add_reaction("❤")
 	else:
 		await ctx.message.add_reaction("👍")
+
+@bot.command(name="seiyuu")
+@commands.check(is_admin)
+async def seiyuu(ctx,*,role):
+	"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
+	roleNames=config["seiyuu"]
+	if role.lower()=="clear":
+		role="clear"
+	elif role.title() not in roleNames:
+		await ctx.send("Not a valid role.")
+		return
+	member = ctx.message.author
+	requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
+	roles = list(filter(lambda x: x.name.title() in roleNames, ctx.guild.roles))
+	await member.remove_roles(*roles, atomic=True)
+	if not(role=="clear"):
+		await member.add_roles(requestedRole)
+	await ctx.message.add_reaction("👍")           
+
+@bot.command(name="sub")
+@commands.check(is_admin)
+async def sub(ctx,*,role):
+	"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
+	member=ctx.message.author
+	roleNames=config["sub"]
+	if role.lower() == "diverdiva" or role.lower() == "diver diva":
+		roleName="DiverDiva"
+	elif role.lower()=="azuna" or role.lower()=="a・zu・na":
+		roleName="A・ZU・NA"
+	elif role.lower()=="qu4rtz" or role.lower()=="quartz":
+		roleName="QU4RTZ"
+	elif role.lower()=="clear":
+		roleName="clear"
+	else:
+		await ctx.send("Not a valid subunit")
+	requestedRole=discord.utils.find(lambda x: x.name==roleName, ctx.guild.roles)
+	allRoles=list(filter(lambda x: x.name in roleNames, ctx.guild.roles))
+	print(allRoles)
+	print(roleNames)
+	await member.remove_roles(*allRoles, atomic=True)
+	if not(role=="clear"):
+		await member.add_roles(requestedRole)
+	await ctx.message.add_reaction("👍")
+
+
+
 
 @bot.command(name="iam")
 async def Iam(ctx, arole=''):
