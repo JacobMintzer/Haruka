@@ -11,7 +11,8 @@ from paste_bin import PasteBinApi
 cache=3
 
 class MessageHandler():
-	def __init__(self):
+	def __init__(self,config):
+		self.config=config
 		self.MRU=[]
 		self.MRU2=[]
 		self.conn=sqlite3.connect("Nijicord.db")
@@ -20,13 +21,19 @@ class MessageHandler():
 		data=json.load(open('pastebin.json'))
 		self.api=PasteBinApi(dev_key=data['key'])
 		self.user_key=self.api.user_key(username=data['username'],password=data['password'])
+	async def initRoles(self,bot):
+		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
+		roles={}
+		roles["new"] = discord.utils.get(nijicord.roles, name="New Club Member")
+		roles["jr"] = discord.utils.get(nijicord.roles, name="Junior Club Member")
+		roles["sr"] = discord.utils.get(nijicord.roles, name="Senior Club Member")
+		roles["exec"] = discord.utils.get(nijicord.roles, name="Executive Club Member")
+		roles["app"] = discord.utils.get(nijicord.roles, name="Idol Club Applicant")
+		self.roles=roles
 	async def getPB(self):
 		self.db.execute("SELECT Name,Score FROM memberScores ORDER BY Score DESC")
 		response=self.db.fetchall()
 		result=(pd.DataFrame(response).to_string())+"\n\n"
-		self.db.execute("Select Name,Score FROM memberScores2 ORDER BY Score Desc")
-		response=self.db.fetchall()
-		result=result+(pd.DataFrame(response).to_string())
 		link=self.api.paste(self.user_key,title='activity',raw_code=result,private=1,expire_date=None)
 		return link
 	async def handleMessage(self,message,bot):
@@ -37,27 +44,42 @@ class MessageHandler():
 			await message.channel.send("No")
 			await message.delete()
 		await bot.process_commands(message)
-		await self.score(message.author)
+		score=await self.score(message.author)
+		result=None
+		if not(score is None):
+			if score<505 and score>=500:
+				result=await self.rankUp(message.author,score)
+			elif score<2505 and score>=2500:
+				result=await self.rankUp(message.author,score)
+			elif score%10000<=5:
+				result=await self.rankUp(message.author,score)
+			if not(result is None):
+				rankUpMsg=self.config["msgs"][result]
+				hug=discord.utils.get(message.guild.emojis,name="HarukaHug")
+				await message.channel.send(rankUpMsg.format(message.author.mention,"<:HarukaHug:{0}>".format(hug.id)))
+
 	async def meme(self,message):
 		cdTime=90
 		if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):
-			kasuGun=discord.utils.get(message.guild.emojis,name="KasuGun")
-			await message.add_reaction(kasuGun)
+			rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
+			await message.add_reaction(rxn)
 			self.cooldown=True
 			await message.channel.send("KA! SU! MIN! DESU!!!")
-			await asyncio.sleep(cdTime)
 		elif "yoshiko" in message.content.lower():
 			self.cooldown=True
 			await message.channel.send("Dakara Yohane Yo!!!")
-			await asyncio.sleep(cdTime)
 		elif message.content.lower()=="chun":
 			self.cooldown=True
 			await message.channel.send("Chun(・8・)Chun~")
-			await asyncio.sleep(cdTime)
+		elif "aquors" in message.content.lower():
+			self.cooldown=True
+			await message.channel.send("AQOURS")
 		else:
 			return
+		await asyncio.sleep(cdTime)
 		self.cooldown=False
 	async def score(self,author):
+		score=-1
 		if not author.id in self.MRU:
 			self.db.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))
 			newScore=self.db.fetchone()
@@ -65,18 +87,40 @@ class MessageHandler():
 				self.db.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)))
 			else:
 				self.db.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author), author.id))
+				score=newScore[0]+1
 			self.MRU.insert(0,author.id)
 			if len(self.MRU)>cache:
 				self.MRU.pop()
-		if not author.id in self.MRU2:
-			self.db.execute("SELECT Score,Name FROM memberScores2 WHERE ID=?",(author.id,))
-			newScore=self.db.fetchone()
-			if newScore==None:
-				self.db.execute("INSERT INTO memberScores2 (ID,Name) VALUES (?,?)",(author.id,str(author)))
-			else:
-				self.db.execute("UPDATE memberScores2 SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author), author.id))
-			self.MRU2.insert(0,author.id)
-			if len(self.MRU2)>2:
-				self.MRU2.pop()
 		self.conn.commit()
-		return False
+		if score<0:
+			return None
+		return score
+
+	async def rankUp(self,member,score):
+		announce=None
+		thresh=self.config["threshold"]
+		if score<thresh["new"]:
+			givenRole=self.roles["app"]
+		elif score<thresh["jr"]:
+			if self.roles["app"] in member.roles:
+				announce="new"
+			givenRole=self.roles["new"]
+		elif score<thresh["sr"]:
+			if self.roles["new"] in member.roles:
+				announce="jr"
+			givenRole=self.roles["jr"]
+		elif score<thresh["exec"]:
+			if self.roles["jr"] in member.roles:
+				announce="sr"
+			givenRole=self.roles["sr"]
+		else:
+			if self.roles["sr"] in member.roles:
+				announce="exec"
+			givenRole=self.roles["exec"]
+		if givenRole in member.roles:
+			return None
+		else:
+			for role in self.roles.values():
+				await member.remove_roles(role)
+			await member.add_roles(givenRole)
+			return announce

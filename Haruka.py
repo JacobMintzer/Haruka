@@ -24,11 +24,10 @@ cooldown=False
 cdTime=127
 
 cogList=['Music']
-messageHandler=MessageHandler.MessageHandler()
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
 asar=config["asar"]
-
+messageHandler=MessageHandler.MessageHandler(config)
 songList=os.listdir("../Haruka/music/")
 songList.sort()
 """
@@ -54,7 +53,8 @@ async def on_ready():
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	for cog in cogList:
 		bot.load_extension(cog)
-	await bot.change_presence(activity = discord.Game("Making lunch for Kanata", type=1))
+	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
+	await messageHandler.initRoles(bot)
 
 @bot.event
 async def on_member_join(member):
@@ -196,14 +196,18 @@ async def prune(ctx,*,person: discord.Member):
 @commands.check(is_admin)
 async def blacklist(ctx,*,id):
 	print(id)
-#@bot.command()
+
+@bot.command()
+@commands.check(is_admin)
 async def uwu(ctx):
-	msg=genLog(ctx.message.author,"has left the guild.")
-	await ctx.send(embed=msg)
+	msg=config["msgs"]["sr"]
+	hug=discord.utils.get(ctx.message.guild.emojis,name="HarukaHug")
+	await ctx.send(msg.format(ctx.message.author.mention,"<:HarukaHug:{0}>".format(hug.id)))
 
 @bot.command()
 async def git(ctx):
-	await ctx.send("You can find my source code here: https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message `Junior Mints#2525`, or submit a pull request if you have any improvements.")
+	"""Link to Haruka's source code, and information related to the development"""
+	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message Junior Mints, or submit a pull request if you have any improvements you can make.")
 
 @bot.command()
 async def sauce(ctx, url: str=""):
@@ -300,8 +304,7 @@ async def best(ctx, *, role):
 	else:
 		await ctx.message.add_reaction("👍")
 
-@bot.command(name="seiyuu")
-@commands.check(is_admin)
+@bot.command()
 async def seiyuu(ctx,*,role):
 	"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
 	roleNames=config["seiyuu"]
@@ -318,8 +321,7 @@ async def seiyuu(ctx,*,role):
 		await member.add_roles(requestedRole)
 	await ctx.message.add_reaction("👍")           
 
-@bot.command(name="sub")
-@commands.check(is_admin)
+@bot.command()
 async def sub(ctx,*,role):
 	"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
 	member=ctx.message.author
@@ -336,8 +338,6 @@ async def sub(ctx,*,role):
 		await ctx.send("Not a valid subunit")
 	requestedRole=discord.utils.find(lambda x: x.name==roleName, ctx.guild.roles)
 	allRoles=list(filter(lambda x: x.name in roleNames, ctx.guild.roles))
-	print(allRoles)
-	print(roleNames)
 	await member.remove_roles(*allRoles, atomic=True)
 	if not(role=="clear"):
 		await member.add_roles(requestedRole)

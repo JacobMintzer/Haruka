@@ -66,7 +66,7 @@ class Music(commands.Cog):
 			artist=str(data["TXXX:artist_jp"])
 		else:
 			artist="artist unknown, pm junior mints to add one"
-		await ctx.bot.change_presence(activity=discord.Streaming(name=title+" by "+artist,url="https://www.twitch.tv/anthem96"))
+		await bot.change_presence(activity = discord.Game(title+" by "+artist,type=1))
 
 
 	def get_vc(self,ctx,channel):
@@ -89,6 +89,7 @@ class Music(commands.Cog):
 		#player.start()
 		while True:
 			if self.message==-1: #stop command
+				await bot.change_presence(activity = discord.Game("Making lunch for Kanata!",type=1))
 				await self.voice.disconnect()
 				break
 			elif self.message==5: #skip song
