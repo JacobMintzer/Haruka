@@ -22,7 +22,7 @@ target=None
 global cooldown
 cooldown=False
 cdTime=127
-
+global allRoles
 cogList=['Music']
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
@@ -55,6 +55,9 @@ async def on_ready():
 		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
 	await messageHandler.initRoles(bot)
+	guild = bot.get_guild(config["nijiCord"])
+	global allRoles
+	allRoles = guild.roles
 
 @bot.event
 async def on_member_join(member):
@@ -109,10 +112,9 @@ def isTarget(msg):
 		return True
 	return False
 
-@bot.command(hidden=True)
-@commands.check(is_admin)
-async def export(ctx):
-	await ctx.send(await messageHandler.getPB())
+@bot.command()
+async def rank(ctx,idx=1):
+	await ctx.send(await messageHandler.getPB(ctx.message.author,idx))
 
 @bot.command(hidden=True)
 @commands.check(is_admin)
@@ -211,50 +213,51 @@ async def git(ctx):
 
 @bot.command()
 async def sauce(ctx, url: str=""):
-	try:
-		if (len(ctx.message.attachments)>0):
-			url=ctx.message.attachments[0].url
-		file="image."+url.split('.')[-1]
-		if (os.path.exists(file)):
-			os.remove(file)
-		request=requests.get(url,allow_redirects=True)
-		print (file)
-		open(file,'wb').write(request.content)
-	except:
-		await ctx.send("error downloading file")
-		return
-	#print ("uwu")
-	foundSauce=""
-	output=SauceNao(directory='./', api_key=config["sauce"])
-	result=output.check_file(file_name=file)
-	#print (result)
-	if (len(result)<1):
-		await ctx.send("no source found")
-		return
-	for source in result:
-		if (float(source["header"]["similarity"])<90):
-			break
-		if "Pixiv ID" in source["data"]["content"][0]:
-			await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+source["data"]["content"][0].split("Pixiv ID: ")[1].split("\n")[0])
+	async with ctx.typing():
+		try:
+			if (len(ctx.message.attachments)>0):
+				url=ctx.message.attachments[0].url
+			file="image."+url.split('.')[-1]
+			if (os.path.exists(file)):
+				os.remove(file)
+			request=requests.get(url,allow_redirects=True)
+			print (file)
+			open(file,'wb').write(request.content)
+		except:
+			await ctx.send("error downloading file")
 			return
-		elif "Source: Pixiv" in source["data"]["content"][0]:
-			stuff=source["data"]["content"][0].split("\n")[0]
-			#print (stuff)
-			id=stuff.split("Source: Pixiv #")[1]
-			await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+id)
+		#print ("uwu")
+		foundSauce=""
+		output=SauceNao(directory='./', api_key=config["sauce"])
+		result=output.check_file(file_name=file)
+		#print (result)
+		if (len(result)<1):
+			await ctx.send("no source found")
 			return
-		elif "dA ID" in source["data"]["content"][0]:
-			foundSauce=("I believe the source is:\nhttps://deviantart.com/view/"+source["data"]["content"][0].split("dA ID: ")[1].split("\n")[0])
-		elif "Seiga ID:" in source["data"]["content"][0]:
-			foundSauce=("I believe the source is:\nhttps://seiga.nicovideo.jp/seiga/im"+source["data"]["content"][0].split("Seiga ID: ")[1].split("\n")[0])
-	if (foundSauce!=""):
-		await ctx.send(foundSauce)
-		return
-	if len(result[0]["data"]["ext_urls"])>0:
-		#print(result[0]["data"]["content"][0])
-		await ctx.send("I couldn't find the exact link, but this might help you find it:\n"+"\n".join(result[0]["data"]["ext_urls"]))
-		return
-	await ctx.send("sorry, I'm not sure what the source for this is.")
+		for source in result:
+			if (float(source["header"]["similarity"])<90):
+				break
+			if "Pixiv ID" in source["data"]["content"][0]:
+				await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+source["data"]["content"][0].split("Pixiv ID: ")[1].split("\n")[0])
+				return
+			elif "Source: Pixiv" in source["data"]["content"][0]:
+				stuff=source["data"]["content"][0].split("\n")[0]
+				#print (stuff)
+				id=stuff.split("Source: Pixiv #")[1]
+				await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+id)
+				return
+			elif "dA ID" in source["data"]["content"][0]:
+				foundSauce=("I believe the source is:\nhttps://deviantart.com/view/"+source["data"]["content"][0].split("dA ID: ")[1].split("\n")[0])
+			elif "Seiga ID:" in source["data"]["content"][0]:
+				foundSauce=("I believe the source is:\nhttps://seiga.nicovideo.jp/seiga/im"+source["data"]["content"][0].split("Seiga ID: ")[1].split("\n")[0])
+		if (foundSauce!=""):
+			await ctx.send(foundSauce)
+			return
+		if len(result[0]["data"]["ext_urls"])>0:
+			#print(result[0]["data"]["content"][0])
+			await ctx.send("I couldn't find the exact link, but this might help you find it:\n"+"\n".join(result[0]["data"]["ext_urls"]))
+			return
+		await ctx.send("sorry, I'm not sure what the source for this is.")
 
 @bot.command()
 async def info(ctx, member: discord.Member = None):
@@ -294,15 +297,21 @@ async def best(ctx, *, role):
 		await ctx.send("Not a valid role.")
 		return
 	member = ctx.message.author
-	requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
-	roles = list(filter(lambda x: x.name.title() in roleNames, ctx.guild.roles))
-	await member.remove_roles(*roles, atomic=True)
-	if not(role=="clear"):
-		await member.add_roles(requestedRole)
-	if role.lower()=="haruka":
-		await ctx.message.add_reaction("❤")
-	else:
-		await ctx.message.add_reaction("👍")
+	global allRoles
+	with ctx.typing():
+		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
+		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
+		await member.remove_roles(*roles) #, atomic=True)
+		print('4')
+		if not(role=="clear"):
+			await member.add_roles(requestedRole)
+		print('5')
+		if role.lower()=="haruka":
+			await ctx.message.add_reaction("❤")
+		else:
+			await ctx.message.add_reaction("👍")
+		print ('6')
+	return
 
 @bot.command()
 async def seiyuu(ctx,*,role):
@@ -314,12 +323,15 @@ async def seiyuu(ctx,*,role):
 		await ctx.send("Not a valid role.")
 		return
 	member = ctx.message.author
-	requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
-	roles = list(filter(lambda x: x.name.title() in roleNames, ctx.guild.roles))
-	await member.remove_roles(*roles, atomic=True)
-	if not(role=="clear"):
-		await member.add_roles(requestedRole)
-	await ctx.message.add_reaction("👍")           
+	global allRoles
+	async with ctx.typing():
+		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
+		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
+		await member.remove_roles(*roles, atomic=True)
+		if not(role=="clear"):
+			await member.add_roles(requestedRole)
+		await ctx.message.add_reaction("👍")           
+	return
 
 @bot.command()
 async def sub(ctx,*,role):
@@ -336,12 +348,15 @@ async def sub(ctx,*,role):
 		roleName="clear"
 	else:
 		await ctx.send("Not a valid subunit")
-	requestedRole=discord.utils.find(lambda x: x.name==roleName, ctx.guild.roles)
-	allRoles=list(filter(lambda x: x.name in roleNames, ctx.guild.roles))
-	await member.remove_roles(*allRoles, atomic=True)
-	if not(role=="clear"):
-		await member.add_roles(requestedRole)
-	await ctx.message.add_reaction("👍")
+	global allRoles
+	async with ctx.typing():
+		requestedRole=discord.utils.find(lambda x: x.name==roleName, allRoles)
+		allRoles=list(filter(lambda x: x.name in roleNames, allRoles))
+		await member.remove_roles(*allRoles, atomic=True)
+		if not(role=="clear"):
+			await member.add_roles(requestedRole)
+		await ctx.message.add_reaction("👍")
+	return
 
 
 
@@ -349,8 +364,9 @@ async def sub(ctx,*,role):
 @bot.command(name="iam")
 async def Iam(ctx, arole=''):
 	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
+	global allRoles
 	if arole.lower() in asar:
-		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
+		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), allRoles)
 		await ctx.message.author.add_roles(role)
 		await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
 	else:

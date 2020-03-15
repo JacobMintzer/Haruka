@@ -14,7 +14,6 @@ class MessageHandler():
 	def __init__(self,config):
 		self.config=config
 		self.MRU=[]
-		self.MRU2=[]
 		self.conn=sqlite3.connect("Nijicord.db")
 		self.db=self.conn.cursor()
 		self.cooldown=False
@@ -30,12 +29,21 @@ class MessageHandler():
 		roles["exec"] = discord.utils.get(nijicord.roles, name="Executive Club Member")
 		roles["app"] = discord.utils.get(nijicord.roles, name="Idol Club Applicant")
 		self.roles=roles
-	async def getPB(self):
-		self.db.execute("SELECT Name,Score FROM memberScores ORDER BY Score DESC")
+	async def getPB(self,user,idx=1):
+		self.db.execute("SELECT ID,Name,Score FROM memberScores ORDER BY Score DESC")
 		response=self.db.fetchall()
-		result=(pd.DataFrame(response).to_string())+"\n\n"
-		link=self.api.paste(self.user_key,title='activity',raw_code=result,private=1,expire_date=None)
-		return link
+		result=pd.DataFrame(response)
+		result.index+=1
+		result.columns=["Id","User","Score"]
+		indexedResults=pd.Index(result["Id"])
+		rank=indexedResults.get_loc(user.id)
+		if idx<1:
+			idx=1
+		result=result.head(idx*10)
+		result=result.tail(10)
+		result=result.drop(columns=["Id"])
+		#link=self.api.paste(self.user_key,title='activity',raw_code=result,private=1,expire_date=None)
+		return ("```fortran\nShowing results for page {}:\nRank".format(idx)+result.to_string()[4:]+"\nCurrent rank for {0}: {1} (page {2})```".format(user.name,rank+1,(rank//10)+1))
 	async def handleMessage(self,message,bot):
 		content=message.content
 		if not self.cooldown:
@@ -44,6 +52,11 @@ class MessageHandler():
 			await message.channel.send("No")
 			await message.delete()
 		await bot.process_commands(message)
+		try:
+			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or message.channel.id==613535108846321665:
+				return
+		except:
+			return
 		score=await self.score(message.author)
 		result=None
 		if not(score is None):
@@ -84,9 +97,9 @@ class MessageHandler():
 			self.db.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))
 			newScore=self.db.fetchone()
 			if newScore==None:
-				self.db.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)))
+				self.db.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)[:-5]))
 			else:
-				self.db.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author), author.id))
+				self.db.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author)[:-5], author.id))
 				score=newScore[0]+1
 			self.MRU.insert(0,author.id)
 			if len(self.MRU)>cache:

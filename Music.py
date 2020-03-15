@@ -24,7 +24,7 @@ class Music(commands.Cog):
 		self.mode="../Haruka/music/"
 		self.artist="none"
 		self.songList=os.listdir(self.mode)
-		self.songList.sort()
+		self.songList=sorted(self.songList, key=str.casefold)
 		self.songs=['```']
 		for song in self.songList:
 			if len(self.songs[-1])>1800:
@@ -66,7 +66,7 @@ class Music(commands.Cog):
 			artist=str(data["TXXX:artist_jp"])
 		else:
 			artist="artist unknown, pm junior mints to add one"
-		await bot.change_presence(activity = discord.Game(title+" by "+artist,type=1))
+		await ctx.bot.change_presence(activity = discord.Game(title+" by "+artist,type=1))
 
 
 	def get_vc(self,ctx,channel):
@@ -75,7 +75,8 @@ class Music(commands.Cog):
 				return ch
 
 	async def play(self,ctx):
-		await ctx.bot.wait_until_ready()
+		bot=ctx.bot
+		await bot.wait_until_ready()
 		ch=self.get_vc(ctx,int(self.config["musicCh"]))
 		#ch=bot.get_channel(int(channel.read().strip()))
 		self.voice = await ch.connect()
