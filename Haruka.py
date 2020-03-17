@@ -1,3 +1,4 @@
+import logging
 import requests
 import time
 import discord
@@ -13,6 +14,14 @@ import pytz
 import Music
 import MessageHandler
 from saucenao import SauceNao
+
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
 
 bot = commands.Bot(command_prefix=['$'], description='NijigasakiBot')
 global deletedMessages
@@ -212,6 +221,10 @@ async def git(ctx):
 	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message Junior Mints, or submit a pull request if you have any improvements you can make.")
 
 @bot.command()
+async def source(ctx,url: str=""):
+	await sauce(ctx,url)
+
+@bot.command()
 async def sauce(ctx, url: str=""):
 	async with ctx.typing():
 		try:
@@ -301,16 +314,19 @@ async def best(ctx, *, role):
 	with ctx.typing():
 		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
 		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
-		await member.remove_roles(*roles) #, atomic=True)
-		print('4')
+		await member.remove_roles(*roles, atomic=True)
+		#print('4')
 		if not(role=="clear"):
-			await member.add_roles(requestedRole)
-		print('5')
+			start=time.time()
+			await ctx.message.author.add_roles(requestedRole)
+			end=time.time()
+			print("adding roles took {0}".format(end-start))
+		#print('5')
 		if role.lower()=="haruka":
 			await ctx.message.add_reaction("❤")
 		else:
 			await ctx.message.add_reaction("👍")
-		print ('6')
+		#print ('6')
 	return
 
 @bot.command()
