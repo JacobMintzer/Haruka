@@ -13,7 +13,7 @@ def is_admin(ctx):
 class Administration(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
-	
+
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
 	async def purge(self,ctx,*,msgs:int=10):
@@ -35,7 +35,7 @@ class Administration(commands.Cog):
 
 	def adminRxn(rxn, user):
 		print(rxn.emoji)
-		if user.permissions_in(bot.get_channel(config["generalCh"])).administrator and not user.bot:
+		if user.permissions_in(self.bot.get_channel(config["generalCh"])).administrator and not user.bot:
 			if str(rxn.emoji) in [u"\U0001F5D1","🔨","🚫"]:
 				return True
 		return False
@@ -52,7 +52,7 @@ class Administration(commands.Cog):
 			await rxnMsg.add_reaction("🔨")
 			await rxnMsg.add_reaction("🚫")
 			try:
-				rxn, user=await bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				rxn, user=await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
 				if str(rxn.emoji)==u"\U0001F5D1":
 					target = person
 					for ch in ctx.message.guild.text_channels:
@@ -80,7 +80,7 @@ class Administration(commands.Cog):
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🚫")
 			try:
-				rxn, user=await bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				rxn, user=await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
 				if str(rxn.emoji)==u"\U0001F5D1":
 					target = person
 					for ch in ctx.message.guild.text_channels:

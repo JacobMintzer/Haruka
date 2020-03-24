@@ -345,5 +345,5 @@ async def Pronoun(ctx, action='', pronoun=''):
 	else:
 		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 
-with open("token2.txt","r") as file_object:
+with open("token.txt","r") as file_object:
 	bot.run(file_object.read().strip())
