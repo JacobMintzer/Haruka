@@ -6,7 +6,7 @@ import sqlite3
 import asyncio
 import json
 import pandas as pd
-from paste_bin import PasteBinApi
+#from paste_bin import PasteBinApi
 
 cache=3
 
@@ -17,9 +17,9 @@ class MessageHandler():
 		self.conn=sqlite3.connect("Nijicord.db")
 		self.db=self.conn.cursor()
 		self.cooldown=False
-		data=json.load(open('pastebin.json'))
-		self.api=PasteBinApi(dev_key=data['key'])
-		self.user_key=self.api.user_key(username=data['username'],password=data['password'])
+		#data=json.load(open('pastebin.json'))
+		#self.api=PasteBinApi(dev_key=data['key'])
+		#self.user_key=self.api.user_key(username=data['username'],password=data['password'])
 	async def initRoles(self,bot):
 		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
 		roles={}
