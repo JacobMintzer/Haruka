@@ -14,6 +14,7 @@ import pytz
 import Music
 import Administration
 import MessageHandler
+import Utils
 from saucenao import SauceNao
 
 
@@ -60,6 +61,7 @@ def is_admin(ctx):
 
 async def on_ready():
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
+	global guild
 	for cog in cogList:
 		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
@@ -96,7 +98,6 @@ async def on_message(message):
 	await messageHandler.handleMessage(message,bot)
 	return
 
-
 def inBotMod(msg):
 	return msg.channel.id==config["ModBotCH"]
 
@@ -123,14 +124,40 @@ def isTarget(msg):
 
 @bot.command()
 async def rank(ctx,idx=1):
+	"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 	await ctx.send(await messageHandler.getPB(ctx.message.author,idx))
 
-@bot.command()
+@bot.command(hidden=True)
 @commands.check(is_admin)
 async def uwu(ctx):
-	msg=config["msgs"]["sr"]
-	hug=discord.utils.get(ctx.message.guild.emojis,name="HarukaHug")
-	await ctx.send(msg.format(ctx.message.author.mention,"<:HarukaHug:{0}>".format(hug.id)))
+	global guild
+	await ctx.send(await messageHandler.test(guild,ctx.message.author))
+
+@bot.command()
+async def re(ctx, emote=""):
+	await randomEmoji(ctx,emote)
+
+@bot.command()
+async def randomEmoji(ctx, emote=""):
+	"""Gets a random emote from the server. Optionally add a search term. ex.'$randomEmoji yay'. '$re yay' for short."""
+	emoji=Utils.getRandEmoji(ctx.message.guild, emote)
+	if emoji is None:
+		await ctx.send("emoji not found")
+	else:
+		await ctx.send(str(emoji))
+
+@bot.command(hidden=True)
+async def e(ctx, emote=""):
+	await getEmoji(ctx, emote)
+
+@bot.command()
+async def getEmoji(ctx, emote=""):
+	"""Gets an emote from the server by search term. ex. $getEmoji aRinaPat. $e aRinaPat for short"""
+	emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),ctx.message.guild.emojis)
+	if emoji is None:
+		await ctx.send("emoji not found")
+	else:
+		await ctx.send(str(emoji))
 
 @bot.command()
 async def git(ctx):
@@ -138,11 +165,13 @@ async def git(ctx):
 	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message Junior Mints, or submit a pull request if you have any improvements you can make.")
 
 @bot.command()
-async def source(ctx,url: str=""):
+async def source(ctx, url: str=""):
+	"""Uses SauceNao to attempt to find the source of an image. Either a direct link to the image, or uploading the image through discord works"""
 	await sauce(ctx,url)
 
 @bot.command()
 async def sauce(ctx, url: str=""):
+	"""Uses SauceNao to attempt to find the source of an image. Either a direct link to the image, or uploading the image through discord works"""
 	async with ctx.typing():
 		try:
 			if (len(ctx.message.attachments)>0):
@@ -188,6 +217,7 @@ async def sauce(ctx, url: str=""):
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n"+"\n".join(result[0]["data"]["ext_urls"]))
 			return
 		await ctx.send("sorry, I'm not sure what the source for this is.")
+
 
 @bot.command()
 async def info(ctx, member: discord.Member = None):
@@ -298,20 +328,22 @@ async def sub(ctx,*,role):
 async def Iam(ctx, arole=''):
 	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 	global allRoles
+	global guild
 	if arole.lower() in asar:
 		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), allRoles)
 		await ctx.message.author.add_roles(role)
-		await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+		await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) #discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
 	else:
 		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
 
 @bot.command(name="iamn")
 async def Iamn(ctx, arole=''):
 	"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
+	global guild
 	if arole.lower() in asar:
 		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
 		await ctx.message.author.remove_roles(role)
-		await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+		await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) #discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
 	else:
 		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
 
@@ -344,6 +376,7 @@ async def Pronoun(ctx, action='', pronoun=''):
 		await member.remove_roles(role)
 	else:
 		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+	await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug"))
 
 with open("token.txt","r") as file_object:
 	bot.run(file_object.read().strip())

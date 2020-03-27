@@ -6,6 +6,7 @@ import sqlite3
 import asyncio
 import json
 import pandas as pd
+import Utils
 #from paste_bin import PasteBinApi
 
 cache=3
@@ -22,6 +23,8 @@ class MessageHandler():
 		#self.user_key=self.api.user_key(username=data['username'],password=data['password'])
 	async def initRoles(self,bot):
 		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
+		self.niji=nijicord
+		self.anataYay = discord.utils.get(nijicord.emojis, name = "AnataYay")
 		roles={}
 		roles["new"] = discord.utils.get(nijicord.roles, name="New Club Member")
 		roles["jr"] = discord.utils.get(nijicord.roles, name="Junior Club Member")
@@ -53,10 +56,10 @@ class MessageHandler():
 			await message.delete()
 		await bot.process_commands(message)
 		try:
-			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or message.channel.id==613535108846321665:
+			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or message.content.startswith('$'):
 				return
-		except:
-			return
+		except Exception as e:
+			print (e)
 		score=await self.score(message.author)
 		result=None
 		if not(score is None):
@@ -64,13 +67,17 @@ class MessageHandler():
 				result=await self.rankUp(message.author,score)
 			elif score<2505 and score>=2500:
 				result=await self.rankUp(message.author,score)
+
 			elif score%10000<=5:
 				result=await self.rankUp(message.author,score)
 			if not(result is None):
 				rankUpMsg=self.config["msgs"][result]
-				hug=discord.utils.get(message.guild.emojis,name="HarukaHug")
-				await message.channel.send(rankUpMsg.format(message.author.mention,"<:HarukaHug:{0}>".format(hug.id)))
-
+				hug = Utils.getRandEmoji(message.guild,"suteki")
+				await message.channel.send(rankUpMsg.format(message.author.mention,str(hug)))
+	async def test(self,guild,auth):
+		rankUpMsg=self.config["msgs"]["sr"]
+		hug=self.anataYay
+		return rankUpMsg.format(auth.mention,str(hug))
 	async def meme(self,message):
 		cdTime=90
 		if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):

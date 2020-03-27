@@ -10,6 +10,12 @@ def is_admin(ctx):
 	except Exception as e:
 		print(e)
 		return False
+
+def adminRxn(rxn, user):
+	if user.permissions_in(self.bot.get_channel(config["generalCh"])).administrator and not user.bot:
+		if str(rxn.emoji) in [u"\U0001F5D1","🔨","🚫"]:
+			return True
+		return False
 class Administration(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
@@ -17,12 +23,13 @@ class Administration(commands.Cog):
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
 	async def purge(self,ctx,*,msgs:int=10):
+		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
 		rxnMsg=await ctx.send("Are you sure you want to delete the last {0} messages on the server? react {1} to confirm or {2} to cancel.".format(str(msgs),u"\U0001F5D1", "🚫" ))
 		await rxnMsg.add_reaction(u"\U0001F5D1")
 		await rxnMsg.add_reaction("🚫")
 		async with ctx.message.channel.typing():
 			try:
-				rxn, user=await bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				rxn, user=await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
 				if str(rxn.emoji)==u"\U0001F5D1":
 					await ctx.message.channel.purge(limit = msgs)
 					await ctx.send("purge complete")
@@ -33,20 +40,14 @@ class Administration(commands.Cog):
 
 		return
 
-	def adminRxn(rxn, user):
-		print(rxn.emoji)
-		if user.permissions_in(self.bot.get_channel(config["generalCh"])).administrator and not user.bot:
-			if str(rxn.emoji) in [u"\U0001F5D1","🔨","🚫"]:
-				return True
-		return False
-
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
 	async def ban(self,ctx,*,person: discord.Member):
+		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. ex. '$ban 613501680469803045'"""
 		global target
 		while target!=None:
 			time.sleep(10)
-		rxnMsg=await ctx.send("React {1} to purge {0} and ban then, react 🔨 to only ban them and react 🚫 to cancel".format(str(person),u"\U0001F5D1"))
+		rxnMsg=await ctx.send("React {1} to purge {0}'s messages and ban then, react 🔨 to only ban them and react 🚫 to cancel".format(str(person),u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🔨")
@@ -72,6 +73,7 @@ class Administration(commands.Cog):
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
 	async def prune(self,ctx,*,person: discord.Member):
+		"""ADMIN ONLY! Removes all messages by a given user"""
 		global target
 		while target!=None:
 			time.sleep(10)

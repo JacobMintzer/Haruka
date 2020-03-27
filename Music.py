@@ -14,7 +14,7 @@ from fuzzywuzzy import process
 import sqlite3
 import json
 import pandas as pd
-
+import Utils
 
 class Music(commands.Cog):
 
@@ -219,14 +219,14 @@ class Music(commands.Cog):
 		#bot.send_typing(ctx.message.channel)
 		if msg.lower()=="gay":
 			#ctx.send('adding every love live song ever')
-			await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+			await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild, "yay"))
 			#await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="mariSuperSmug"))
 			for song in self.songList:
 				if fuzz.ratio('Garasu no Hanazono'.lower()+'.mp3',song.lower())>95:
 					self.requests.append(song)
 					return 0
 		elif "lesbian" in msg.lower():
-			await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+			await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild, "yay"))
 			for song in self.songList:
 				if fuzz.ratio('Zurui yo Magnetic today.mp3'.lower(),song.lower())>95:
 					self.requests.append(song)
@@ -236,7 +236,7 @@ class Music(commands.Cog):
 				if fuzz.ratio(msg.lower()+'.mp3',song.lower())>95:
 					self.requests.append(song)
 					#yield from bot.say("added")
-					await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+					await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild, "yay"))
 					return 0
 				elif fuzz.partial_ratio(msg.lower(),song.lower())>85:
 					potential.append(song)
@@ -244,7 +244,7 @@ class Music(commands.Cog):
 				await ctx.send("Song not found, check your spelling or dm junior mints to add the song.")
 			elif len(potential)==1:
 				#yield from bot.say("added")
-				await ctx.message.add_reaction(discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
+				await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild, "yay"))
 				self.requests.append(potential[0])
 			else:
 				response="```These are potential matches, try being more specific with the name."
