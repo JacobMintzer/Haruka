@@ -12,9 +12,11 @@ def is_admin(ctx):
 		return False
 
 def adminRxn(rxn, user):
-	if user.permissions_in(self.bot.get_channel(config["generalCh"])).administrator and not user.bot:
+	if user.permissions_in(rxn.message.channel).administrator and not user.bot:
 		if str(rxn.emoji) in [u"\U0001F5D1","🔨","🚫"]:
 			return True
+		return False
+	else:
 		return False
 class Administration(commands.Cog):
 	def __init__(self,bot):
@@ -24,6 +26,7 @@ class Administration(commands.Cog):
 	@commands.check(is_admin)
 	async def purge(self,ctx,*,msgs:int=10):
 		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
+		print ("uwu")
 		rxnMsg=await ctx.send("Are you sure you want to delete the last {0} messages on the server? react {1} to confirm or {2} to cancel.".format(str(msgs),u"\U0001F5D1", "🚫" ))
 		await rxnMsg.add_reaction(u"\U0001F5D1")
 		await rxnMsg.add_reaction("🚫")

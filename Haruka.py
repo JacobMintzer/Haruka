@@ -25,7 +25,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 
-bot = commands.Bot(command_prefix=['$'], description='NijigasakiBot')
+bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata!')
 global deletedMessages
 deletedMessages=[]
 global target
@@ -60,7 +60,6 @@ def is_admin(ctx):
 @bot.event
 
 async def on_ready():
-	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	global guild
 	for cog in cogList:
 		bot.load_extension(cog)
@@ -69,6 +68,7 @@ async def on_ready():
 	guild = bot.get_guild(config["nijiCord"])
 	global allRoles
 	allRoles = guild.roles
+	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 
 @bot.event
 async def on_member_join(member):
@@ -260,6 +260,9 @@ async def best(ctx, *, role):
 	global allRoles
 	with ctx.typing():
 		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
+		if requestedRole is None:
+			print ("role {0} not found")
+			await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
 		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
 		await member.remove_roles(*roles, atomic=True)
 		#print('4')
