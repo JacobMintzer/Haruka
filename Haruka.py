@@ -1,3 +1,4 @@
+import sys
 import logging
 import requests
 import time
@@ -131,7 +132,7 @@ async def rank(ctx,idx=1):
 @commands.check(is_admin)
 async def uwu(ctx):
 	global guild
-	await ctx.send(await messageHandler.test(guild,ctx.message.author))
+	await ctx.send("{0} emotes at {1} ea for a total size of {2}".format(len(guild.emojis),sys.getsizeof(await randomEmoji(ctx)),sys.getsizeof(guild.emojis)))
 
 @bot.command()
 async def re(ctx, emote=""):
@@ -153,7 +154,7 @@ async def e(ctx, emote=""):
 @bot.command()
 async def getEmoji(ctx, emote=""):
 	"""Gets an emote from the server by search term. ex. $getEmoji aRinaPat. $e aRinaPat for short"""
-	emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),ctx.message.guild.emojis)
+	emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),ctx.bot.emojis)
 	if emoji is None:
 		await ctx.send("emoji not found")
 	else:
@@ -260,7 +261,7 @@ async def best(ctx, *, role):
 	global allRoles
 	with ctx.typing():
 		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
-		if requestedRole is None:
+		if (requestedRole is None) and (role!="clear"):
 			print ("role {0} not found")
 			await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
 		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
@@ -328,7 +329,7 @@ async def sub(ctx,*,role):
 
 
 @bot.command(name="iam")
-async def Iam(ctx, arole=''):
+async def Iam(ctx,*, arole=''):
 	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 	global allRoles
 	global guild
@@ -340,7 +341,7 @@ async def Iam(ctx, arole=''):
 		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
 
 @bot.command(name="iamn")
-async def Iamn(ctx, arole=''):
+async def Iamn(ctx,*, arole=''):
 	"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
 	global guild
 	if arole.lower() in asar:

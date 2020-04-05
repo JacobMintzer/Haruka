@@ -66,7 +66,7 @@ class Music(commands.Cog):
 			artist=str(data["TXXX:artist_jp"])
 		else:
 			artist="artist unknown, pm junior mints to add one"
-		await ctx.bot.change_presence(activity = discord.Game(title+" by "+artist,type=1))
+		await ctx.bot.change_presence(activity = discord.Game(title.replace(".mp3", "" )+" by "+artist,type=1))
 
 
 	def get_vc(self,ctx,channel):

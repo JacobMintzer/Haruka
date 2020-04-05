@@ -55,6 +55,8 @@ class MessageHandler():
 			return False
 		if (message.content[0]=='|'):
 			return False
+		if (message.content[0]=="$"):
+			return False
 		content=message.content
 		content=re.sub(r'<[^>]+>','',content)
 		testContent=content.lower().replace("again","")
@@ -97,12 +99,15 @@ class MessageHandler():
 		else:
 			return False
 	async def handleMessage(self,message,bot):
+		if not((message.guild is None) or (message.guild==self.niji)):
+			return
 		if not (self.cooldown or message.author.bot):
 			await self.meme(message)
 		if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
 			await message.channel.send("No")
 			await message.delete()
-		await bot.process_commands(message)
+		if not (message.author.bot):
+			await bot.process_commands(message)
 		try:
 			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or message.content.startswith('$'):
 				return
@@ -127,23 +132,27 @@ class MessageHandler():
 		hug=self.anataYay
 		return rankUpMsg.format(auth.mention,str(hug))
 	async def meme(self,message):
-		cdTime=120
-		#if "kasukasu" in message.content.lower() or ("kasu kasu" in message.content.lower() and not("nakasu kasumi" in message.content.lower())):
-		#	rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
-		#	await message.add_reaction(rxn)
-		#	self.cooldown=True
-		#	await message.channel.send("KA! SU! MIN! DESU!!!")
-		if(await self.pdpIfy(message)):
+		cdTime=90
+		content=re.sub(r'<[^>]+>','',message.content).lower()
+		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content)):
+			rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
+			await message.add_reaction(rxn)
 			self.cooldown=True
-		elif "yoshiko" in message.content.lower():
+			await message.channel.send("KA! SU! MIN! DESU!!!")
+		elif "yoshiko" in content:
 			self.cooldown=True
 			await message.channel.send("Dakara Yohane Yo!!!")
-		elif message.content.lower()=="chun":
+		elif content=="chun":
 			self.cooldown=True
 			await message.channel.send("Chun(・8・)Chun~")
-		elif "aquors" in message.content.lower():
+		elif "aquors" in content:
 			self.cooldown=True
 			await message.channel.send("AQOURS")
+		elif "pdp" in content:
+			self.cooldown=True
+			rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
+			await message.add_reaction(rxn)
+			await message.channel.send("Hey, April Fools Day is over, they're Nijigasaki!")
 		else:
 			return
 		await asyncio.sleep(cdTime)
