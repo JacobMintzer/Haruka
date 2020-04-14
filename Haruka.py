@@ -59,7 +59,6 @@ def is_admin(ctx):
 		print(e)
 		return False
 @bot.event
-
 async def on_ready():
 	global guild
 	for cog in cogList:
@@ -70,13 +69,19 @@ async def on_ready():
 	global allRoles
 	allRoles = guild.roles
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
+	guildList=""
+	for guild in bot.guilds:
+		guildList=guildList+guild.name+", "
+	print("Currently in the current guilds:\n"+guildList)
 
 @bot.event
 async def on_member_join(member):
 	#print(member)
+	global guild
+	if member.guild!=guild:
+		return
 	welcomeCh = bot.get_channel(config["welcomeCh"])
 	rules = bot.get_channel(config["rulesCh"])
-	guild = bot.get_guild(config["nijiCord"])
 	await welcomeCh.send(config["welcome"].format(member.display_name, rules.mention))
 	log=bot.get_channel(config["logCh"])
 	baseRole=discord.utils.find(lambda x: x.name == "Idol Club Applicant", guild.roles)
@@ -85,11 +90,17 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
+	global guild
+	if member.guild!=guild:
+		return
 	log=bot.get_channel(config["logCh"])
 	await log.send(embed=genLog(member,"has left the server."))
 
 @bot.event
 async def on_message_delete(message):
+	global guild
+	if message.guild!=guild:
+		return
 	log=bot.get_channel(config["logCh"])
 	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
 	await log.send("{0}'s message was deleted from {2}. The message:\n{1}".format(message.author.display_name, message.content, message.channel),files=fileList)
@@ -262,16 +273,25 @@ async def best(ctx, *, role):
 	with ctx.typing():
 		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
 		if (requestedRole is None) and (role!="clear"):
-			print ("role {0} not found")
+			print ("role {0} not found".format(requestedRole))
 			await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
+			all=""
+			for rol in all:
+				all=all+(", "+str(rol))
+			print(all)
 		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
 		await member.remove_roles(*roles, atomic=True)
 		#print('4')
 		if not(role=="clear"):
-			start=time.time()
-			await ctx.message.author.add_roles(requestedRole)
-			end=time.time()
-			print("adding roles took {0}".format(end-start))
+			try:
+				start=time.time()
+				await ctx.message.author.add_roles(requestedRole)
+				end=time.time()
+				print("adding roles took {0}".format(end-start))
+			except Exception as e:
+				console.log(e)
+				await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
+				print(str(role))
 		#print('5')
 		if role.lower()=="haruka":
 			await ctx.message.add_reaction("❤")
@@ -382,5 +402,7 @@ async def Pronoun(ctx, action='', pronoun=''):
 		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 	await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug"))
 
+
 with open("token.txt","r") as file_object:
 	bot.run(file_object.read().strip())
+

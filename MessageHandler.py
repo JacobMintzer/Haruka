@@ -133,6 +133,8 @@ class MessageHandler():
 		return rankUpMsg.format(auth.mention,str(hug))
 	async def meme(self,message):
 		cdTime=90
+		if message.channel.id==696402682168082453:
+			return
 		content=re.sub(r'<[^>]+>','',message.content).lower()
 		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content)):
 			rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
