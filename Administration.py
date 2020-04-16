@@ -3,6 +3,8 @@ import discord
 from discord.ext import commands
 
 def is_admin(ctx):
+	if not(ctx.guild.id==610931193516392472):
+		return False
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
@@ -26,7 +28,6 @@ class Administration(commands.Cog):
 	@commands.check(is_admin)
 	async def purge(self,ctx,*,msgs:int=10):
 		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
-		print ("uwu")
 		rxnMsg=await ctx.send("Are you sure you want to delete the last {0} messages on the server? react {1} to confirm or {2} to cancel.".format(str(msgs),u"\U0001F5D1", "🚫" ))
 		await rxnMsg.add_reaction(u"\U0001F5D1")
 		await rxnMsg.add_reaction("🚫")
@@ -42,6 +43,20 @@ class Administration(commands.Cog):
 				await rxnMsg.delete()
 
 		return
+	
+	@commands.command(hidden=True)
+	@commands.check(is_admin)
+	async def blacklist(self,ctx,*,user):
+		person=self.bot.get_user(int(user))
+		if person is None:
+			person=await self.bot.fetch_user(int(user))
+		print (person)
+		for guild in self.bot.guilds:
+			try:
+				await guild.ban(person, reason="This user was banned by {0} through haruka's blacklist function from Nijicord; this means you let haruka have ban permissions in your server.".format(str(ctx.message.author)), delete_message_days=0)
+				print("banned {0} from {1}".format(person.name,guild.name))
+			except Exception as e:
+				print("can't ban from {0} because of {1}".format(guild.name, e))
 
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
@@ -96,11 +111,7 @@ class Administration(commands.Cog):
 			except asyncio.TimeoutError:
 				await rxnMsg.delete()
 			return
-
-	#@commands.command(hidden=True)
-	#@commands.check(is_admin)
-	#async def blacklist(self,ctx,*,id):
-	#	print(id)
+			
 
 def setup(bot):
 	bot.add_cog(Administration(bot))

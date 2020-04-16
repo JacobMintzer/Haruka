@@ -36,6 +36,7 @@ cooldown=False
 cdTime=127
 global allRoles
 cogList=['Music','Administration']
+global config
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
 asar=config["asar"]
@@ -60,7 +61,7 @@ def is_admin(ctx):
 		return False
 @bot.event
 async def on_ready():
-	global guild
+	global config
 	for cog in cogList:
 		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
@@ -77,8 +78,9 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	#print(member)
-	global guild
-	if member.guild!=guild:
+	global config
+	guild=bot.get_guild(config["nijiCord"])
+	if member.guild.id!=config["nijiCord"]:
 		return
 	welcomeCh = bot.get_channel(config["welcomeCh"])
 	rules = bot.get_channel(config["rulesCh"])
@@ -90,16 +92,19 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
-	global guild
-	if member.guild!=guild:
+	global config
+	print("someone joined {0}".format(member.guild.name))
+	if member.guild.id!=config["nijiCord"]:
+		print("but thats not nijicord")
 		return
+	print("and that is nijicord")
 	log=bot.get_channel(config["logCh"])
 	await log.send(embed=genLog(member,"has left the server."))
 
 @bot.event
 async def on_message_delete(message):
-	global guild
-	if message.guild!=guild:
+	global config
+	if message.guild.id!=config["nijiCord"]:
 		return
 	log=bot.get_channel(config["logCh"])
 	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
@@ -142,8 +147,8 @@ async def rank(ctx,idx=1):
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def uwu(ctx):
-	global guild
-	await ctx.send("{0} emotes at {1} ea for a total size of {2}".format(len(guild.emojis),sys.getsizeof(await randomEmoji(ctx)),sys.getsizeof(guild.emojis)))
+	print(ctx.guild.id)
+	print(config["nijiCord"])
 
 @bot.command()
 async def re(ctx, emote=""):
@@ -232,7 +237,7 @@ async def sauce(ctx, url: str=""):
 
 
 @bot.command()
-async def info(ctx, member: discord.Member = None):
+async def info(ctx, member: discord.User = None):
 	"""$info for information on yourself"""
 	if member == None:
 		await ctx.send(embed=genLog(ctx.message.author, "Info on {0}".format(ctx.message.author.display_name)))
@@ -317,7 +322,7 @@ async def seiyuu(ctx,*,role):
 		await member.remove_roles(*roles, atomic=True)
 		if not(role=="clear"):
 			await member.add_roles(requestedRole)
-		await ctx.message.add_reaction("👍")           
+		await ctx.message.add_reaction("👍")
 	return
 
 @bot.command()
@@ -352,7 +357,7 @@ async def sub(ctx,*,role):
 async def Iam(ctx,*, arole=''):
 	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 	global allRoles
-	global guild
+	guild=ctx.message.guild
 	if arole.lower() in asar:
 		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), allRoles)
 		await ctx.message.author.add_roles(role)
@@ -363,7 +368,7 @@ async def Iam(ctx,*, arole=''):
 @bot.command(name="iamn")
 async def Iamn(ctx,*, arole=''):
 	"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
-	global guild
+	guild=ctx.message.guild
 	if arole.lower() in asar:
 		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
 		await ctx.message.author.remove_roles(role)
