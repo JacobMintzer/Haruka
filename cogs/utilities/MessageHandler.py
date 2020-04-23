@@ -6,8 +6,7 @@ import sqlite3
 import asyncio
 import json
 import pandas as pd
-import Utils
-#from paste_bin import PasteBinApi
+import cogs.utilities.Utils
 
 cache=3
 
@@ -21,9 +20,7 @@ class MessageHandler():
 		self.conn=sqlite3.connect("Nijicord.db")
 		self.db=self.conn.cursor()
 		self.cooldown=False
-		#data=json.load(open('pastebin.json'))
-		#self.api=PasteBinApi(dev_key=data['key'])
-		#self.user_key=self.api.user_key(username=data['username'],password=data['password'])
+
 	async def initRoles(self,bot):
 		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
 		self.niji=nijicord
@@ -48,56 +45,7 @@ class MessageHandler():
 		result=result.head(idx*10)
 		result=result.tail(10)
 		result=result.drop(columns=["Id"])
-		#link=self.api.paste(self.user_key,title='activity',raw_code=result,private=1,expire_date=None)
 		return ("```fortran\nShowing results for page {}:\nRank".format(idx)+result.to_string()[4:]+"\nCurrent rank for {0}: {1} (page {2})```".format(user.name,rank+1,(rank//10)+1))
-	async def pdpIfy(self,message):
-		if(message.author.bot):
-			return False
-		if (message.content[0]=='|'):
-			return False
-		if (message.content[0]=="$"):
-			return False
-		content=message.content
-		content=re.sub(r'<[^>]+>','',content)
-		testContent=content.lower().replace("again","")
-		testContent=testContent.replace("wait","")
-		testContent=testContent.replace("senpai","")
-		if bool([ele for ele in self.girls if(ele in testContent)]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
-			msg=content
-			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('nijigaku'),re.IGNORECASE)
-			msg=regex.sub('The PDP School',msg)
-			regex=re.compile(re.escape('niji'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('ayumu'),re.IGNORECASE)
-			msg=regex.sub('Honoka 3',msg)
-			regex=re.compile(re.escape('karin'),re.IGNORECASE)
-			msg=regex.sub('Kanan with tiddy moles',msg)
-			regex=re.compile(re.escape('kasumin'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('kasumi'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('setsuna'),re.IGNORECASE)
-			msg=regex.sub('The self-insert weeb idol',msg)
-			regex=re.compile(re.escape('shizuku'),re.IGNORECASE)
-			msg=regex.sub('Volleyball target practice',msg)
-			regex=re.compile(re.escape('kanata'),re.IGNORECASE)
-			msg=regex.sub('zzzzzzzzzzzzzzz',msg)
-			regex=re.compile(re.escape('emma'),re.IGNORECASE)
-			msg=regex.sub('Emma, consumer of smaller idols',msg)
-			regex=re.compile(re.escape('rina'),re.IGNORECASE)
-			msg=regex.sub('Overlord Board-sama and her loyal flesh-slave',msg)
-			regex=re.compile(re.escape('ai'),re.IGNORECASE)
-			msg=regex.sub('The safest gyaru design of all time',msg)
-			regex=re.compile(re.escape('haruka'),re.IGNORECASE)
-			msg=regex.sub('Boneless Ruby',msg)
-			regex=re.compile(re.escape('anata'),re.IGNORECASE)
-			msg=regex.sub('Me, but if i were cuter and always talking to other cute girls',msg)
-			await message.channel.send('{1} You mean `{0}`'.format(msg,message.author.mention))
-			return True
-		else:
-			return False
 	async def handleMessage(self,message,bot):
 		if not((message.guild is None) or (message.guild==self.niji)):
 			return
@@ -116,6 +64,8 @@ class MessageHandler():
 		score=await self.score(message.author)
 		result=None
 		if not(score is None):
+			if score==69 or score==6969:
+				await message.channel.send("nice")
 			if score<505 and score>=500:
 				result=await self.rankUp(message.author,score)
 			elif score<2505 and score>=2500:
@@ -205,3 +155,52 @@ class MessageHandler():
 				await member.remove_roles(role)
 			await member.add_roles(givenRole)
 			return announce
+	async def pdpIfy(self,message):
+		if(message.author.bot):
+			return False
+		if (message.content[0]=='|'):
+			return False
+		if (message.content[0]=="$"):
+			return False
+		content=message.content
+		content=re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',content)
+		testContent=content.lower().replace("again","")
+		testContent=testContent.replace("wait","")
+		testContent=testContent.replace("senpai","")
+		if bool([ele for ele in self.girls if(ele in testContent)]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
+			msg=content
+			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
+			msg=regex.sub('PDP',msg)
+			regex=re.compile(re.escape('nijigaku'),re.IGNORECASE)
+			msg=regex.sub('The PDP School',msg)
+			regex=re.compile(re.escape('niji'),re.IGNORECASE)
+			msg=regex.sub('PDP',msg)
+			regex=re.compile(re.escape('ayumu'),re.IGNORECASE)
+			msg=regex.sub('Honoka 3',msg)
+			regex=re.compile(re.escape('karin'),re.IGNORECASE)
+			msg=regex.sub('Kanan with tiddy moles',msg)
+			regex=re.compile(re.escape('kasumin'),re.IGNORECASE)
+			msg=regex.sub('KasuKasu',msg)
+			regex=re.compile(re.escape('kasumi'),re.IGNORECASE)
+			msg=regex.sub('KasuKasu',msg)
+			regex=re.compile(re.escape('setsuna'),re.IGNORECASE)
+			msg=regex.sub('The self-insert weeb idol',msg)
+			regex=re.compile(re.escape('shizuku'),re.IGNORECASE)
+			msg=regex.sub('Volleyball target practice',msg)
+			regex=re.compile(re.escape('kanata'),re.IGNORECASE)
+			msg=regex.sub('zzzzzzzzzzzzzzz',msg)
+			regex=re.compile(re.escape('emma'),re.IGNORECASE)
+			msg=regex.sub('Emma, consumer of smaller idols',msg)
+			regex=re.compile(re.escape('rina'),re.IGNORECASE)
+			msg=regex.sub('Overlord Board-sama and her loyal flesh-slave',msg)
+			regex=re.compile(re.escape('ai'),re.IGNORECASE)
+			msg=regex.sub('The safest gyaru design of all time',msg)
+			regex=re.compile(re.escape('haruka'),re.IGNORECASE)
+			msg=regex.sub('Boneless Ruby',msg)
+			regex=re.compile(re.escape('anata'),re.IGNORECASE)
+			msg=regex.sub('Me, but if i were cuter and always talking to other cute girls',msg)
+			await message.channel.send('{1} You mean `{0}`'.format(msg,message.author.mention))
+			return True
+		else:
+			return False
+	

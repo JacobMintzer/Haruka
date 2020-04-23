@@ -14,13 +14,12 @@ from fuzzywuzzy import process
 import sqlite3
 import json
 import pandas as pd
-import Utils
+from .utilities import Utils
 
 class Music(commands.Cog):
 
 	def __init__(self,bot):
 		self.bot=bot
-		#self.config=bot.config
 		self.mode="../Haruka/music/"
 		self.artist="none"
 		self.songList=os.listdir(self.mode)
@@ -78,7 +77,6 @@ class Music(commands.Cog):
 		bot=ctx.bot
 		await bot.wait_until_ready()
 		ch=self.get_vc(ctx,int(self.config["musicCh"]))
-		#ch=bot.get_channel(int(channel.read().strip()))
 		self.voice = await ch.connect()
 		songs=self.shuff()
 		if len(self.requests)>0:

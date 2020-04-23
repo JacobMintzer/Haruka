@@ -12,10 +12,7 @@ import io
 import json
 import datetime
 import pytz
-import Music
-import Administration
-import MessageHandler
-import Utils
+from cogs.utilities import MessageHandler,Utils
 from saucenao import SauceNao
 
 
@@ -25,22 +22,13 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-
 bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata!')
-global deletedMessages
-deletedMessages=[]
-global target
-target=None
-global cooldown
-cooldown=False
-cdTime=127
-global allRoles
-cogList=['Music','Administration']
-global config
+
+cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions']
 with open('Resources.json', 'r') as file_object:
 	config=json.load(file_object)
-asar=config["asar"]
-messageHandler=MessageHandler.MessageHandler(config)
+bot.config=config
+bot.asar=bot.config["asar"]
 """
 if not discord.opus.is_loaded():
         # the 'opus' library here is opus.dll on windows
@@ -61,14 +49,14 @@ def is_admin(ctx):
 		return False
 @bot.event
 async def on_ready():
-	global config
+	messageHandler=MessageHandler.MessageHandler(bot.config)
+	bot.messageHandler=messageHandler
 	for cog in cogList:
 		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
-	await messageHandler.initRoles(bot)
-	guild = bot.get_guild(config["nijiCord"])
-	global allRoles
-	allRoles = guild.roles
+	await bot.messageHandler.initRoles(bot)
+	guild = bot.get_guild(bot.config["nijiCord"])
+	bot.allRoles = guild.roles
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList=""
 	for guild in bot.guilds:
@@ -78,103 +66,63 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	#print(member)
-	global config
-	guild=bot.get_guild(config["nijiCord"])
-	if member.guild.id!=config["nijiCord"]:
+	guild=bot.get_guild(bot.config["nijiCord"])
+	if member.guild.id!=bot.config["nijiCord"]:
 		return
-	welcomeCh = bot.get_channel(config["welcomeCh"])
-	rules = bot.get_channel(config["rulesCh"])
-	await welcomeCh.send(config["welcome"].format(member.display_name, rules.mention))
-	log=bot.get_channel(config["logCh"])
+	welcomeCh = bot.get_channel(bot.config["welcomeCh"])
+	rules = bot.get_channel(bot.config["rulesCh"])
+	await welcomeCh.send(bot.config["welcome"].format(member.display_name, rules.mention))
+	log=bot.get_channel(bot.config["logCh"])
 	baseRole=discord.utils.find(lambda x: x.name == "Idol Club Applicant", guild.roles)
 	await member.add_roles(baseRole)
-	await log.send(embed=genLog(member,"has joined the server."))
+	embd=Utils.genLog(member,"has joined the server.")
+	await log.send(embed=embd)
 
 @bot.event
 async def on_member_remove(member):
-	global config
 	print("someone joined {0}".format(member.guild.name))
-	if member.guild.id!=config["nijiCord"]:
+	if member.guild.id!=bot.config["nijiCord"]:
 		print("but thats not nijicord")
 		return
 	print("and that is nijicord")
-	log=bot.get_channel(config["logCh"])
-	await log.send(embed=genLog(member,"has left the server."))
+	log=bot.get_channel(bot.config["logCh"])
+	embd=Utils.genLog(member,"has left the server.")
+	
+	await log.send(embed=embd)
 
 @bot.event
 async def on_message_delete(message):
-	global config
-	if message.guild.id!=config["nijiCord"]:
+	if message.guild.id!=bot.config["nijiCord"]:
 		return
-	log=bot.get_channel(config["logCh"])
+	log=bot.get_channel(bot.config["logCh"])
 	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
 	await log.send("{0}'s message was deleted from {2}. The message:\n{1}".format(message.author.display_name, message.content, message.channel),files=fileList)
 
 @bot.event
 async def on_message(message):
-	await messageHandler.handleMessage(message,bot)
+	await bot.messageHandler.handleMessage(message,bot)
 	return
 
 def inBotMod(msg):
-	return msg.channel.id==config["ModBotCH"]
+	return msg.channel.id==bot.config["ModBotCH"]
 
-def genLog(member, what):
-	embd=discord.Embed()
-	embd.title=member.display_name
-	embd.description=what
-	embd=embd.set_thumbnail (url=member.avatar_url)
-	embd.type="rich"
-	embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
-	embd=embd.add_field(name = 'Discord Username', value = str(member))
-	embd=embd.add_field(name = 'id', value = member.id)
-	embd=embd.add_field(name = 'Joined', value = member.joined_at)
-	embd=embd.add_field(name = 'Roles', value = ', '.join(map(lambda x: x.name, member.roles)))
-	embd=embd.add_field(name = 'Account Created', value = member.created_at)
-	embd=embd.add_field(name = 'Profile Picture', value = member.avatar_url)
-	return embd
 
-def isTarget(msg):
-	global target
-	if msg.author==target:
-		return True
-	return False
-
-@bot.command()
-async def rank(ctx,idx=1):
-	"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
-	await ctx.send(await messageHandler.getPB(ctx.message.author,idx))
 
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def uwu(ctx):
-	print(ctx.guild.id)
-	print(config["nijiCord"])
-
-@bot.command()
-async def re(ctx, emote=""):
-	await randomEmoji(ctx,emote)
-
-@bot.command()
-async def randomEmoji(ctx, emote=""):
-	"""Gets a random emote from the server. Optionally add a search term. ex.'$randomEmoji yay'. '$re yay' for short."""
-	emoji=Utils.getRandEmoji(ctx.message.guild, emote)
-	if emoji is None:
-		await ctx.send("emoji not found")
-	else:
-		await ctx.send(str(emoji))
+	embd=Utils.genLog(ctx.message.author,"has joined the server.")
+	await ctx.send(embed=embd)
+	await cog.randomEmoji(ctx,"rina")
 
 @bot.command(hidden=True)
-async def e(ctx, emote=""):
-	await getEmoji(ctx, emote)
+@commands.check(is_admin)
+async def s(ctx,*,msg=""):
+	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename) for x in ctx.message.attachments]
+	await ctx.send(msg,files=fileList)
+	await ctx.message.delete()
 
-@bot.command()
-async def getEmoji(ctx, emote=""):
-	"""Gets an emote from the server by search term. ex. $getEmoji aRinaPat. $e aRinaPat for short"""
-	emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),ctx.bot.emojis)
-	if emoji is None:
-		await ctx.send("emoji not found")
-	else:
-		await ctx.send(str(emoji))
+
 
 @bot.command()
 async def git(ctx):
@@ -204,7 +152,7 @@ async def sauce(ctx, url: str=""):
 			return
 		#print ("uwu")
 		foundSauce=""
-		output=SauceNao(directory='./', api_key=config["sauce"])
+		output=SauceNao(directory='./', api_key=bot.config["sauce"])
 		result=output.check_file(file_name=file)
 		#print (result)
 		if (len(result)<1):
@@ -235,177 +183,6 @@ async def sauce(ctx, url: str=""):
 			return
 		await ctx.send("sorry, I'm not sure what the source for this is.")
 
-
-@bot.command()
-async def info(ctx, member: discord.User = None):
-	"""$info for information on yourself"""
-	if member == None:
-		await ctx.send(embed=genLog(ctx.message.author, "Info on {0}".format(ctx.message.author.display_name)))
-	else:
-		await ctx.send(embed=genLog(member, "info on {0}".format(member.display_name)))
-
-@bot.command()
-async def sinfo(ctx):
-        """$sinfo if you want me to tell you information about this server"""
-        embd=discord.Embed()
-        embd.title=ctx.guild.name
-        embd.description="information on "+ctx.guild.name
-        embd=embd.set_thumbnail (url=ctx.guild.icon_url)
-        embd.type="rich"
-        embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
-        dt = ctx.guild.created_at
-        embd=embd.add_field(name = 'Date Created', value = str(dt.date())+" at "+str(dt.time().isoformat('minutes')))
-        embd=embd.add_field(name = 'ID', value = ctx.guild.id)
-        embd=embd.add_field(name = 'Owner', value = str(ctx.guild.owner))
-        embd=embd.add_field(name = 'Total Boosters', value = ctx.guild.premium_subscription_count)
-        embd=embd.add_field(name = 'Total Channels', value = len(ctx.guild.channels))
-        embd=embd.add_field(name = 'Total Members', value = ctx.guild.member_count)
-        await ctx.send(embed=embd)
-
-@bot.command(name="best")
-async def best(ctx, *, role):
-	"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
-	roleNames=config["girls"]
-	if role.lower()=="girl":
-		role="haruka"
-	elif role.lower()=="clear":
-		role="clear"
-	elif role.title() not in roleNames:
-		await ctx.send("Not a valid role.")
-		return
-	member = ctx.message.author
-	global allRoles
-	with ctx.typing():
-		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
-		if (requestedRole is None) and (role!="clear"):
-			print ("role {0} not found".format(requestedRole))
-			await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
-			all=""
-			for rol in all:
-				all=all+(", "+str(rol))
-			print(all)
-		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
-		await member.remove_roles(*roles, atomic=True)
-		#print('4')
-		if not(role=="clear"):
-			try:
-				start=time.time()
-				await ctx.message.author.add_roles(requestedRole)
-				end=time.time()
-				print("adding roles took {0}".format(end-start))
-			except Exception as e:
-				console.log(e)
-				await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
-				print(str(role))
-		#print('5')
-		if role.lower()=="haruka":
-			await ctx.message.add_reaction("❤")
-		else:
-			await ctx.message.add_reaction("👍")
-		#print ('6')
-	return
-
-@bot.command()
-async def seiyuu(ctx,*,role):
-	"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
-	roleNames=config["seiyuu"]
-	if role.lower()=="clear":
-		role="clear"
-	elif role.title() not in roleNames:
-		await ctx.send("Not a valid role.")
-		return
-	member = ctx.message.author
-	global allRoles
-	async with ctx.typing():
-		requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
-		roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
-		await member.remove_roles(*roles, atomic=True)
-		if not(role=="clear"):
-			await member.add_roles(requestedRole)
-		await ctx.message.add_reaction("👍")
-	return
-
-@bot.command()
-async def sub(ctx,*,role):
-	"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
-	member=ctx.message.author
-	roleNames=config["sub"]
-	if role.lower() == "diverdiva" or role.lower() == "diver diva":
-		roleName="DiverDiva"
-	elif role.lower()=="azuna" or role.lower()=="a・zu・na":
-		roleName="A・ZU・NA"
-	elif role.lower()=="qu4rtz" or role.lower()=="quartz":
-		roleName="QU4RTZ"
-	elif role.lower()=="clear":
-		roleName="clear"
-	else:
-		await ctx.send("Not a valid subunit")
-	global allRoles
-	async with ctx.typing():
-		requestedRole=discord.utils.find(lambda x: x.name==roleName, allRoles)
-		allRoles=list(filter(lambda x: x.name in roleNames, allRoles))
-		await member.remove_roles(*allRoles, atomic=True)
-		if not(role=="clear"):
-			await member.add_roles(requestedRole)
-		await ctx.message.add_reaction("👍")
-	return
-
-
-
-
-@bot.command(name="iam")
-async def Iam(ctx,*, arole=''):
-	"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
-	global allRoles
-	guild=ctx.message.guild
-	if arole.lower() in asar:
-		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), allRoles)
-		await ctx.message.author.add_roles(role)
-		await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) #discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
-	else:
-		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
-
-@bot.command(name="iamn")
-async def Iamn(ctx,*, arole=''):
-	"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
-	guild=ctx.message.guild
-	if arole.lower() in asar:
-		role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
-		await ctx.message.author.remove_roles(role)
-		await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) #discord.utils.get(ctx.message.guild.emojis, name="HarukaHug"))
-	else:
-		await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(asar)))
-
-@bot.command(name="asar")
-async def Asar(ctx):
-	"""Use this command to list all self-assignable roles. Roles can be assigned with the $iam command, and removed using the $iamn command"""
-	await ctx.send(str(asar))
-
-@bot.command(name="pronoun")
-async def Pronoun(ctx, action='', pronoun=''):
-	"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
-	member=ctx.message.author
-	if action=="" or pronoun=="":
-		await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-		return
-
-	if pronoun.lower().strip() == 'they':
-		role = discord.utils.find(lambda x: x.name == "p:they/them", ctx.guild.roles)
-	elif pronoun.lower().strip() == 'she':
-		role = discord.utils.find(lambda x: x.name == "p:she/her", ctx.guild.roles)
-	elif pronoun.lower().strip() == 'he':
-		role = discord.utils.find(lambda x: x.name == "p:he/him", ctx.guild.roles)
-	else:
-		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-		return
-
-	if action.strip().lower() == "add":
-		await member.add_roles(role)
-	elif action.strip().lower() == "remove":
-		await member.remove_roles(role)
-	else:
-		await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-	await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug"))
 
 
 with open("token.txt","r") as file_object:

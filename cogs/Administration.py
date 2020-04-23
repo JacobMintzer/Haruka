@@ -1,17 +1,26 @@
 import asyncio
 import discord
 from discord.ext import commands
+from .utilities import Utils
 
-def is_admin(ctx):
+
+async def is_admin(ctx):
 	if not(ctx.guild.id==610931193516392472):
 		return False
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
+		await ctx.send("You do not have permission to do this. This incident will be reported.")
 		return False
 	except Exception as e:
 		print(e)
 		return False
+
+def isTarget(msg):
+	global target
+	if msg.author==target:
+		return True
+	return False
 
 def adminRxn(rxn, user):
 	if user.permissions_in(rxn.message.channel).administrator and not user.bot:
@@ -23,6 +32,8 @@ def adminRxn(rxn, user):
 class Administration(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
+		global target
+		target=None
 
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
