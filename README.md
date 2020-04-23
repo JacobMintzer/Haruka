@@ -8,7 +8,7 @@ Discord bot for Nijigasaki Discord
 * Allow true multi-server support without breaking everything
 * Youtube support, including revamping the queue system
 * Specific ban system for when people inevitably abuse this system
-* Import and improve Maribot's antispam automoderation
+* <s>Import and improve Maribot's antispam automoderation</s>
 * Haruka specific message when people boost
 * Nijigasaki.moe integrations?
 * SIF/SIFAS card info lookups
