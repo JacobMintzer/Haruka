@@ -26,8 +26,8 @@ bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I
 
 cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions']
 with open('Resources.json', 'r') as file_object:
-	config=json.load(file_object)
-bot.config=config
+	bot.config=json.load(file_object)
+bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
 bot.asar=bot.config["asar"]
 """
 if not discord.opus.is_loaded():
@@ -49,8 +49,6 @@ def is_admin(ctx):
 		return False
 @bot.event
 async def on_ready():
-	messageHandler=MessageHandler.MessageHandler(bot.config)
-	bot.messageHandler=messageHandler
 	for cog in cogList:
 		bot.load_extension(cog)
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))

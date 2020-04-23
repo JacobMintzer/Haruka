@@ -3,13 +3,18 @@ from discord.ext import commands
 import asyncio
 import random
 import time
+import pytz
 
-def getRandEmoji(guild,query=""):
+def getRandEmoji(emojis,query=""):
+	nijiEmojis=[emoji for emoji in emojis if not((emoji.guild.id==175176337185701888) )]
 	if query is "":
-		return random.choice(guild.emojis)
-	choices=[emoji for emoji in guild.emojis if query.lower() in emoji.name.lower()]
-	return random.choice(choices)
-	
+		return random.choice(nijiEmojis)
+	choices=[emoji for emoji in nijiEmojis if query.lower() in emoji.name.lower()]
+	if len(choices)<1:
+		return "No Emoji Found"
+	choice= random.choice(choices)
+	return choice
+
 def genLog(member, what):
 	embd=discord.Embed()
 	embd.title=member.display_name

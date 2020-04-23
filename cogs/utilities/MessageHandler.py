@@ -7,19 +7,29 @@ import asyncio
 import json
 import pandas as pd
 import cogs.utilities.Utils
+import threading
 
 cache=3
+spamCacheSize=3
+maxPoints=20
+
 
 class MessageHandler():
-	def __init__(self,config):
+	def __init__(self,config,bot):
+		self.bot=bot
 		self.config=config
 		self.girls=[girl.lower() for girl in config["girls"]]
 		self.girls.append("niji")
 		self.girls.append("anata")
 		self.MRU=[]
+		self.antiSpamCache={}
+		self.antiSpamScores={}
 		self.conn=sqlite3.connect("Nijicord.db")
 		self.db=self.conn.cursor()
 		self.cooldown=False
+		with open("bad-words.txt") as f:
+			content=f.readlines()
+		self.badWords = [x.strip() for x in content] 
 
 	async def initRoles(self,bot):
 		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
@@ -32,6 +42,7 @@ class MessageHandler():
 		roles["exec"] = discord.utils.get(nijicord.roles, name="Executive Club Member")
 		roles["app"] = discord.utils.get(nijicord.roles, name="Idol Club Applicant")
 		self.roles=roles
+		self.bot.loop.create_task(self.antiSpamSrv())
 	async def getPB(self,user,idx=1):
 		self.db.execute("SELECT ID,Name,Score FROM memberScores ORDER BY Score DESC")
 		response=self.db.fetchall()
@@ -57,11 +68,14 @@ class MessageHandler():
 		if not (message.author.bot):
 			await bot.process_commands(message)
 		try:
-			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or message.content.startswith('$'):
+			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752):
 				return
 		except Exception as e:
 			print (e)
-		score=await self.score(message.author)
+		score=await self.score(message.author,message.content.startswith('$'))
+		if not(await self.antiSpam(message,score)):
+			print("spammers don't get points")
+			return
 		result=None
 		if not(score is None):
 			if score==69 or score==6969:
@@ -70,13 +84,65 @@ class MessageHandler():
 				result=await self.rankUp(message.author,score)
 			elif score<2505 and score>=2500:
 				result=await self.rankUp(message.author,score)
-
 			elif score%10000<=5:
 				result=await self.rankUp(message.author,score)
 			if not(result is None):
 				rankUpMsg=self.config["msgs"][result]
-				hug = Utils.getRandEmoji(message.guild,"suteki")
+				hug = Utils.getRandEmoji(self.bot.emojis,"suteki")
 				await message.channel.send(rankUpMsg.format(message.author.mention,str(hug)))
+	async def antiSpamSrv(self):
+		print("starting service")
+		while True:
+			keys=list(self.antiSpamScores)
+			for user in keys:
+				if self.antiSpamScores[user]<=5:
+					del self.antiSpamScores[user]
+					del self.antiSpamCache[user]
+				else:
+					self.antiSpamScores[user]-=5
+			await asyncio.sleep(5)
+			
+	async def antiSpam(self,message,score):
+		if message.author.bot:
+			return True
+		for badWord in self.badWords:
+			if badWord in message.content.lower():
+				await self.mute(message.author,"banned word:\n {0}\n in {1}".format(message.content,message.channel))
+				return False
+		if score is None or score<10:
+			modifier=4
+		elif score<100:
+			modifier=2
+		else:
+			modifier=1
+		points=1
+		if '@everyone' in message.content:
+			points+=modifier
+		if len(message.content)>100:
+			points+=modifier
+		if len(message.mentions)>0:
+			points+=(len(message.mentions)*modifier)
+		points+=modifier*len(message.attachments)
+		if message.author.id in self.antiSpamCache.keys():
+			if message.content.lower() == self.antiSpamCache[message.author.id].lower():
+				points+=modifier
+			self.antiSpamCache[message.author.id]=message.content
+			self.antiSpamScores[message.author.id]+=points
+			totalScore=self.antiSpamScores[message.author.id]
+		else:
+			self.antiSpamCache[message.author.id]=message.content
+			self.antiSpamScores[message.author.id]=points
+			totalScore=points
+		if totalScore>maxPoints:
+			await self.mute(message.author,"exceeded max points at {0} where max is {1}. last message gave them {2} points".format(totalScore,maxPoints,points))
+			return False
+		return True
+		
+		
+	async def mute(self,user,reason):
+		log=self.bot.get_channel(self.bot.config["logCh"])
+		await log.send("{2}\n{0} was banned for {1}".format(user.mention,reason,self.bot.get_user(self.config["owner"]).mention))
+
 	async def test(self,guild,auth):
 		rankUpMsg=self.config["msgs"]["sr"]
 		hug=self.anataYay
@@ -109,7 +175,7 @@ class MessageHandler():
 			return
 		await asyncio.sleep(cdTime)
 		self.cooldown=False
-	async def score(self,author):
+	async def score(self,author,isCommand):
 		score=-1
 		if not author.id in self.MRU:
 			self.db.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))
@@ -117,6 +183,8 @@ class MessageHandler():
 			if newScore==None:
 				self.db.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)[:-5]))
 			else:
+				if isCommand:
+					return newScore[0]
 				self.db.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author)[:-5], author.id))
 				score=newScore[0]+1
 			self.MRU.insert(0,author.id)
@@ -155,6 +223,8 @@ class MessageHandler():
 				await member.remove_roles(role)
 			await member.add_roles(givenRole)
 			return announce
+
+	#april fools day replacement
 	async def pdpIfy(self,message):
 		if(message.author.bot):
 			return False

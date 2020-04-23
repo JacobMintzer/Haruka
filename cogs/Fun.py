@@ -11,7 +11,7 @@ class Fun(commands.Cog):
 	@commands.command()
 	async def randomEmoji(self, ctx, emote=""):
 		"""Gets a random emote from the server. Optionally add a search term. ex.'$randomEmoji yay'. '$re yay' for short."""
-		emoji=Utils.getRandEmoji(ctx.message.guild, emote)
+		emoji=Utils.getRandEmoji(ctx.bot.emojis, emote)
 		if emoji is None:
 			await ctx.send("emoji not found")
 		else:
