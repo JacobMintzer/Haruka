@@ -2,7 +2,10 @@ import asyncio
 import discord
 from discord.ext import commands
 from .utilities import Utils
-
+import os
+import io
+import pytz
+import datetime
 
 async def is_admin(ctx):
 	if not(ctx.guild.id==610931193516392472):
@@ -16,6 +19,7 @@ async def is_admin(ctx):
 		print(e)
 		return False
 
+#used for purging, since we want to selectively check if messages are by the user currently being targetted
 def isTarget(msg):
 	global target
 	if msg.author==target:
@@ -34,6 +38,84 @@ class Administration(commands.Cog):
 		self.bot=bot
 		global target
 		target=None
+
+	@commands.Cog.listener()
+	async def on_member_join(self, member):
+		if member.guild.id!=self.bot.config["nijiCord"]:
+			return
+		log=self.bot.get_channel(self.bot.config["logCh"])
+		guild=self.bot.get_guild(self.bot.config["nijiCord"])
+		baseRole=discord.utils.find(lambda x: x.name == "Idol Club Applicant", guild.roles)
+		await member.add_roles(baseRole)
+		embd=Utils.genLog(member,"has joined the server.")
+		await log.send(embed=embd)
+
+
+	@commands.Cog.listener()
+	async def on_member_remove(self, member):
+		if member.guild.id!=self.bot.config["nijiCord"]:
+			return
+		log=self.bot.get_channel(self.bot.config["logCh"])
+		embd=Utils.genLog(member,"has left the server.")
+		
+		await log.send(embed=embd)
+
+	
+	@commands.Cog.listener()
+	async def on_message_delete(self,message):
+		if message.guild.id!=self.bot.config["nijiCord"]:
+			return
+		att=None
+		try:
+			fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
+		except discord.errors.NotFound as e:
+			print ("error downloading file: {0}".format(e))
+			att=[x.proxy_url for x in message.attachments]
+		log=self.bot.get_channel(self.bot.config["logCh"])
+		
+		embd=discord.Embed()
+		embd.title=message.author.display_name
+		embd.description="{0}'s Message was deleted from {1}".format(message.author,message.channel)
+		embd=embd.set_thumbnail (url=message.author.avatar_url)
+		embd.type="rich"
+		embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
+		embd=embd.add_field(name = 'Discord Username', value = str(message.author))
+		embd=embd.add_field(name = 'id', value = message.author.id)
+		embd=embd.add_field(name = 'Joined', value = message.author.joined_at)
+		embd.color=discord.Color.red()
+		embd=embd.add_field(name = 'Channel', value = message.channel.name)
+		embd=embd.add_field(name = 'Message Content', value = message.clean_content, inline=False)
+		if att is not None:
+			embd=embd.add_field(name='Attachments', value="\n".join(att),inline=False)
+			await log.send(embed=embd)
+		elif fileList is None or len(fileList)<1:
+			await log.send(embed=embd,files=fileList)
+		else:
+			await log.send(embed=embd)
+
+	@commands.Cog.listener()
+	async def on_message_edit(self,original,message):
+		if message.guild.id!=self.bot.config["nijiCord"]:
+			return
+		if original.clean_content==message.clean_content:
+			return
+		log=self.bot.get_channel(self.bot.config["logCh"])		
+		embd=discord.Embed()
+		embd.title=message.author.display_name
+		embd.description="{0}'s message was edited in {1}".format(message.author,message.channel)
+		embd=embd.set_thumbnail (url=message.author.avatar_url)
+		embd.type="rich"
+		embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
+		embd=embd.add_field(name = 'Discord Username', value = str(message.author))
+		embd=embd.add_field(name = 'id', value = message.author.id)
+		embd=embd.add_field(name = 'Joined', value = message.author.joined_at)
+		embd.color=discord.Color.teal()
+		embd=embd.add_field(name = 'Channel', value = message.channel.name)
+		embd=embd.add_field(name = 'Jump Link', value=message.jump_url)
+		embd=embd.add_field(name = 'Original Content', value = original.clean_content, inline=False)
+		embd=embd.add_field(name= 'Changed Content', value = message.clean_content, inline=False)
+		await log.send(embed=embd)
+
 
 	@commands.command(hidden=True)
 	@commands.check(is_admin)
@@ -75,7 +157,7 @@ class Administration(commands.Cog):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. ex. '$ban 613501680469803045'"""
 		global target
 		while target!=None:
-			time.sleep(10)
+			await asyncio.sleep(10)
 		rxnMsg=await ctx.send("React {1} to purge {0}'s messages and ban then, react 🔨 to only ban them and react 🚫 to cancel".format(str(person),u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
@@ -105,7 +187,7 @@ class Administration(commands.Cog):
 		"""ADMIN ONLY! Removes all messages by a given user"""
 		global target
 		while target!=None:
-			time.sleep(10)
+			await asyncio.sleep(10)
 		rxnMsg=await ctx.send("Are you sure you want to delete all messages in the past 2 weeks by {0}? React {1} to confirm or 🚫 to cancel.".format(str(person),u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")

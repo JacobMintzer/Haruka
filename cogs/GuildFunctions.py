@@ -1,5 +1,8 @@
 import asyncio
 import discord
+import time
+import datetime
+import pytz
 from discord.ext import commands
 from .utilities import Utils
 
@@ -9,14 +12,14 @@ class GuildFunctions(commands.Cog):
 
 
 	@commands.command()
-	async def info(self,ctx, member: discord.User = None):
+	async def info(self,ctx, member: discord.Member = None):
 		"""$info for information on yourself"""
 		if member == None:
-			embd=genLog(ctx.message.author, "Info on {0}".format(ctx.message.author.display_name))
+			embd=Utils.genLog(ctx.message.author, "Info on {0}".format(ctx.message.author.display_name))
 			embd.color=discord.Color.gold()
 			await ctx.send(embed=embd)
 		else:
-			embd=genLog(member, "Info on {0}".format(member.display_name))
+			embd=Utils.genLog(member, "Info on {0}".format(member.display_name))
 			embd.color=discord.Color.gold()
 			await ctx.send(embed=embd)
 
@@ -47,7 +50,7 @@ class GuildFunctions(commands.Cog):
 		if arole.lower() in self.bot.asar:
 			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), self.bot.allRoles)
 			await ctx.message.author.add_roles(role)
-			await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) 
+			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
@@ -58,7 +61,7 @@ class GuildFunctions(commands.Cog):
 		if arole.lower() in self.bot.asar:
 			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
 			await ctx.message.author.remove_roles(role)
-			await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug")) 
+			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
@@ -91,7 +94,7 @@ class GuildFunctions(commands.Cog):
 			await member.remove_roles(role)
 		else:
 			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-		await ctx.message.add_reaction(Utils.getRandEmoji(guild,"hug"))
+		await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis,"hug"))
 
 
 	@commands.command(name="best")
@@ -105,38 +108,7 @@ class GuildFunctions(commands.Cog):
 		elif role.title() not in roleNames:
 			await ctx.send("Not a valid role.")
 			return
-		member = ctx.message.author
-		global allRoles
 		await self.setRole(ctx,roleNames,role)
-		return
-		with ctx.typing():
-			requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
-			if (requestedRole is None) and (role!="clear"):
-				print ("role {0} not found".format(requestedRole))
-				await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
-				all=""
-				for rol in all:
-					all=all+(", "+str(rol))
-				print(all)
-			roles = list(filter(lambda x: x.name.title() in roleNames, allRoles))
-			await member.remove_roles(*roles, atomic=True)
-			#print('4')
-			if not(role=="clear"):
-				try:
-					start=time.time()
-					await ctx.message.author.add_roles(requestedRole)
-					end=time.time()
-					print("adding roles took {0}".format(end-start))
-				except Exception as e:
-					console.log(e)
-					await ctx.send("Sorry, there seems to be some trouble with the API, please ping Junior or another officer for assistance.")
-					print(str(role))
-			#print('5')
-			if role.lower()=="haruka":
-				await ctx.message.add_reaction("❤")
-			else:
-				await ctx.message.add_reaction("👍")
-			#print ('6')
 		return
 
 	@commands.command()
@@ -148,22 +120,12 @@ class GuildFunctions(commands.Cog):
 		elif role.title() not in roleNames:
 			await ctx.send("Not a valid role.")
 			return
-		member = ctx.message.author
 		await self.setRole(ctx,roleNames,role)
-		return
-		async with ctx.typing():
-			requestedRole = discord.utils.find(lambda x: x.name.lower() == role.lower(), allRoles)
-			roles=list(filter(lambda x: x.name in roleNames, ctx.message.guild.roles))
-			await member.remove_roles(*roles, atomic=True)
-			if not(role=="clear"):
-				await member.add_roles(requestedRole)
-			await ctx.message.add_reaction("👍")
 		return
 
 	@commands.command()
 	async def sub(self,ctx,*,role):
 		"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
-		member=ctx.message.author
 		roleNames=self.bot.config["sub"]
 		if role.lower() == "diverdiva" or role.lower() == "diver diva":
 			roleName="DiverDiva"
@@ -185,7 +147,7 @@ class GuildFunctions(commands.Cog):
 			await member.remove_roles(*roles, atomic=True)
 			if not(role=="clear"):
 				await member.add_roles(requestedRole)
-			emoji=Utils.getRandEmoji(ctx.guild,"yay")
+			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
 			await ctx.message.add_reaction(emoji) #"👍")
 		return
 

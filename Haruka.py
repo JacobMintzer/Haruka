@@ -29,20 +29,12 @@ with open('Resources.json', 'r') as file_object:
 	bot.config=json.load(file_object)
 bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
 bot.asar=bot.config["asar"]
-"""
-if not discord.opus.is_loaded():
-        # the 'opus' library here is opus.dll on windows
-        # or libopus.so on linux in the current directory
-        # you should replace this with the location the
-        # opus library is located in and with the proper filename.
-        # note that on windows this DLL is automatically provided for you
-        discord.opus.load_opus('opus')
-"""
 
-def is_admin(ctx):
+async def is_admin(ctx):
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
+		await ctx.send("You do not have permission to do this. This incident will be reported.")
 		return False
 	except Exception as e:
 		print(e)
@@ -57,44 +49,21 @@ async def on_ready():
 	bot.allRoles = guild.roles
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList=""
+	totalUsers=0
 	for guild in bot.guilds:
 		guildList=guildList+guild.name+", "
-	print("Currently in the current guilds:\n"+guildList)
+		totalUsers+=guild.member_count
+	print("Currently in the current guilds: {0} with a total userbase of {1}".format(guildList,totalUsers))
+
 
 @bot.event
 async def on_member_join(member):
-	#print(member)
-	guild=bot.get_guild(bot.config["nijiCord"])
 	if member.guild.id!=bot.config["nijiCord"]:
 		return
 	welcomeCh = bot.get_channel(bot.config["welcomeCh"])
 	rules = bot.get_channel(bot.config["rulesCh"])
 	await welcomeCh.send(bot.config["welcome"].format(member.display_name, rules.mention))
-	log=bot.get_channel(bot.config["logCh"])
-	baseRole=discord.utils.find(lambda x: x.name == "Idol Club Applicant", guild.roles)
-	await member.add_roles(baseRole)
-	embd=Utils.genLog(member,"has joined the server.")
-	await log.send(embed=embd)
 
-@bot.event
-async def on_member_remove(member):
-	print("someone joined {0}".format(member.guild.name))
-	if member.guild.id!=bot.config["nijiCord"]:
-		print("but thats not nijicord")
-		return
-	print("and that is nijicord")
-	log=bot.get_channel(bot.config["logCh"])
-	embd=Utils.genLog(member,"has left the server.")
-	
-	await log.send(embed=embd)
-
-@bot.event
-async def on_message_delete(message):
-	if message.guild.id!=bot.config["nijiCord"]:
-		return
-	log=bot.get_channel(bot.config["logCh"])
-	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename,spoiler=True) for x in message.attachments]
-	await log.send("{0}'s message was deleted from {2}. The message:\n{1}".format(message.author.display_name, message.content, message.channel),files=fileList)
 
 @bot.event
 async def on_message(message):
@@ -104,15 +73,11 @@ async def on_message(message):
 def inBotMod(msg):
 	return msg.channel.id==bot.config["ModBotCH"]
 
-
-
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def uwu(ctx):
-	embd=Utils.genLog(ctx.message.author,"has joined the server.")
-	await ctx.send(embed=embd)
-	await cog.randomEmoji(ctx,"rina")
-
+	await ctx.message.add_reac
+	
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def s(ctx,*,msg=""):
