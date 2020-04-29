@@ -5,7 +5,7 @@ Discord bot for Nijigasaki Discord
   * birthday messages to users/girls
   * mutes/umutes
   * $remindMe function
-* Allow true multi-server support without breaking everything
+* <s>Allow true multi-server support without breaking everything</s> (just need to do music, scoring, and automod)
 * Youtube support, including revamping the queue system
 * Specific ban system for when people inevitably abuse this system
 * <s>Import and improve Maribot's antispam automoderation</s>
