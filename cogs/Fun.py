@@ -1,7 +1,7 @@
 import asyncio
 import discord
 from discord.ext import commands
-from .utilities import Utils
+from .utilities import MessageHandler, Utils, Checks
 
 class Fun(commands.Cog):
 	def __init__(self,bot):
@@ -38,6 +38,7 @@ class Fun(commands.Cog):
 			await ctx.send(str(emoji))
 
 	@commands.command()
+	@Checks.is_niji()
 	async def rank(self,ctx,idx=1):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))

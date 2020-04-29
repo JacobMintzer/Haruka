@@ -3,8 +3,9 @@ import discord
 import time
 import datetime
 import pytz
+import json
 from discord.ext import commands
-from .utilities import Utils
+from .utilities import MessageHandler,Utils,Checks
 
 class GuildFunctions(commands.Cog):
 	def __init__(self,bot):
@@ -22,6 +23,26 @@ class GuildFunctions(commands.Cog):
 			embd=Utils.genLog(member, "Info on {0}".format(member.display_name))
 			embd.color=discord.Color.gold()
 			await ctx.send(embed=embd)
+
+	@commands.command()
+	@Checks.is_admin()
+	async def welcome(self,ctx,*,msg=""):
+		"""ADMIN ONLY! Use this command in your welcome channel to enable welcome messages. For your message, use {0} to say the user's name, and {1} to ping the user. To disable logging type $welcome stop"""
+		async with ctx.message.channel.typing():
+			if msg.lower()=="stop":
+				if str(ctx.message.guild.id) in self.bot.config["welcomeCh"].keys():
+					del self.bot.config["welcomeCh"][str(ctx.message.guild.id)]
+					del self.bot.config["welcomeMsg"][str(ctx.message.guild.id)]
+			elif not msg:
+				await ctx.send("You cannot have an empty welcome message. For your message, use `{0}` to say the user's name, and `{1}` to ping the user.")
+			else:
+				self.bot.config["welcomeCh"][str(ctx.message.guild.id)]=ctx.message.channel.id
+				self.bot.config["welcomeMsg"][str(ctx.message.guild.id)]=msg
+			with open('Resources.json', 'w') as outfile:
+				json.dump(self.bot.config, outfile)
+			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
+			await ctx.message.add_reaction(emoji)
+		
 
 	@commands.command()
 	async def sinfo(self,ctx):
@@ -44,17 +65,19 @@ class GuildFunctions(commands.Cog):
 
 
 	@commands.command(name="iam")
+	@Checks.is_niji()
 	async def Iam(self,ctx,*, arole=''):
 		"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 		guild=ctx.message.guild
 		if arole.lower() in self.bot.asar:
-			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), self.bot.allRoles)
+			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.allRoles)
 			await ctx.message.author.add_roles(role)
 			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
 	@commands.command(name="iamn")
+	@Checks.is_niji()
 	async def Iamn(self,ctx,*, arole=''):
 		"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
 		guild=ctx.message.guild
@@ -66,11 +89,13 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
 	@commands.command(name="asar")
+	@Checks.is_niji()
 	async def Asar(self,ctx):
 		"""Use this command to list all self-assignable roles. Roles can be assigned with the $iam command, and removed using the $iamn command"""
 		await ctx.send(str(self.bot.asar))
 
 	@commands.command(name="pronoun")
+	@Checks.is_niji()
 	async def Pronoun(self,ctx, action='', pronoun=''):
 		"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
 		member=ctx.message.author
@@ -98,6 +123,7 @@ class GuildFunctions(commands.Cog):
 
 
 	@commands.command(name="best")
+	@Checks.is_niji()
 	async def best(self,ctx, *, role):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 		roleNames=self.bot.config["girls"]
@@ -112,6 +138,7 @@ class GuildFunctions(commands.Cog):
 		return
 
 	@commands.command()
+	@Checks.is_niji()
 	async def seiyuu(self,ctx,*,role):
 		"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
 		roleNames=self.bot.config["seiyuu"]
@@ -124,6 +151,7 @@ class GuildFunctions(commands.Cog):
 		return
 
 	@commands.command()
+	@Checks.is_niji()
 	async def sub(self,ctx,*,role):
 		"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
 		roleNames=self.bot.config["sub"]

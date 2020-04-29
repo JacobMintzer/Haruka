@@ -14,7 +14,7 @@ from fuzzywuzzy import process
 import sqlite3
 import json
 import pandas as pd
-from .utilities import Utils
+from .utilities import Utils,Checks
 
 class Music(commands.Cog):
 
@@ -39,6 +39,7 @@ class Music(commands.Cog):
 		self.config=json.load(open('Resources.json'))
 
 	@commands.command(hidden=True)
+	@Checks.is_niji()
 	async def update(self,ctx):
 		"""Sometimes I forget when I learn new songs~"""
 		self.songList=os.listdir(self.mode)
@@ -137,17 +138,20 @@ class Music(commands.Cog):
 		return songList
 
 	@commands.command(no_pm=True)
+	@Checks.is_niji()
 	async def skip(self,ctx):
 		"""If you want me to play another song"""
 		self.message=5
 
 
 	@commands.command(no_pm=True)
+	@Checks.is_niji()
 	async def stop(self,ctx):
 		"""stops music"""
 		self.message=-1
 
 	@commands.command(no_pm=True)
+	@Checks.is_niji()
 	async def music(self,ctx):
 		"""Let's start the music!"""
 		msg=ctx.message.content.replace("!music ","")
@@ -165,6 +169,7 @@ class Music(commands.Cog):
 
 
 	@commands.command()
+	@Checks.is_niji()
 	async def playing(self,ctx):
 		"""I tell you the song I am singing"""
 		data=mutagen.File(self.mode+self.current)
@@ -198,6 +203,7 @@ class Music(commands.Cog):
 
 
 	@commands.command()
+	@Checks.is_niji()
 	async def queue(self,ctx):
 		"""See what songs will play next."""
 		requestList="```"
@@ -212,6 +218,7 @@ class Music(commands.Cog):
 
 
 	@commands.command(no_pm=True,pass_context=True)
+	@Checks.is_niji()
 	async def request(self,ctx,*,msg):
 		"""Request Haruka to play a song! If you only know some of the name that's fine, I can figure out what you're looking for!"""
 		potential=[]

@@ -12,7 +12,7 @@ import io
 import json
 import datetime
 import pytz
-from cogs.utilities import MessageHandler,Utils
+from cogs.utilities import MessageHandler,Utils,Checks
 from saucenao import SauceNao
 
 
@@ -22,7 +22,7 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata!')
+bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata!',case_insensitive=True)
 
 cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions']
 with open('Resources.json', 'r') as file_object:
@@ -39,6 +39,27 @@ async def is_admin(ctx):
 	except Exception as e:
 		print(e)
 		return False
+
+
+
+
+def is_me():
+	def predicate(ctx):
+		return ctx.message.author.id == ctx.bot.config["owner"]
+	return commands.check(predicate)
+
+
+def is_admin_enabled():
+	def predicate(ctx):
+		return ctx.message.guild.id in ctx.bot.config["modEnabled"]
+	return commands.check(predicate)
+
+@bot.check
+def check_enabled(ctx):
+	if ctx.message.guild.id in bot.config["enabled"]:
+		return True
+	return False
+	
 @bot.event
 async def on_ready():
 	for cog in cogList:
@@ -58,11 +79,14 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-	if member.guild.id!=bot.config["nijiCord"]:
-		return
-	welcomeCh = bot.get_channel(bot.config["welcomeCh"])
-	rules = bot.get_channel(bot.config["rulesCh"])
-	await welcomeCh.send(bot.config["welcome"].format(member.display_name, rules.mention))
+	if member.guild.id==bot.config["nijiCord"]:
+		welcomeCh = bot.get_channel(bot.config["welcomeCh"][str(member.guild.id)])
+		rules = bot.get_channel(bot.config["rulesCh"])
+		await welcomeCh.send(bot.config["welcome"].format(member.display_name, rules.mention))
+	elif str(member.guild.id) in bot.config["welcomeCh"].keys():
+		welcomeCh = bot.get_channel(bot.config["welcomeCh"][str(member.guild.id)])
+		welcomeMsg=bot.config["welcomeMsg"][str(member.guild.id)]
+		await welcomeCh.send(welcomeMsg.format(member.display_name,member.mention))
 
 
 @bot.event
@@ -70,13 +94,10 @@ async def on_message(message):
 	await bot.messageHandler.handleMessage(message,bot)
 	return
 
-def inBotMod(msg):
-	return msg.channel.id==bot.config["ModBotCH"]
-
 @bot.command(hidden=True)
-@commands.check(is_admin)
-async def uwu(ctx):
-	await ctx.message.add_reac
+@Checks.is_niji()
+async def uwu(ctx,*,msg):
+	await ctx.send(msg.format(member=ctx.message.author,guild=ctx.message.guild))
 	
 @bot.command(hidden=True)
 @commands.check(is_admin)
@@ -84,7 +105,6 @@ async def s(ctx,*,msg=""):
 	fileList=[discord.File(io.BytesIO(await x.read(use_cached=True)),filename=x.filename) for x in ctx.message.attachments]
 	await ctx.send(msg,files=fileList)
 	await ctx.message.delete()
-
 
 
 @bot.command()

@@ -6,7 +6,7 @@ import sqlite3
 import asyncio
 import json
 import pandas as pd
-import cogs.utilities.Utils
+from cogs.utilities import Utils
 import threading
 
 cache=3
@@ -58,20 +58,22 @@ class MessageHandler():
 		result=result.drop(columns=["Id"])
 		return ("```fortran\nShowing results for page {}:\nRank".format(idx)+result.to_string()[4:]+"\nCurrent rank for {0}: {1} (page {2})```".format(user.name,rank+1,(rank//10)+1))
 	async def handleMessage(self,message,bot):
-		if not((message.guild is None) or (message.guild==self.niji)):
+		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
 			return
-		if not (self.cooldown or message.author.bot):
-			await self.meme(message)
-		if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
-			await message.channel.send("No")
-			await message.delete()
+		if (message.guild.id == self.bot.config["nijiCord"]):
+			if not (self.cooldown or message.author.bot):
+				await self.meme(message)
+			if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
+				await message.channel.send("No")
+				await message.delete()
 		if not (message.author.bot):
 			await bot.process_commands(message)
 		try:
-			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752):
+			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or not(message.guild.id == self.bot.config["nijiCord"]):
 				return
 		except Exception as e:
 			print (e)
+			return
 		score=await self.score(message.author,message.content.startswith('$'))
 		if not(await self.antiSpam(message,score)):
 			print("spammers don't get points")
@@ -103,6 +105,8 @@ class MessageHandler():
 			await asyncio.sleep(5)
 			
 	async def antiSpam(self,message,score):
+		if not (message.guild.id == self.bot.config["nijiCord"]):
+			return True
 		if message.author.bot:
 			return True
 		for badWord in self.badWords:
