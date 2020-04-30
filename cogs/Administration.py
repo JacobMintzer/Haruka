@@ -172,7 +172,7 @@ class Administration(commands.Cog):
 				await guild.ban(person, reason="This user was banned by {0} through haruka's blacklist function from Nijicord; this means you let haruka have ban permissions in your server.".format(str(ctx.message.author)), delete_message_days=0)
 				bans+=("banned from {0}".format(guild.name)+"\n")
 				if ctx.message.guild.id in self.bot.config["logEnabled"]:
-					log=self.bot.get_channel(self.bot.config["log"][str(ctx.message.guild.id)])
+					log=self.bot.get_channel(self.bot.config["log"][str(guild.id)])
 					await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person),str(ctx.message.author)))
 			except Exception as e:
 				bans+=("not banned from {0} because of {1}".format(guild.name, e)+"\n")

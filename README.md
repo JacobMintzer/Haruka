@@ -1,5 +1,5 @@
 # Haruka
-Discord bot for Nijigasaki Discord
+Discord bot for management of the Nijigasaki Discord and adjacent Love Live servers.
 ### TODO
 * Scheduling
   * birthday messages to users/girls

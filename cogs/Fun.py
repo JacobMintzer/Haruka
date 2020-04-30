@@ -43,8 +43,5 @@ class Fun(commands.Cog):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))
 
-
-
-
 def setup(bot):
 	bot.add_cog(Fun(bot))
