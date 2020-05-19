@@ -12,7 +12,7 @@ async def is_admin(ctx):
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
-		await ctx.send("You do not have permission to do this. This incident will be reported.")
+		#await ctx.send("You do not have permission to do this. This incident will be reported.")
 		return False
 	except Exception as e:
 		print(e)
@@ -32,11 +32,24 @@ def adminRxn(rxn, user):
 		return False
 	else:
 		return False
+
+def saveConfig(ctx):
+	print("saving")
+	with open('Resources.json', 'w') as outfile:
+		json.dump(ctx.bot.config, outfile)
+
 class Administration(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
 		global target
-		target=None
+		target = None
+
+	@commands.command(hidden=True)
+	@Checks.is_me()
+	async def uwu(self,ctx,*,msg):
+		"""test command please ignore"""
+		await ctx.send(msg+ " desu")
+	
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
@@ -106,23 +119,19 @@ class Administration(commands.Cog):
 		embd=embd.set_thumbnail (url=message.author.avatar_url)
 		embd.type="rich"
 		embd.timestamp=datetime.datetime.now(pytz.timezone('US/Eastern'))
-		embd=embd.add_field(name = 'Discord Username', value = str(message.author))
-		embd=embd.add_field(name = 'id', value = message.author.id)
-		embd=embd.add_field(name = 'Joined', value = message.author.joined_at)
-		embd.color=discord.Color.gold()
-		embd=embd.add_field(name = 'Channel', value = message.channel.name)
-		embd=embd.add_field(name = 'Jump Link', value=message.jump_url)
-		embd=embd.add_field(name = 'Original Content', value = original.clean_content, inline=False)
-		embd=embd.add_field(name= 'Changed Content', value = message.clean_content, inline=False)
+		embd.colour=discord.Color.gold()
+		embd=embd.add_field(name = 'Jump Link', value="[Here]("+message.jump_url+")")
+		embd=embd.add_field(name = 'Original Content', value = original.clean_content)
+		embd=embd.add_field(name= 'Changed Content', value = message.clean_content)
 		await log.send(embed=embd)
 
 
 	@commands.command()
 	@commands.check(is_admin)
 	async def log(self,ctx,msg=""):
-		"""ADMIN ONLY! Use this command in your logs channel to enable logging. To disable logging type $log stop"""
+		"""ADMIN ONLY! Use this command in your logs channel to enable logging. To disable logging type $log disable"""
 		async with ctx.message.channel.typing():
-			if msg.lower()=="stop":
+			if msg.lower()=="disable":
 				if ctx.message.guild.id in self.bot.config["logEnabled"]:
 					self.bot.config["logEnabled"].remove(ctx.message.guild.id)
 					del self.bot.config["log"][str(ctx.message.guild.id)]
@@ -130,10 +139,9 @@ class Administration(commands.Cog):
 				if not (ctx.message.guild.id in self.bot.config["logEnabled"]):
 					self.bot.config["logEnabled"].append(ctx.message.guild.id)
 				self.bot.config["log"][str(ctx.message.guild.id)]=ctx.message.channel.id
-			with open('Resources.json', 'w') as outfile:
-				json.dump(self.bot.config, outfile)
 			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
 			await ctx.message.add_reaction(emoji)
+			saveConfig(ctx)
 		
 
 
@@ -169,7 +177,8 @@ class Administration(commands.Cog):
 		bans=""
 		for guild in self.bot.guilds:
 			try:
-				await guild.ban(person, reason="This user was banned by {0} through haruka's blacklist function from Nijicord; this means you let haruka have ban permissions in your server.".format(str(ctx.message.author)), delete_message_days=0)
+				await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord; 
+				this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
 				bans+=("banned from {0}".format(guild.name)+"\n")
 				if ctx.message.guild.id in self.bot.config["logEnabled"]:
 					log=self.bot.get_channel(self.bot.config["log"][str(guild.id)])
@@ -179,10 +188,37 @@ class Administration(commands.Cog):
 		await ctx.send("{0} was {1}".format(person.display_name,bans))
 
 
+	@commands.group()
+	@commands.check(is_admin)
+	async def antispam(self,ctx):
+		if ctx.invoked_subcommand is None:
+			await ctx.send("""For enabling antispam be sure to make a role named 'Muted', and run `$antispam enable 
+			@mention` for me to mention you, a role, or everyone in a channel when someone is muted. To disable 
+			the antispam, run `$antispam disable`. To set Haruka to ignore a channel, run `$antispam ignore` 
+			in that channel.""")
+
+
+	@antispam.command()
+	async def enable(self,ctx,*,message):
+		"""enables antispam, and sets reporting channel to be the channel it is posted in"""
+		obj={"ch":ctx.message.channel.id,"msg":message}
+		self.bot.config["antispam"][str(ctx.message.guild.id)]=obj
+		saveConfig(ctx)
+
+	@antispam.command()
+	async def ignore(self,ctx):
+		print("ignore")
+		if not(ctx.message.channel.id in self.bot.config["antispamIgnore"]):
+			self.bot.config["antispamIgnore"].append(ctx.message.channel.id)
+			print("added")
+			saveConfig(ctx)
+		
+
 	@commands.command()
 	@commands.check(is_admin)
 	async def ban(self,ctx,*,person: discord.Member):
-		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. ex. '$ban 613501680469803045'"""
+		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
+		ex. '$ban 613501680469803045'"""
 		global target
 		while target!=None:
 			await asyncio.sleep(10)
@@ -216,7 +252,8 @@ class Administration(commands.Cog):
 		global target
 		while target!=None:
 			await asyncio.sleep(10)
-		rxnMsg=await ctx.send("Are you sure you want to delete all messages in the past 2 weeks by {0}? React {1} to confirm or 🚫 to cancel.".format(str(person),u"\U0001F5D1"))
+		rxnMsg=await ctx.send("""Are you sure you want to delete all messages in the past 2 weeks by 
+		{0}? React {1} to confirm or 🚫 to cancel.""".format(str(person),u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🚫")
