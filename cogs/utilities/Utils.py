@@ -12,7 +12,7 @@ def getRandEmoji(emojis,query=""):
 		return random.choice(nijiEmojis)
 	choices=[emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 	if len(choices)<1:
-		return "No Emoji Found"
+		return None
 	choice= random.choice(choices)
 	return choice
 
