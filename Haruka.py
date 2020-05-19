@@ -23,9 +23,9 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata!',case_insensitive=True)
+bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit `https://discord.gg/qp7nuPC` or DM `Junior Mints#2525`',case_insensitive=True)
 
-cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions']
+cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions','cogs.events']
 with open('Resources.json', 'r') as file_object:
 	bot.config=json.load(file_object)
 bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
@@ -163,7 +163,6 @@ async def softReset(ctx,*,selectedCogs=None):
 		guildList=guildList+guild.name+", "
 		totalUsers+=guild.member_count
 	print("Currently in the current guilds: {0} with a total userbase of {1}".format(guildList,totalUsers))
-	#await ctx.message.add_reaction()
 	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
 
 
@@ -184,17 +183,6 @@ async def kill(ctx):
 	x=bot.logout()
 	print("logging out")
 	await x
-
-@bot.event
-async def on_member_join(member):
-	if member.guild.id==bot.config["nijiCord"]:
-		welcomeCh = bot.get_channel(bot.config["welcomeCh"][str(member.guild.id)])
-		rules = bot.get_channel(bot.config["rulesCh"])
-		await welcomeCh.send(bot.config["welcome"].format(member.display_name, rules.mention))
-	elif str(member.guild.id) in bot.config["welcomeCh"].keys():
-		welcomeCh = bot.get_channel(bot.config["welcomeCh"][str(member.guild.id)])
-		welcomeMsg=bot.config["welcomeMsg"][str(member.guild.id)]
-		await welcomeCh.send(welcomeMsg.format(member.display_name,member.mention))
 
 
 @bot.event
