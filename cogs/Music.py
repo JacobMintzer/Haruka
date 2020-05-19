@@ -11,7 +11,6 @@ import sys
 import mutagen
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
-import sqlite3
 import json
 import pandas as pd
 from .utilities import Utils,Checks
@@ -37,6 +36,12 @@ class Music(commands.Cog):
 		self.message=0
 		self.requests=[]
 		self.config=json.load(open('Resources.json'))
+		self.voice=None
+
+	async def kill(self):
+		if self.voice is not None:
+			await self.voice.disconnect()
+
 
 	@commands.command(hidden=True)
 	@Checks.is_niji()
@@ -91,6 +96,7 @@ class Music(commands.Cog):
 			if self.message==-1: #stop command
 				await bot.change_presence(activity = discord.Game("Making lunch for Kanata!",type=1))
 				await self.voice.disconnect()
+				self.voice=None
 				break
 			elif self.message==5: #skip song
 				self.message=1
