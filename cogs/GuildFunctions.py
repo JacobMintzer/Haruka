@@ -41,6 +41,8 @@ class GuildFunctions(commands.Cog):
 			with open('Resources.json', 'w') as outfile:
 				json.dump(self.bot.config, outfile)
 			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
+			if emoji is None:
+				emoji = Utils.getRandEmoji(self.bot.emojis,"yay")
 			await ctx.message.add_reaction(emoji)
 		
 
@@ -62,7 +64,9 @@ class GuildFunctions(commands.Cog):
 		embd=embd.add_field(name = 'Total Members', value = ctx.guild.member_count)
 		await ctx.send(embed=embd)
 
-
+	@commands.command()
+	async def invite(self,ctx):
+		await ctx.send("To invite Haruka to your sever, please click this link https://discord.com/api/oauth2/authorize?client_id=613501680469803045&permissions=268774468&scope=bot")
 
 	@commands.command(name="iam")
 	@Checks.is_niji()

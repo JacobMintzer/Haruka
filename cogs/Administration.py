@@ -12,7 +12,6 @@ async def is_admin(ctx):
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
-		#await ctx.send("You do not have permission to do this. This incident will be reported.")
 		return False
 	except Exception as e:
 		print(e)
@@ -140,9 +139,29 @@ class Administration(commands.Cog):
 					self.bot.config["logEnabled"].append(ctx.message.guild.id)
 				self.bot.config["log"][str(ctx.message.guild.id)]=ctx.message.channel.id
 			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
+			if emoji is None:
+				emoji = Utils.getRandEmoji(self.bot.emojis,"yay")
 			await ctx.message.add_reaction(emoji)
 			saveConfig(ctx)
 		
+
+	@commands.command()
+	@commands.check(is_admin)
+	async def autorole(self,ctx,*,role):
+		"""ADMIN ONLY! Use this command to set up an autorole for the server. ex. '$autorole member'. To clear type '$autorole clear'. Make sure the role is lower than Haruka's role."""
+		if role.lower() is "clear":
+			if str(ctx.message.guild.id) in self.bot.config["autorole"].keys():
+				del self.bot.config["autorole"][str(ctx.message.guild.id)]
+		else:
+			autorole=discord.utils.find(lambda x: x.name.lower()==role.lower(), ctx.guild.roles)
+			if autorole is None:
+				await ctx.send("Role not found, please create the role, and make sure it is below my highest role so I can add it to users")
+			else:
+				self.bot.config["autorole"][str(ctx.message.guild.id)]=autorole.id
+				await ctx.send("Autorole set to {0}. To remove this autorole, type `$autorole clear`".format(str(autorole)))
+		saveConfig(ctx)
+				
+
 
 
 	@commands.command()
@@ -230,12 +249,12 @@ class Administration(commands.Cog):
 			try:
 				rxn, user=await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
 				if str(rxn.emoji)==u"\U0001F5D1":
-					target = person
-					for ch in ctx.message.guild.text_channels:
-						await ch.purge(check=isTarget)
-					target=None
+					#target = person
+					#for ch in ctx.message.guild.text_channels:
+					#	await ch.purge(check=isTarget)
+					#target=None
 					await ctx.send("purge complete")
-					await person.ban()
+					await person.ban(delete_message_days=7)
 				elif str(rxn.emoji)=="🔨":
 					await person.ban()
 				else:
