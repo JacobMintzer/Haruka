@@ -1,5 +1,7 @@
 import asyncio
 import discord
+import requests
+import pprint
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
 
@@ -9,39 +11,36 @@ class Fun(commands.Cog):
 	
 	
 	@commands.command()
-	async def randomEmoji(self, ctx, emote=""):
-		"""Gets a random emote from the server. Optionally add a search term. ex.'$randomEmoji yay'. '$re yay' for short."""
+	async def re(self,ctx,emote=""):
 		emoji=Utils.getRandEmoji(ctx.bot.emojis, emote)
 		if emoji is None:
 			await ctx.send("emoji not found")
 		else:
 			await ctx.send(str(emoji))
+		
+		
 	@commands.command()
-	async def re(self,ctx,emote=""):
-		thisCog=self.bot.get_cog("Fun")
-		await thisCog.randomEmoji(ctx,emote)
-		
-		
-	@commands.command(hidden=True)
 	async def e(self,ctx, emote=""):
-		"""Gets emoji by name; sorthand for getEmoji"""
-		thisCog=self.bot.get_cog("Fun")
-		await thisCog.getEmoji(ctx, emote)
-
-	@commands.command()
-	async def getEmoji(self,ctx, emote=""):
-		"""Gets an emote from the server by search term. ex. $getEmoji aRinaPat. $e aRinaPat for short."""
+		"""Gets an emote from the server by search term. ex. $e aRinaPat."""
 		emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),self.bot.emojis)
 		if emoji is None:
 			await ctx.send("emoji not found")
 		else:
 			await ctx.send(str(emoji))
 
+
 	@commands.command()
 	@Checks.is_niji()
 	async def rank(self,ctx,idx=1):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))
+
+	@commands.command()
+	async def llas(self,ctx,*,query):
+		async with ctx.typing():
+			response=requests.get("http://all-stars-api.uc.r.appspot.com/cards/search?query={0}".format(str(query)))
+			data= (response.json()[0])
+			await ctx.send(data["rarity"]["abbreviation"]+" "+data["idol"]["firstName"]+" "+data["idol"]["lastName"]+" "+data["idolizedTitle"])
 
 def setup(bot):
 	bot.add_cog(Fun(bot))
