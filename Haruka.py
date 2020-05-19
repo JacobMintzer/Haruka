@@ -4,6 +4,7 @@ import requests
 import time
 import discord
 from discord.ext import commands
+import importlib
 import asyncio
 import re
 import random
@@ -14,7 +15,7 @@ import datetime
 import pytz
 from cogs.utilities import MessageHandler,Utils,Checks
 from saucenao import SauceNao
-
+import atexit
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
@@ -29,18 +30,15 @@ with open('Resources.json', 'r') as file_object:
 	bot.config=json.load(file_object)
 bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
 bot.asar=bot.config["asar"]
-
 async def is_admin(ctx):
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
 			return True
-		await ctx.send("You do not have permission to do this. This incident will be reported.")
+		print("You do not have permission to do this. This incident will be reported.")
 		return False
 	except Exception as e:
 		print(e)
 		return False
-
-
 
 
 def is_me():
@@ -56,6 +54,8 @@ def is_admin_enabled():
 
 @bot.check
 def check_enabled(ctx):
+	if ctx.message.guild is None:
+		return True
 	if ctx.message.guild.id in bot.config["enabled"]:
 		return True
 	return False
@@ -76,6 +76,114 @@ async def on_ready():
 		totalUsers+=guild.member_count
 	print("Currently in the current guilds: {0} with a total userbase of {1}".format(guildList,totalUsers))
 
+@bot.event
+async def on_command_error(ctx, error):
+	if isinstance(error,KeyboardInterrupt):
+		print("is keyboard interrupt")
+		await shutdown()
+	ignored=(commands.CommandNotFound,commands.UserInputError)
+	if hasattr(ctx.command, 'on_error'):
+		print(error)
+		return
+	if isinstance(error,ignored):
+		return
+	print (error)
+
+async def shutdown():
+	print("shutting down messagehandler")
+	bot.messageHandler.disconnect()
+	print("shutting down music cog")
+	music=bot.get_cog("Music")
+	await music.kill()
+	print ("killed music cog")
+	for cog in cogList:
+		print("shutting down {0}".format(cog))
+		bot.unload_extension(cog)
+		print("shut down {0}".format(cog))
+	print("shutdown complete")
+	x=bot.logout()
+	print("logging out")
+	await x
+
+@Checks.is_me()
+@bot.command(hidden=True)
+async def softReset(ctx,*,selectedCogs=None):
+	await bot.change_presence(activity = discord.Game("Quickly doing a soft-reset for a minor update, will be back up soon!", type=1))
+	if selectedCogs is None:
+		msg=True
+		cogs=cogList
+	elif "messageHandler" in selectedCogs:
+		cogs = selectedCogs.split(" ")
+		cogs.remove("messageHandler")
+		msg=True
+	else:
+		cogs=selectedCogs.split(" ")
+		msg=False
+	if msg:
+		bot.messageHandler.disconnect()
+	music=bot.get_cog("cogs.Music")
+	if "cogs.Music" in selectedCogs or "Music" in selectedCogs:
+		try:
+			await music.kill()
+		except:
+			print("no music service active")
+	print ("about to unload cogs")
+	for cog in cogs:
+		try:
+			bot.unload_extension("cogs."+cog.replace("cogs.",""))
+		except Exception as e:
+			print ("cannot unload cog {0}".format(cog))
+	print("cogs unloaded, reloading everything now")
+
+	
+	with open('Resources.json', 'r') as file_object:
+		bot.config=json.load(file_object)
+	if msg:
+		importlib.reload(MessageHandler)
+		bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
+	bot.asar=bot.config["asar"]
+
+
+	for cog in cogs:
+		try:
+			bot.load_extension("cogs."+cog.replace("cogs.",""))
+		except Exception as e:
+			await ctx.send("WARNING: cog {0} was not successfully reloaded for reason:\n`{1}`".format(cog,str(e)))
+	if msg:
+		try:
+			await bot.messageHandler.initRoles(bot)
+		except Exception as e:
+			await ctx.send("WARNING: MessageHandler was not successfully reloaded for reason {0}".format(str(e)))
+	guild = bot.get_guild(bot.config["nijiCord"])
+	bot.allRoles = guild.roles
+	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
+	guildList=""
+	totalUsers=0
+	for guild in bot.guilds:
+		guildList=guildList+guild.name+", "
+		totalUsers+=guild.member_count
+	print("Currently in the current guilds: {0} with a total userbase of {1}".format(guildList,totalUsers))
+	#await ctx.message.add_reaction()
+	await bot.change_presence(activity = discord.Game("Making lunch for Kanata!", type=1))
+
+
+@Checks.is_me()
+@bot.command(hidden=True)
+async def kill(ctx):
+	print("shutting down messagehandler")
+	bot.messageHandler.disconnect()
+	print("shutting down music cog")
+	music=bot.get_cog("Music")
+	await music.kill()
+	print ("killed music cog")
+	for cog in cogList:
+		print("shutting down {0}".format(cog))
+		bot.unload_extension(cog)
+		print("shut down {0}".format(cog))
+	print("shutdown complete")
+	x=bot.logout()
+	print("logging out")
+	await x
 
 @bot.event
 async def on_member_join(member):
@@ -94,11 +202,7 @@ async def on_message(message):
 	await bot.messageHandler.handleMessage(message,bot)
 	return
 
-@bot.command(hidden=True)
-@Checks.is_niji()
-async def uwu(ctx,*,msg):
-	await ctx.send(msg.format(member=ctx.message.author,guild=ctx.message.guild))
-	
+
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def s(ctx,*,msg=""):
@@ -112,7 +216,7 @@ async def git(ctx):
 	"""Link to Haruka's source code, and information related to the development"""
 	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message Junior Mints, or submit a pull request if you have any improvements you can make.")
 
-@bot.command()
+@bot.command(hidden=True)
 async def source(ctx, url: str=""):
 	"""Uses SauceNao to attempt to find the source of an image. Either a direct link to the image, or uploading the image through discord works"""
 	await sauce(ctx,url)
@@ -133,11 +237,9 @@ async def sauce(ctx, url: str=""):
 		except:
 			await ctx.send("error downloading file")
 			return
-		#print ("uwu")
 		foundSauce=""
 		output=SauceNao(directory='./', api_key=bot.config["sauce"])
 		result=output.check_file(file_name=file)
-		#print (result)
 		if (len(result)<1):
 			await ctx.send("no source found")
 			return
@@ -149,7 +251,6 @@ async def sauce(ctx, url: str=""):
 				return
 			elif "Source: Pixiv" in source["data"]["content"][0]:
 				stuff=source["data"]["content"][0].split("\n")[0]
-				#print (stuff)
 				id=stuff.split("Source: Pixiv #")[1]
 				await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/"+id)
 				return
@@ -161,7 +262,6 @@ async def sauce(ctx, url: str=""):
 			await ctx.send(foundSauce)
 			return
 		if len(result[0]["data"]["ext_urls"])>0:
-			#print(result[0]["data"]["content"][0])
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n"+"\n".join(result[0]["data"]["ext_urls"]))
 			return
 		await ctx.send("sorry, I'm not sure what the source for this is.")
