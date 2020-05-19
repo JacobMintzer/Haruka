@@ -70,7 +70,7 @@ class GuildFunctions(commands.Cog):
 		"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 		guild=ctx.message.guild
 		if arole.lower() in self.bot.asar:
-			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.allRoles)
+			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
 			await ctx.message.author.add_roles(role)
 			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
 		else:
@@ -95,16 +95,17 @@ class GuildFunctions(commands.Cog):
 		await ctx.send(str(self.bot.asar))
 
 	@commands.command(name="pronoun")
-	@Checks.is_niji()
 	async def Pronoun(self,ctx, action='', pronoun=''):
 		"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
 		member=ctx.message.author
+		theyRole = discord.utils.find(lambda x: x.name == "p:they/them", ctx.guild.roles)
+		if theyRole is None:
+			return
 		if action=="" or pronoun=="":
 			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
-
 		if pronoun.lower().strip() == 'they':
-			role = discord.utils.find(lambda x: x.name == "p:they/them", ctx.guild.roles)
+			role = theyRole
 		elif pronoun.lower().strip() == 'she':
 			role = discord.utils.find(lambda x: x.name == "p:she/her", ctx.guild.roles)
 		elif pronoun.lower().strip() == 'he':
@@ -119,22 +120,24 @@ class GuildFunctions(commands.Cog):
 			await member.remove_roles(role)
 		else:
 			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
-		await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis,"hug"))
+		rxn=Utils.getRandEmoji(ctx.guild.emojis,"hug")
+		if rxn is None:
+			rxn = "👍"
+		await ctx.message.add_reaction(rxn)
 
 
 	@commands.command(name="best")
-	@Checks.is_niji()
 	async def best(self,ctx, *, role):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
-		roleNames=self.bot.config["girls"]
-		if role.lower()=="girl":
-			role="haruka"
-		elif role.lower()=="clear":
+		if not( str(ctx.message.guild.id) in ctx.bot.config["girls"].keys()):
+			return
+		roleNames=self.bot.config["girls"][str(ctx.message.guild.id)]
+		if role.lower()=="clear":
 			role="clear"
 		elif role.title() not in roleNames:
 			await ctx.send("Not a valid role.")
 			return
-		await self.setRole(ctx,roleNames,role)
+		await self.setRole(ctx,roleNames,role,role.lower()+"yay")
 		return
 
 	@commands.command()
@@ -167,7 +170,7 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Not a valid subunit")
 		await self.setRole(ctx,roleNames,roleName)
 
-	async def setRole(self,ctx,allRoles,role):
+	async def setRole(self,ctx,allRoles,role,rxnChoice=None):
 		async with ctx.typing():
 			member=ctx.message.author
 			roles=list(filter(lambda x: x.name in allRoles, ctx.message.guild.roles))
@@ -175,7 +178,16 @@ class GuildFunctions(commands.Cog):
 			await member.remove_roles(*roles, atomic=True)
 			if not(role=="clear"):
 				await member.add_roles(requestedRole)
-			emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
+			if rxnChoice is None:
+				emoji=Utils.getRandEmoji(ctx.guild.emojis,"yay")
+				if emoji is None:
+					emoji=Utils.getRandEmoji(self.bot.emojis,"yay")
+			else:
+				if rxnChoice.lower() == "setsunayay":
+					rxnChoice=rxnChoice.replace("etsuna","etsu")
+				emoji=Utils.getRandEmoji(self.bot.emojis,rxnChoice)
+				if emoji == "No Emoji Found" or emoji is None:
+					emoji="👍"
 			await ctx.message.add_reaction(emoji) #"👍")
 		return
 
