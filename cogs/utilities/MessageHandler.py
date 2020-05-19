@@ -2,7 +2,7 @@ import discord
 import re
 import os
 import time
-import sqlite3
+import aiosqlite
 import asyncio
 import json
 import pandas as pd
@@ -16,6 +16,7 @@ maxPoints=20
 
 class MessageHandler():
 	def __init__(self,config,bot):
+		self.isEnabled=False
 		self.bot=bot
 		self.config=config
 		self.girls=[girl.lower() for girl in config["girls"]]
@@ -24,49 +25,61 @@ class MessageHandler():
 		self.MRU=[]
 		self.antiSpamCache={}
 		self.antiSpamScores={}
-		self.conn=sqlite3.connect("Nijicord.db")
-		self.db=self.conn.cursor()
 		self.cooldown=False
 		with open("bad-words.txt") as f:
 			content=f.readlines()
 		self.badWords = [x.strip() for x in content] 
 
+	
+	def disconnect(self):
+		self.isEnabled=False
+		self.antispamLoop.cancel()
+
+
 	async def initRoles(self,bot):
-		nijicord = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
-		self.niji=nijicord
-		self.anataYay = discord.utils.get(nijicord.emojis, name = "AnataYay")
+		self.isEnabled=True
+		self.niji = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
+		self.anataYay = discord.utils.get(self.niji.emojis, name = "AnataYay")
 		roles={}
-		roles["new"] = discord.utils.get(nijicord.roles, name="New Club Member")
-		roles["jr"] = discord.utils.get(nijicord.roles, name="Junior Club Member")
-		roles["sr"] = discord.utils.get(nijicord.roles, name="Senior Club Member")
-		roles["exec"] = discord.utils.get(nijicord.roles, name="Executive Club Member")
-		roles["app"] = discord.utils.get(nijicord.roles, name="Idol Club Applicant")
+		roles["new"] = discord.utils.get(self.niji.roles, name="New Club Member")
+		roles["jr"] = discord.utils.get(self.niji.roles, name="Junior Club Member")
+		roles["sr"] = discord.utils.get(self.niji.roles, name="Senior Club Member")
+		roles["exec"] = discord.utils.get(self.niji.roles, name="Executive Club Member")
+		roles["app"] = discord.utils.get(self.niji.roles, name="Idol Club Applicant")
 		self.roles=roles
-		self.bot.loop.create_task(self.antiSpamSrv())
+		self.antispamLoop=self.bot.loop.create_task(self.antiSpamSrv())
+
 	async def getPB(self,user,idx=1):
-		self.db.execute("SELECT ID,Name,Score FROM memberScores ORDER BY Score DESC")
-		response=self.db.fetchall()
-		result=pd.DataFrame(response)
-		result.index+=1
-		result.columns=["Id","User","Score"]
-		indexedResults=pd.Index(result["Id"])
-		rank=indexedResults.get_loc(user.id)
-		if idx<1:
-			idx=1
-		result=result.head(idx*10)
-		result=result.tail(10)
-		result=result.drop(columns=["Id"])
-		return ("```fortran\nShowing results for page {}:\nRank".format(idx)+result.to_string()[4:]+"\nCurrent rank for {0}: {1} (page {2})```".format(user.name,rank+1,(rank//10)+1))
+		if not self.isEnabled:
+			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
+		async with aiosqlite.connect("Nijicord.db") as conn:
+			cursor = await conn.execute("SELECT ID,Name,Score FROM memberScores ORDER BY Score DESC")
+			response = await cursor.fetchall()
+			result=pd.DataFrame(response)
+			result.index+=1
+			result.columns=["Id","User","Score"]
+			indexedResults=pd.Index(result["Id"])
+			rank=indexedResults.get_loc(user.id)
+			if idx<1:
+				idx=1
+			result=result.head(idx*10)
+			result=result.tail(10)
+			result=result.drop(columns=["Id"])
+			return ("```fortran\nShowing results for page {}:\nRank".format(idx)+result.to_string()[4:]+"\nCurrent rank for {0}: {1} (page {2})```".format(user.name,rank+1,(rank//10)+1))
+
 	async def handleMessage(self,message,bot):
 		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
 			return
-		if (message.guild.id == self.bot.config["nijiCord"]):
+		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
 			if not (self.cooldown or message.author.bot):
 				await self.meme(message)
 			if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id!=611375108056940555:
 				await message.channel.send("No")
 				await message.delete()
 		if not (message.author.bot):
+			if not self.isEnabled and message.content.startswith("$"):
+				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
+				return
 			await bot.process_commands(message)
 		try:
 			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or not(message.guild.id == self.bot.config["nijiCord"]):
@@ -76,7 +89,7 @@ class MessageHandler():
 			return
 		score=await self.score(message.author,message.content.startswith('$'))
 		if not(await self.antiSpam(message,score)):
-			print("spammers don't get points")
+			#this means either the db connection isn't initiated yet, or the user is spamming
 			return
 		result=None
 		if not(score is None):
@@ -105,7 +118,11 @@ class MessageHandler():
 			await asyncio.sleep(5)
 			
 	async def antiSpam(self,message,score):
-		if not (message.guild.id == self.bot.config["nijiCord"]):
+		if score==-1:
+			return True
+		if not (str(message.guild.id) in self.bot.config["antispam"].keys()):
+			return True
+		if message.channel.id in self.bot.config["antispamIgnore"]:
 			return True
 		if message.author.bot:
 			return True
@@ -143,9 +160,11 @@ class MessageHandler():
 		return True
 		
 		
-	async def mute(self,user,reason):
+	async def mute(self,member,reason):
+		role=discord.utils.find(lambda x: x.name.lower()=="muted", member.guild.allRoles)
+		await member.add_roles(role)
 		log=self.bot.get_channel(self.bot.config["logCh"])
-		await log.send("{2}\n{0} was banned for {1}".format(user.mention,reason,self.bot.get_user(self.config["owner"]).mention))
+		await log.send("{2}\n{0} was banned for {1}".format(member.mention,reason,self.bot.get_user(self.config["owner"]).mention))
 
 	async def test(self,guild,auth):
 		rankUpMsg=self.config["msgs"]["sr"]
@@ -169,6 +188,8 @@ class MessageHandler():
 			await message.channel.send("Chun(・8・)Chun~")
 		elif "aquors" in content:
 			self.cooldown=True
+			rxn=discord.utils.get(message.guild.emojis,name="RinaBonk")
+			await message.add_reaction(rxn)
 			await message.channel.send("AQOURS")
 		elif "pdp" in content:
 			self.cooldown=True
@@ -179,25 +200,28 @@ class MessageHandler():
 			return
 		await asyncio.sleep(cdTime)
 		self.cooldown=False
+		
 	async def score(self,author,isCommand):
-		score=-1
-		if not author.id in self.MRU:
-			self.db.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))
-			newScore=self.db.fetchone()
-			if newScore==None:
-				self.db.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)[:-5]))
-			else:
-				if isCommand:
-					return newScore[0]
-				self.db.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author)[:-5], author.id))
-				score=newScore[0]+1
-			self.MRU.insert(0,author.id)
-			if len(self.MRU)>cache:
-				self.MRU.pop()
-		self.conn.commit()
-		if score<0:
-			return None
-		return score
+		async with aiosqlite.connect("Nijicord.db") as conn:
+			score=-1
+			if not author.id in self.MRU:
+				cursor=await conn.execute("SELECT Score,Name FROM memberScores WHERE ID=?",(author.id,))
+				newScore=await cursor.fetchone()
+				await cursor.close()
+				if newScore==None:
+					cursor=await conn.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)",(author.id,str(author)[:-5]))
+				else:
+					if isCommand:
+						return newScore[0]
+					cursor=await conn.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?",(newScore[0]+1,str(author)[:-5], author.id))
+					score=newScore[0]+1
+				self.MRU.insert(0,author.id)
+				if len(self.MRU)>cache:
+					self.MRU.pop()
+			await conn.commit()
+			if score<0:
+				return None
+			return score
 
 	async def rankUp(self,member,score):
 		announce=None
