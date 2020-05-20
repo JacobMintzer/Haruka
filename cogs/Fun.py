@@ -8,10 +8,11 @@ from .utilities import MessageHandler, Utils, Checks
 class Fun(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
-	
+		self.cooldowns=[]
 	
 	@commands.command()
 	async def re(self,ctx,emote=""):
+		"""Searches for a random emote by search term. ex. '$re yay' will return a random 'yay' emote."""
 		emoji=Utils.getRandEmoji(ctx.bot.emojis, emote)
 		if emoji is None:
 			await ctx.send("emoji not found")
@@ -21,7 +22,7 @@ class Fun(commands.Cog):
 		
 	@commands.command()
 	async def e(self,ctx, emote=""):
-		"""Gets an emote from the server by search term. ex. $e aRinaPat."""
+		"""Gets an emote from the server name. ex. $e aRinaPat."""
 		emoji=discord.utils.find(lambda emoji: emoji.name.lower() == emote.lower(),self.bot.emojis)
 		if emoji is None:
 			await ctx.send("emoji not found")
