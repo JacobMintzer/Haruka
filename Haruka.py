@@ -23,13 +23,12 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-bot = commands.Bot(command_prefix=['$'], description='I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit `https://discord.gg/qp7nuPC` or DM `Junior Mints#2525`',case_insensitive=True)
+bot = commands.Bot(command_prefix=['$'], description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",case_insensitive=True)
 
-cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions','cogs.events']
+cogList=['cogs.Music','cogs.Administration', 'cogs.Fun','cogs.GuildFunctions','cogs.events', 'cogs.setup']
 with open('Resources.json', 'r') as file_object:
 	bot.config=json.load(file_object)
 bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
-bot.asar=bot.config["asar"]
 async def is_admin(ctx):
 	try:
 		if ctx.author.permissions_in(ctx.message.channel).administrator:
@@ -87,7 +86,12 @@ async def on_command_error(ctx, error):
 		return
 	if isinstance(error,ignored):
 		return
-	print (error)
+	print ("error in {0}".format(str(ctx.guild)))
+	try:
+		logger.error("Error in {0} with message {1}".format(str(ctx.guild),str(ctx.message.clean_content)))
+	except:
+		logger.error("Message that caused error either doesn't exist or can't be found")
+	raise (error)
 
 async def shutdown():
 	print("shutting down messagehandler")
@@ -141,7 +145,6 @@ async def softReset(ctx,*,selectedCogs=None):
 	if msg:
 		importlib.reload(MessageHandler)
 		bot.messageHandler=MessageHandler.MessageHandler(bot.config,bot)
-	bot.asar=bot.config["asar"]
 
 
 	for cog in cogs:
