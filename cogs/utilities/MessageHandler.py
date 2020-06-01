@@ -36,6 +36,7 @@ class MessageHandler():
 		self.antispamLoop.cancel()
 
 
+
 	async def initRoles(self,bot):
 		self.isEnabled=True
 		self.niji = discord.utils.get(bot.guilds, id = self.config["nijiCord"])
@@ -70,6 +71,8 @@ class MessageHandler():
 	async def handleMessage(self,message,bot):
 		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
 			return
+		if message.content == "<@!{0}>".format(self.bot.user.id):
+			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
 			if not (self.cooldown or message.author.bot):
 				await self.meme(message)
@@ -82,7 +85,7 @@ class MessageHandler():
 				return
 			await bot.process_commands(message)
 		try:
-			if (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or not(message.guild.id == self.bot.config["nijiCord"]):
+			if message.guild is None or (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or not(message.guild.id == self.bot.config["nijiCord"]):
 				return
 		except Exception as e:
 			print (e)
@@ -105,6 +108,7 @@ class MessageHandler():
 				rankUpMsg=self.config["msgs"][result]
 				hug = Utils.getRandEmoji(self.bot.emojis,"suteki")
 				await message.channel.send(rankUpMsg.format(message.author.mention,str(hug)))
+
 	async def antiSpamSrv(self):
 		print("starting service")
 		while True:
@@ -170,6 +174,7 @@ class MessageHandler():
 		rankUpMsg=self.config["msgs"]["sr"]
 		hug=self.anataYay
 		return rankUpMsg.format(auth.mention,str(hug))
+
 	async def meme(self,message):
 		cdTime=90
 		if message.channel.id==696402682168082453:

@@ -4,6 +4,8 @@ from discord.ext import commands
 
 def is_niji():
 	def predicate(ctx):
+		if ctx.message.guild is None:
+			return False
 		return ctx.message.guild.id == ctx.bot.config["nijiCord"]
 	return commands.check(predicate)
 	
@@ -25,8 +27,5 @@ def is_admin():
 
 def is_me():
 	def predicate(ctx):
-		print (ctx.author.id)
-		print (ctx.message.author.id)
-		print(ctx.bot.config["owner"])
 		return ctx.message.author.id == ctx.bot.config["owner"]
 	return commands.check(predicate)

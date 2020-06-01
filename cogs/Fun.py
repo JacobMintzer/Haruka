@@ -96,11 +96,15 @@ class Fun(commands.Cog):
 			await ctx.send(str(emoji))
 
 
-	@commands.command()
+	@commands.group()
 	@Checks.is_niji()
-	async def rank(self,ctx,idx=1):
+	async def rank(self,ctx,idx: int=1):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))
+
+	@rank.command()
+	async def ignore(self,ctx):
+		await ctx.send("uwu")
 
 	@commands.command()
 	async def llas(self,ctx,*,query):

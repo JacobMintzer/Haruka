@@ -34,5 +34,8 @@ class Events(commands.Cog):
 			except:
 				print("error adding autorole in {0}".format(member.guild.name))
 
+
+	
+
 def setup(bot):
 	bot.add_cog(Events(bot))

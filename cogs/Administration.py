@@ -237,7 +237,6 @@ class Administration(commands.Cog):
 
 	@antispam.command()
 	async def ignore(self,ctx):
-		print("ignore")
 		if not(ctx.message.channel.id in self.bot.config["antispamIgnore"]):
 			self.bot.config["antispamIgnore"].append(ctx.message.channel.id)
 			print("added")
@@ -273,6 +272,14 @@ class Administration(commands.Cog):
 			except asyncio.TimeoutError:
 				await rxnMsg.delete()
 			return
+
+
+	@commands.command()
+	@Checks.is_me()
+	async def DM(self,ctx,members: commands.Greedy[discord.User], *, msg:str):
+		memberList=""
+		for member in members:
+			await member.send(msg)
 
 
 	@commands.command()
