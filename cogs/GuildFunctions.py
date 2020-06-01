@@ -66,37 +66,85 @@ class GuildFunctions(commands.Cog):
 
 	@commands.command()
 	async def invite(self,ctx):
+		"""Generate an link to invite Haruka to your server"""
 		await ctx.send("To invite Haruka to your sever, please click this link https://discord.com/api/oauth2/authorize?client_id=613501680469803045&permissions=268774468&scope=bot")
 
 	@commands.command(name="iam")
-	@Checks.is_niji()
 	async def Iam(self,ctx,*, arole=''):
 		"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
+		if not (str(ctx.message.guild.id) in self.bot.config["asar"].keys()):
+			await ctx.send("This server has no self-assignable roles. Please have an admin use `$asar add rolename` to make roles self-assignable.")
 		guild=ctx.message.guild
-		if arole.lower() in self.bot.asar:
+		if arole.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
+			if role is None:
+				await ctx.send("Hmmm, it looks  like the role you requested has been deleted. I will remove it from self assignable.")
+				self.bot.config["asar"][str(ctx.message.guild.id)].remove(arole.lower())
+				Utils.saveConfig(ctx)
 			await ctx.message.author.add_roles(role)
-			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
+			rxn=Utils.getRandEmoji(guild.emojis,"hug")
+			if rxn is None:
+				rxn = Utils.getRandEmoji(ctx.bot.emojis,"harukahug")
+			await ctx.message.add_reaction(rxn)
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
 	@commands.command(name="iamn")
-	@Checks.is_niji()
 	async def Iamn(self,ctx,*, arole=''):
 		"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
 		guild=ctx.message.guild
-		if arole.lower() in self.bot.asar:
+		if arole.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			role=discord.utils.find(lambda x: x.name.lower()==arole.lower(), ctx.guild.roles)
 			await ctx.message.author.remove_roles(role)
-			await ctx.message.add_reaction(Utils.getRandEmoji(guild.emojis,"hug")) 
+			rxn=Utils.getRandEmoji(guild.emojis,"hug")
+			if rxn is None:
+				rxn = Utils.getRandEmoji(ctx.bot.emojis,"harukahug")
+			await ctx.message.add_reaction(rxn) 
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
 
-	@commands.command(name="asar")
-	@Checks.is_niji()
-	async def Asar(self,ctx):
-		"""Use this command to list all self-assignable roles. Roles can be assigned with the $iam command, and removed using the $iamn command"""
-		await ctx.send(str(self.bot.asar))
+	@commands.group()
+	async def asar(self,ctx):
+		"""Use this command to list all self-assignable roles. Admins can add and remove roles from asar with '$asar add rolename' and '$asar remove rolename'"""
+		if ctx.invoked_subcommand is None:
+			roleMessage = "`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])
+			await ctx.send("Self assignable roles here are: \n`{0}`.".format(roleMessage))
+
+	@asar.command()
+	@Checks.is_admin()
+	async def add(self,ctx,*,role=""):
+		"""ADMIN ONLY! Use this command to add roles to self-assignable with '$iam'. If a role with given name is not found, one will be created. Make sure the role is lower than haruka's highest role. ex. '$asar add roleName'"""
+		if role == "":
+			await ctx.send("Please enter a role")
+			return
+		if not str(ctx.message.guild.id) in self.bot.config["asar"].keys():
+			self.bot.config["asar"][str(ctx.message.guild.id)]=[]
+		requestedRole=discord.utils.find(lambda x: x.name.lower()==role.lower(),ctx.message.guild.roles)
+		if requestedRole is None:
+			try:
+				await ctx.message.guild.create_role(name=role)
+				self.bot.config["asar"][str(ctx.message.guild.id)].append(role.lower())
+				await ctx.send("Role `{0}` was not found, so I created it, and it was added to the self-assignable roles.".format(role))
+				Utils.saveConfig(ctx)
+			except:
+				await ctx.send("Role `{0}` not found, and I was unable to create the role. Please modify my permissions to manage roles so I can assign roles.".format(role))
+		else:
+			self.bot.config["asar"][str(ctx.message.guild.id)].append(role.lower())
+			Utils.saveConfig(ctx)
+			await ctx.send("Role {0} added to self-assignable roles.".format(requestedRole.name))
+
+	@asar.command()
+	@Checks.is_admin()
+	async def remove(self,ctx,*,role=""):
+		"""ADMIN ONLY! Use this command to remove roles from self-assignable with '$iam'. ex. '$asar remove roleName'"""
+		if role == "":
+			await ctx.send("Please enter a role")
+			return
+		if role.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
+			self.bot.config["asar"][str(ctx.message.guild.id)].remove(role.lower())
+			Utils.saveConfig(ctx)
+		else:
+			await ctx.send("Role `{0}` not found in self assignable list.".format(role))
 
 	@commands.command(name="pronoun")
 	async def Pronoun(self,ctx, action='', pronoun=''):
@@ -191,7 +239,7 @@ class GuildFunctions(commands.Cog):
 					rxnChoice=rxnChoice.replace("etsuna","etsu")
 				emoji=Utils.getRandEmoji(self.bot.emojis,rxnChoice)
 				if emoji == "No Emoji Found" or emoji is None:
-					emoji="👍"
+					emoji=Utils.getRandEmoji(self.bot.emojis,"harukayay")
 			await ctx.message.add_reaction(emoji) #"👍")
 		return
 
