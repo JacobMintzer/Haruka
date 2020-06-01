@@ -25,6 +25,8 @@ def isTarget(msg):
 	return False
 
 def adminRxn(rxn, user):
+	if not rxn.message.author.id == 613501680469803045:
+		return False
 	if user.permissions_in(rxn.message.channel).administrator and not user.bot:
 		if str(rxn.emoji) in [u"\U0001F5D1","🔨","🚫"]:
 			return True
@@ -45,11 +47,11 @@ class Administration(commands.Cog):
 
 	@commands.command(hidden=True)
 	@Checks.is_me()
-	async def uwu(self,ctx,*,msg):
+	async def uwu(self,ctx,*,msg=" "):
 		"""test command please ignore"""
-		await ctx.send(msg+ " desu")
+		print(ctx.message.content)
+		await ctx.send(msg)
 	
-
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
 		if not(member.guild.id in self.bot.config["logEnabled"]):
@@ -72,6 +74,10 @@ class Administration(commands.Cog):
 	
 	@commands.Cog.listener()
 	async def on_message_delete(self,message):
+		if message.guild is None:
+			return
+		if message.author.bot:
+			return
 		if not(message.guild.id in self.bot.config["logEnabled"]):
 			return
 		att=None
@@ -107,6 +113,10 @@ class Administration(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_message_edit(self,original,message):
+		if message.guild is None:
+			return
+		if message.author.bot:
+			return
 		if not( message.guild.id in self.bot.config["logEnabled"]):
 			return
 		if original.clean_content==message.clean_content:
@@ -149,7 +159,7 @@ class Administration(commands.Cog):
 	@commands.check(is_admin)
 	async def autorole(self,ctx,*,role):
 		"""ADMIN ONLY! Use this command to set up an autorole for the server. ex. '$autorole member'. To clear type '$autorole clear'. Make sure the role is lower than Haruka's role."""
-		if role.lower() is "clear":
+		if role.lower() == "clear":
 			if str(ctx.message.guild.id) in self.bot.config["autorole"].keys():
 				del self.bot.config["autorole"][str(ctx.message.guild.id)]
 		else:
@@ -208,6 +218,7 @@ class Administration(commands.Cog):
 
 
 	@commands.group()
+	@Checks.is_me()
 	@commands.check(is_admin)
 	async def antispam(self,ctx):
 		if ctx.invoked_subcommand is None:
