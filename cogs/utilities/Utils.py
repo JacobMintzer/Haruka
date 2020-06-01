@@ -5,11 +5,11 @@ import random
 import time
 import datetime
 import pytz
+import json
 
 def getRandEmoji(emojis,query=""):
-	nijiEmojis=[emoji for emoji in emojis if not((emoji.guild.id==175176337185701888) )]
 	if query is "":
-		return random.choice(nijiEmojis)
+		return random.choice(emojis)
 	choices=[emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 	if len(choices)<1:
 		return None
@@ -30,3 +30,8 @@ def genLog(member, what):
 	embd=embd.add_field(name = 'Account Created', value = member.created_at)
 	embd=embd.add_field(name = 'Profile Picture', value = member.avatar_url)
 	return embd
+
+def saveConfig(ctx):
+	print("saving")
+	with open('Resources.json', 'w') as outfile:
+		json.dump(ctx.bot.config, outfile)
