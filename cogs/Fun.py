@@ -107,12 +107,64 @@ class Fun(commands.Cog):
 		await ctx.send("uwu")
 
 	@commands.command()
-	async def llas(self,ctx,*,query):
-		"""Search for a LLAS card. Still in beta. ex. $llas Honoka"""
+	async def llasID(self,ctx,id:int,lb=0):
+		"""Search for a LLAS card by ID. Optionally give limit break level (defaults to 0). ex. '$llasID 146 2'"""
 		async with ctx.typing():
-			response=requests.get("http://all-stars-api.uc.r.appspot.com/cards/search?query={0}".format(str(query)))
-			data= (response.json()[0])
-			await ctx.send(data["rarity"]["abbreviation"]+" "+data["idol"]["firstName"]+" "+data["idol"]["lastName"]+" "+data["idolizedTitle"])
+			if len(str(lb))>1:
+				lb=int(lb[-1])
+			response=requests.get("http://all-stars-api.uc.r.appspot.com/cards/id/{0}".format(str(id)))
+			data = (response.json())
+			embd = self.embedCard(data,lb)
+			await ctx.send(embed=embd)
 
+	@commands.command()
+	async def llas(self,ctx,*,query):
+		"""Search for a LLAS card. ex. $llas Bowling Eli"""
+		async with ctx.typing():
+			lb=0
+			if query[-3:-1].lower()=="lb":
+				lb=int(query[-1])
+				query=query[:-3]
+			query=query.strip()
+			response=requests.get("http://all-stars-api.uc.r.appspot.com/cards/search?query={0}".format(str(query)))
+			data= (response.json())
+			if len(data)>15:
+				await ctx.send("Too many potential cards, please send a more specific query.")
+				return
+			if len(data)>1:
+				await ctx.send(self.listCards(data))
+				return
+			if len(data)<1:
+				await ctx.send("No card found with given query.")
+				return
+			data=data[0]
+			embd=self.embedCard(data,lb)
+			await ctx.send(embed=embd)
+
+	def embedCard(self,data,lb=0):
+		embd=discord.Embed(title= data["idolizedTitle"], description=data["title"],colour=discord.Colour(int(data["idol"]["color"].replace("#","0x"),16)))
+		embd.set_image(url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconI.jpg".format(data["id"]))
+		embd.set_thumbnail(url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconN.jpg".format(data["id"]))
+		rarity=discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(data["rarity"]["abbreviation"]).lower(),self.bot.emojis)
+		embd.set_author(name = data["idol"]["firstName"] + " " + data["idol"]["lastName"], icon_url = rarity.url)
+		if lb<0 or lb>5:
+			lb = 0
+		embd.add_field(name="Appeal (LB{0})".format(str(lb)), value=data["appeal"]["lb{0}".format(lb)])
+		embd.add_field(name="Stamina (LB{0})".format(str(lb)), value=data["stamina"]["lb{0}".format(lb)])
+		embd.add_field(name="Technique (LB{0})".format(str(lb)), value=data["technique"]["lb{0}".format(lb)])
+		embd.add_field(name="Skill", value=data["primaryActiveAbilityText"], inline=False)
+		embd.add_field(name="Passive Ability", value=data["passiveAbility"]["abilityText"], inline=False)
+		embd.add_field(name="Active Ability", value=data["secondaryActiveAbilityText"], inline=False)
+		embd.set_footer(text="{0}: ID: {1}".format(data["title"],data["id"]))
+		return embd
+
+
+
+	def listCards(self,data):
+		cardList="Multiple cards found, please pick the card you want with `$llasID <id>` with <id> replaced with the ID you want.```\nID  Rarity    Idol   Title      Idolized Title\n"
+		for card in data:
+			cardList+="{0}.  {1} {2} {3}: {4} / {5}\n".format(card["id"],card["rarity"]["abbreviation"],card["idol"]["firstName"],card["idol"]["lastName"],card["title"],card["idolizedTitle"])
+		return cardList+"```"
+	
 def setup(bot):
 	bot.add_cog(Fun(bot))
