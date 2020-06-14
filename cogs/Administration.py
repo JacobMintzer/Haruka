@@ -51,6 +51,7 @@ class Administration(commands.Cog):
 		"""test command please ignore"""
 		print(ctx.message.content)
 		await ctx.send(msg)
+
 	
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
@@ -197,24 +198,50 @@ class Administration(commands.Cog):
 	@commands.command()
 	@Checks.is_niji()
 	@commands.check(is_admin)
-	async def blacklist(self,ctx,*,user):
+	async def blacklistprop(self,ctx,*users):
 		"""NIJICORD ADMIN ONLY! This blacklists a user from all the servers Haruka is on. This is only used in exceedingly rare situations like gore-spammers."""
-		person=self.bot.get_user(int(user))
-		if person is None:
-			person=await self.bot.fetch_user(int(user))
-		print (person)
 		bans=""
+		people=""
 		for guild in self.bot.guilds:
+			for user in users:
+				person=self.bot.get_user(int(user))
+				if person is None:
+					person=await self.bot.fetch_user(int(user))
+				people+=person.display_name
+				people+=", "
+				try:
+					await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord; 
+					this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
+					bans+=("banned from {0}".format(guild.name)+"\n")
+					if ctx.message.guild.id in self.bot.config["logEnabled"]:
+						log=self.bot.get_channel(self.bot.config["log"][str(guild.id)])
+						await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person),str(ctx.message.author)))
+				except Exception as e:
+					bans+=("not banned from {0} because of {1}".format(guild.name, e)+"\n")
 			try:
-				await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord; 
-				this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
-				bans+=("banned from {0}".format(guild.name)+"\n")
-				if ctx.message.guild.id in self.bot.config["logEnabled"]:
-					log=self.bot.get_channel(self.bot.config["log"][str(guild.id)])
-					await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person),str(ctx.message.author)))
-			except Exception as e:
-				bans+=("not banned from {0} because of {1}".format(guild.name, e)+"\n")
-		await ctx.send("{0} was {1}".format(person.display_name,bans))
+				await ctx.send("{0} were {1}".format(people,bans))
+			except:
+				print("{0} were {1}".format(people,bans))
+
+	@commands.command()
+	@Checks.is_admin()
+	async def blacklist(self,ctx,*users):
+		"""This blacklists a user joining this server even if they aren't in the server currently."""
+		log = None
+		if ctx.message.guild.id in self.bot.config["logEnabled"]:
+			log=self.bot.get_channel(self.bot.config["log"][str(ctx.message.guild.id)])
+		for user in users:
+			person=self.bot.get_user(int(user))
+			if person is None:
+				person=await self.bot.fetch_user(int(user))
+			print (person)
+			try:
+				await ctx.message.guild.ban(person)
+				if log is not None:
+					await log.send("{0} was blacklisted by Haruka on this server.".format(str(person)))
+			except:
+				await ctx.send("Could not ban user, please check to make sure I have the `ban user` permission.")
+		
 
 
 	@commands.group()
@@ -248,9 +275,7 @@ class Administration(commands.Cog):
 	async def ban(self,ctx,*,person: discord.Member):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
 		ex. '$ban 613501680469803045'"""
-		global target
-		while target!=None:
-			await asyncio.sleep(10)
+		print("uwu")
 		rxnMsg=await ctx.send("React {1} to purge {0}'s messages and ban then, react 🔨 to only ban them and react 🚫 to cancel".format(str(person),u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
