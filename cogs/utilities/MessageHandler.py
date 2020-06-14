@@ -19,9 +19,6 @@ class MessageHandler():
 		self.isEnabled=False
 		self.bot=bot
 		self.config=config
-		self.girls=[girl.lower() for girl in config["girls"]]
-		self.girls.append("niji")
-		self.girls.append("anata")
 		self.MRU=[]
 		self.antiSpamCache={}
 		self.antiSpamScores={}
@@ -85,30 +82,32 @@ class MessageHandler():
 				return
 			await bot.process_commands(message)
 		try:
-			if message.guild is None or (message.channel.category_id==610934583730634752 or message.channel.category_id==610934583730634752) or not(message.guild.id == self.bot.config["nijiCord"]):
+			if message.guild is None or not (message.guild.id in bot.config["scoreEnabled"]):
 				return
 		except Exception as e:
 			print (e)
 			return
-		score=await self.score(message.author,message.content.startswith('$'))
-		if not(await self.antiSpam(message,score)):
-			#this means either the db connection isn't initiated yet, or the user is spamming
-			return
-		result=None
-		if not(score is None):
-			if score==69 or score==6969:
-				await message.channel.send("nice")
-			if score<505 and score>=500:
-				result=await self.rankUp(message.author,score)
-			elif score<2505 and score>=2500:
-				result=await self.rankUp(message.author,score)
-			elif score%10000<=5:
-				result=await self.rankUp(message.author,score)
-			if not(result is None):
-				rankUpMsg=self.config["msgs"][result]
-				hug = Utils.getRandEmoji(self.bot.emojis,"suteki")
-				await message.channel.send(rankUpMsg.format(message.author.mention,str(hug)))
-
+		if not (message.channel.id in bot.config["scoreIgnore"]):
+			score=await self.score(message.author,message.content.startswith('$'))
+			if not(str(message.guild.id) in bot.config["antispam"].keys()):
+				return
+			if not(await self.antiSpam(message,score)):
+				#this means either the db connection isn't initiated yet, or the user is spamming
+				return
+			result=None
+			if not(score is None):
+				if score==69 or score==6969:
+					await message.channel.send("nice")
+				if score<505 and score>=500:
+					result=await self.rankUp(message.author,score)
+				elif score<2505 and score>=2500:
+					result=await self.rankUp(message.author,score)
+				elif score%10000<=5:
+					result=await self.rankUp(message.author,score)
+				if not(result is None):
+					rankUpMsg=self.config["msgs"][result]
+					hug = Utils.getRandEmoji(self.bot.emojis,"suteki")
+					await message.channel.send(rankUpMsg.format(message.author.mention,str(hug)))
 	async def antiSpamSrv(self):
 		print("starting service")
 		while True:
@@ -186,6 +185,8 @@ class MessageHandler():
 			self.cooldown=True
 			await message.channel.send("KA! SU! MIN! DESU!!!")
 		elif "yoshiko" in content:
+			if message.content.startswith("$llas "):
+				return
 			self.cooldown=True
 			await message.channel.send("Dakara Yohane Yo!!!")
 		elif content=="chun":
@@ -203,6 +204,9 @@ class MessageHandler():
 			await message.channel.send("Hey, April Fools Day is over, they're Nijigasaki!")
 		else:
 			return
+		self.bot.loop.create_task(self.memeCooldown(cdTime))
+
+	async def memeCooldown(self, cdTime=90):
 		await asyncio.sleep(cdTime)
 		self.cooldown=False
 		

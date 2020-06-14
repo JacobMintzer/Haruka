@@ -181,9 +181,9 @@ class GuildFunctions(commands.Cog):
 	@commands.command(name="best")
 	async def best(self,ctx, *, role):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
-		if not( str(ctx.message.guild.id) in ctx.bot.config["girls"].keys()):
+		if not( str(ctx.message.guild.id) in ctx.bot.config["best"].keys()):
 			return
-		roleNames=self.bot.config["girls"][str(ctx.message.guild.id)]
+		roleNames=self.bot.config["best"][str(ctx.message.guild.id)]
 		if role.lower()=="clear":
 			role="clear"
 		elif role.title() not in roleNames:
