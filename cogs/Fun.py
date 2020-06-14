@@ -2,6 +2,7 @@ import asyncio
 import discord
 import requests
 import pprint
+import pandas as pd
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
 
@@ -98,13 +99,64 @@ class Fun(commands.Cog):
 
 	@commands.group()
 	@Checks.is_niji()
-	async def rank(self,ctx,idx: int=1):
+	async def rank(self,ctx,*,idx="1"):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
-		await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))
+		print (str(idx))
+		if str(idx).isdigit():
+			idx=int(idx)
+			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author,idx))
+		elif idx.lower() == 'ignore':
+			print("ignoring")
+			await self.ignore(ctx)
+		elif idx.lower() == 'best' or idx.lower() == 'best girl':
+			await self.best(ctx)
 
 	@rank.command()
-	async def ignore(self,ctx):
-		await ctx.send("uwu")
+	@Checks.hasBest()
+	async def best(self,ctx):
+		"""Use this to show the rankings of what the most popular `best girl` role is"""
+		roleList = []
+		for roleName in ctx.bot.config["best"][str(ctx.message.guild.id)]:
+			role = discord.utils.find(lambda x: x.name.lower() == roleName.lower(), ctx.message.guild.roles)
+			roleList.append((role.name,len(list(filter(lambda x: role in x.roles , ctx.message.guild.members )))))
+		roleList.sort(key = lambda x: x[1],reverse=True) 
+		series = pd.DataFrame(roleList)
+		series.index+=1
+		series.columns=["Best","Users"]
+		await ctx.send("```fortran\n{0}```".format(series.to_string()))
+
+	
+
+	@commands.group()
+	@Checks.isScoreEnabled()
+	@Checks.is_admin()
+	async def score(self,ctx):
+		"""Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings"""
+		if ctx.invoked_subcommand is None:
+			await ctx.send("Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings")
+
+	@score.command()
+	async def ignore(self,ctx,ch:discord.channel=None):
+		"""Use `$score ignore` to have Haruka ignore a channel"""
+		if ch is None:
+			ch = ctx.message.channel
+		try:
+			await ctx.send("ignoring {ch.mention}")
+		except:
+			print
+		self.bot.config["scoreIgnore"].append(ch.id)
+		Utils.saveConfig(ctx)
+
+	@score.command()
+	async def unignore(self,ctx,ch:discord.channel=None):
+		if ch is None:
+			ch = ctx.message.channel
+		await ctx.send("No longer ignoring {ch.mention}")
+		try:
+			self.bot.config["scoreIgnore"].remove(ch.id)
+			Utils.saveConfig(ctx)
+		except:
+			print ("could not remove channel from scoreIgnore")
 
 	@commands.command()
 	async def llasID(self,ctx,id:int,lb=0):
