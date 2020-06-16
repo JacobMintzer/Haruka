@@ -11,5 +11,5 @@ Discord bot for management of the Nijigasaki Discord and adjacent Love Live serv
 * <s>Import and improve Maribot's antispam automoderation</s> done
 * Haruka specific message when people boost
 * Nijigasaki.moe integrations?
-* SIF/SIFAS card info lookups - In Progress
+* SIF/<s>SIFAS</s> card info lookups 
 * Extract image from pixiv links
