@@ -91,25 +91,45 @@ class MessageHandler():
 			return
 		if not (message.channel.id in bot.config["scoreIgnore"]):
 			score = await self.score(message.author, message.content.startswith('$'))
+			if not (score is None) and message.guild.id in self.config["rankEnabled"]:
+				await self.checkRanks(message, score)
 			if not(str(message.guild.id) in bot.config["antispam"].keys()):
 				return
 			if not(await self.antiSpam(message, score)):
 				# this means either the db connection isn't initiated yet, or the user is spamming
 				return
-			result = None
-			if not(score is None):
-				if score == 69 or score == 6969:
-					await message.channel.send("nice")
-				if score < 505 and score >= 500:
-					result = await self.rankUp(message.author, score)
-				elif score < 2505 and score >= 2500:
-					result = await self.rankUp(message.author, score)
-				elif score % 10000 <= 5:
-					result = await self.rankUp(message.author, score)
-				if not(result is None):
-					rankUpMsg = self.config["msgs"][result]
-					hug = Utils.getRandEmoji(self.bot.emojis, "suteki")
-					await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))
+			
+
+	async def checkRanks(self, message, score):
+		thresh = self.config["threshold"]
+		givenRole=""
+		if score == 69 or score == 6969:
+			await message.channel.send("nice")
+		if score>thresh["exec"]:
+			if not(self.roles["exec"] in message.author.roles):
+				givenRole="exec"
+				old=self.roles["sr"]
+		elif score>thresh["sr"]:
+			if not(self.roles["sr"] in message.author.roles):
+				givenRole="sr"
+				old=self.roles["jr"]
+		elif score>thresh["jr"]:
+			if not(self.roles["jr"] in message.author.roles):
+				givenRole="jr"
+				old=self.roles["new"]
+		elif score>thresh["new"]:
+			if not(self.roles["new"] in message.author.roles):
+				givenRole="new"
+				old=self.roles["app"]
+		if givenRole=="":
+			return
+		rankUpMsg = self.config["msgs"][givenRole]
+		newRole=self.roles[givenRole]
+		hug = Utils.getRandEmoji(self.bot.emojis, "suteki")
+		await message.author.remove_roles(old)
+		await message.author.add_roles(newRole)
+		await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))
+
 
 	async def antiSpamSrv(self):
 		print("starting service")
@@ -124,6 +144,7 @@ class MessageHandler():
 			await asyncio.sleep(5)
 
 	async def antiSpam(self, message, score):
+
 		if score == -1:
 			return True
 		if not (str(message.guild.id) in self.bot.config["antispam"].keys()):
@@ -235,35 +256,7 @@ class MessageHandler():
 				return None
 			return score
 
-	async def rankUp(self, member, score):
-		announce = None
-		thresh = self.config["threshold"]
-		if score < thresh["new"]:
-			givenRole = self.roles["app"]
-		elif score < thresh["jr"]:
-			if self.roles["app"] in member.roles:
-				announce = "new"
-			givenRole = self.roles["new"]
-		elif score < thresh["sr"]:
-			if self.roles["new"] in member.roles:
-				announce = "jr"
-			givenRole = self.roles["jr"]
-		elif score < thresh["exec"]:
-			if self.roles["jr"] in member.roles:
-				announce = "sr"
-			givenRole = self.roles["sr"]
-		else:
-			if self.roles["sr"] in member.roles:
-				announce = "exec"
-			givenRole = self.roles["exec"]
-		if givenRole in member.roles:
-			return None
-		else:
-			for role in self.roles.values():
-				await member.remove_roles(role)
-			await member.add_roles(givenRole)
-			return announce
-
+	
 	# april fools day replacement
 	""" async def pdpIfy(self,message):
 		if(message.author.bot):
