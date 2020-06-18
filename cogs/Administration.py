@@ -19,19 +19,18 @@ async def is_admin(ctx):
 		return False
 
 # used for purging, since we want to selectively check if messages are by the user currently being targetted. TODO find better way to implement this
-
-
 def isTarget(msg):
 	global target
-	if msg.author == target:
+	if msg.author.id in target:
 		return True
 	return False
 
 
 def adminRxn(rxn, user):
+	global target
 	if not rxn.message.author.id == 613501680469803045:
 		return False
-	if user.permissions_in(rxn.message.channel).administrator and not user.bot:
+	if user.permissions_in(rxn.message.channel).administrator and not user.bot and user.id in target:
 		if str(rxn.emoji) in [u"\U0001F5D1", "🔨", "🚫"]:
 			return True
 		return False
@@ -49,7 +48,7 @@ class Administration(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		global target
-		target = None
+		target = []
 
 	@commands.command(hidden=True)
 	@Checks.is_me()
@@ -103,20 +102,20 @@ class Administration(commands.Cog):
 		embd.type = "rich"
 		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
 		embd = embd.add_field(name='Discord Username',
-							  value=str(message.author))
+                        value=str(message.author))
 		embd = embd.add_field(name='id', value=message.author.id)
 		embd = embd.add_field(name='Joined', value=message.author.joined_at)
 		embd.color = discord.Color.red()
 		embd = embd.add_field(name='Channel', value=message.channel.name)
 		if message.clean_content:
 			embd = embd.add_field(name='Message Content',
-								  value=message.clean_content, inline=False)
+                         value=message.clean_content, inline=False)
 		else:
 			embd = embd.add_field(
 				name='Message Content', value="`contents of message was empty`", inline=False)
 		if att is not None:
 			embd = embd.add_field(name='Attachments',
-								  value="\n".join(att), inline=False)
+                         value="\n".join(att), inline=False)
 			await log.send(embed=embd)
 		elif fileList is None or len(fileList) < 1:
 			await log.send(embed=embd, files=fileList)
@@ -146,9 +145,9 @@ class Administration(commands.Cog):
 		embd = embd.add_field(
 			name='Jump Link', value="[Here](" + message.jump_url + ")")
 		embd = embd.add_field(name='Original Content',
-							  value=original.clean_content)
+                        value=original.clean_content)
 		embd = embd.add_field(name='Changed Content',
-							  value=message.clean_content)
+                        value=message.clean_content)
 		await log.send(embed=embd)
 
 	@commands.command()
@@ -193,12 +192,15 @@ class Administration(commands.Cog):
 	@commands.check(is_admin)
 	async def purge(self, ctx, *, msgs: int = 10):
 		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
+		global target
 		rxnMsg = await ctx.send("Are you sure you want to delete the last {0} messages on the server? react {1} to confirm or {2} to cancel.".format(str(msgs), u"\U0001F5D1", "🚫"))
 		await rxnMsg.add_reaction(u"\U0001F5D1")
 		await rxnMsg.add_reaction("🚫")
 		async with ctx.message.channel.typing():
 			try:
-				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				target.append(ctx.message.author.id)
+				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=20.0)
+				target.remove(ctx.message.author.id)
 				if str(rxn.emoji) == u"\U0001F5D1":
 					await ctx.message.channel.purge(limit=msgs)
 					await ctx.send("purge complete")
@@ -206,6 +208,7 @@ class Administration(commands.Cog):
 					await ctx.send("cancelling the purge")
 			except asyncio.TimeoutError:
 				await rxnMsg.delete()
+				target.remove(ctx.message.author.id)
 
 		return
 
@@ -218,7 +221,7 @@ class Administration(commands.Cog):
 		people = ""
 		async with ctx.message.channel.typing():
 			for guild in self.bot.guilds:
-				bans+="\n**{0}**:\n".format(guild.name)
+				bans += "\n**{0}**:\n".format(guild.name)
 				for user in users:
 					person = self.bot.get_user(int(user))
 					if person is None:
@@ -227,13 +230,13 @@ class Administration(commands.Cog):
 					try:
 						await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord;
 						this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
-						bans += ("*{0}* was banned".format(person.display_name)+"\n")
+						bans += ("*{0}* was banned".format(person.display_name) + "\n")
 						if ctx.message.guild.id in self.bot.config["logEnabled"]:
 							log = self.bot.get_channel(
 								self.bot.config["log"][str(guild.id)])
 							await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person), str(ctx.message.author)))
 					except Exception as e:
-						bans += ("{2} not banned from {0} because of {1}".format(guild.name, e, person.display_name)+"\n")
+						bans += ("{2} not banned from {0} because of {1}".format(guild.name, e, person.display_name) + "\n")
 		try:
 			await ctx.send(bans)
 		except:
@@ -271,9 +274,21 @@ class Administration(commands.Cog):
 			in that channel.""")
 
 	@antispam.command()
-	async def enable(self, ctx, *, message):
+	async def enable(self, ctx, mention=""):
 		"""enables antispam, and sets reporting channel to be the channel it is posted in"""
-		obj = {"ch": ctx.message.channel.id, "msg": message}
+		msg=""
+		if mention.lower() == "everyone":
+			msg = "@everyone"
+		elif len(ctx.message.mentions)>0:
+			for member in ctx.message.mentions:
+				msg+=member.mention
+		elif len(ctx.message.role_mentions)>0:
+			for role in ctx.message.role_mentions:
+				print("role {0}".format(role.mention))
+				msg+=role.mention
+		if len(msg)>1:
+			msg+="\n"
+		obj = {"ch": ctx.message.channel.id, "mention": msg}
 		self.bot.config["antispam"][str(ctx.message.guild.id)] = obj
 		saveConfig(ctx)
 
@@ -289,14 +304,16 @@ class Administration(commands.Cog):
 	async def ban(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
 		ex. '$ban 613501680469803045'"""
-		print("uwu")
+		global target
 		rxnMsg = await ctx.send("React {1} to purge {0}'s messages and ban then, react 🔨 to only ban them and react 🚫 to cancel".format(str(person), u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🔨")
 			await rxnMsg.add_reaction("🚫")
 			try:
-				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				target.append(ctx.message.author.id)
+				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=20.0)
+				target.remove(ctx.message.author.id)
 				if str(rxn.emoji) == u"\U0001F5D1":
 					# target = person
 					# for ch in ctx.message.guild.text_channels:
@@ -310,11 +327,12 @@ class Administration(commands.Cog):
 					await ctx.send("cancelling the ban")
 			except asyncio.TimeoutError:
 				await rxnMsg.delete()
+				target.remove(ctx.message.author.id)
 			return
 
 	@commands.command()
 	@Checks.is_me()
-	async def DM(self, ctx, members: commands.Greedy[discord.User], *, msg: str):
+	async def announce(self, ctx, members: commands.Greedy[discord.User], *, msg: str):
 		memberList = ""
 		for member in members:
 			await member.send(msg)
@@ -332,7 +350,9 @@ class Administration(commands.Cog):
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🚫")
 			try:
-				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=60.0)
+				target.append(ctx.message.author.id)
+				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=20.0)
+				target.remove(ctx.message.author.id)
 				if str(rxn.emoji) == u"\U0001F5D1":
 					target = person
 					for ch in ctx.message.guild.text_channels:
@@ -342,6 +362,7 @@ class Administration(commands.Cog):
 					await ctx.send("cancelling prune")
 			except asyncio.TimeoutError:
 				await rxnMsg.delete()
+				target.remove(ctx.message.author.id)
 			return
 
 
