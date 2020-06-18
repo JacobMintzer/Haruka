@@ -70,7 +70,7 @@ def check_enabled(ctx):
 async def on_ready():
 	for cog in cogList:
 		bot.load_extension(cog)
-	await bot.change_presence(activity=discord.Game("Making lunch for Kanata!", type=1))
+	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
 	await bot.messageHandler.initRoles(bot)
 	guild = bot.get_guild(bot.config["nijiCord"])
 	bot.allRoles = guild.roles
@@ -80,8 +80,8 @@ async def on_ready():
 	for guild in bot.guilds:
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
-	print("Currently in the current guilds: {0} with a total userbase of {1}".format(
-		guildList, totalUsers))
+	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
+		guildList, totalUsers,len(guildList)))
 
 
 @bot.event
@@ -179,7 +179,7 @@ async def softReset(ctx, *, selectedCogs=None):
 		totalUsers += guild.member_count
 	print("Currently in the current guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers))
-	await bot.change_presence(activity=discord.Game("Making lunch for Kanata!", type=1))
+	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
 	rxn = Utils.getRandEmoji(bot.emojis, "hug")
 	await ctx.message.add_reaction(rxn)
 
