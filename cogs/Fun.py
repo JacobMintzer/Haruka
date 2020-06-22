@@ -101,18 +101,20 @@ class Fun(commands.Cog):
 			await ctx.send(str(emoji))
 
 	@commands.group()
-	@Checks.is_niji()
+	@Checks.isScoreEnabled()
 	async def rank(self, ctx, *, idx="1"):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		print(str(idx))
 		if str(idx).isdigit():
 			idx = int(idx)
-			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author, idx))
+			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author, ctx.message.guild, idx))
 		elif idx.lower() == 'ignore':
 			print("ignoring")
 			await self.ignore(ctx)
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
+
+	@rank.command
 
 	@rank.command()
 	@Checks.hasBest()
@@ -131,7 +133,6 @@ class Fun(commands.Cog):
 		await ctx.send("```fortran\n{0}```".format(series.to_string()))
 
 	@commands.group()
-	@Checks.isScoreEnabled()
 	@Checks.is_admin()
 	async def score(self, ctx):
 		"""Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings"""
@@ -139,6 +140,7 @@ class Fun(commands.Cog):
 			await ctx.send("Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings")
 
 	@score.command()
+	@Checks.isScoreEnabled()
 	async def ignore(self, ctx, ch: discord.channel = None):
 		"""Use `$score ignore` to have Haruka ignore a channel"""
 		if ch is None:
@@ -151,6 +153,7 @@ class Fun(commands.Cog):
 		Utils.saveConfig(ctx)
 
 	@score.command()
+	@Checks.isScoreEnabled()
 	async def unignore(self, ctx, ch: discord.channel = None):
 		if ch is None:
 			ch = ctx.message.channel
@@ -160,6 +163,15 @@ class Fun(commands.Cog):
 			Utils.saveConfig(ctx)
 		except:
 			print("could not remove channel from scoreIgnore")
+
+	@score.command(name="enable")
+	@Checks.is_admin()
+	async def scoreEnable(self,ctx):
+		if ctx.message.guild.id in self.bot.config["scoreEnabled"]:
+			await ctx.send("scoring is already enabled")
+		await self.bot.messageHandler.addGuildToDB(ctx.message.guild)
+		self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
+		Utils.saveConfig(ctx)
 
 	@commands.command()
 	async def llasID(self, ctx, id: int, lb="0"):

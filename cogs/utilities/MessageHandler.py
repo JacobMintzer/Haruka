@@ -11,7 +11,7 @@ import threading
 
 cache = 3
 spamCacheSize = 3
-maxPoints = 20
+maxPoints = 25
 
 
 class MessageHandler():
@@ -49,11 +49,11 @@ class MessageHandler():
 		self.roles = roles
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
 
-	async def getPB(self, user, idx=1):
+	async def getPB(self, user, guild, idx=1):
 		if not self.isEnabled:
 			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
-		async with aiosqlite.connect("Nijicord.db") as conn:
-			cursor = await conn.execute("SELECT ID,Name,Score FROM memberScores ORDER BY Score DESC")
+		async with aiosqlite.connect("memberScores.db") as conn:
+			cursor = await conn.execute('SELECT ID, Name, Score FROM "guild{0}" ORDER BY Score DESC'.format((str(guild.id))))
 			response = await cursor.fetchall()
 			result = pd.DataFrame(response)
 			result.index += 1
@@ -66,6 +66,11 @@ class MessageHandler():
 			result = result.tail(10)
 			result = result.drop(columns=["Id"])
 			return ("```fortran\nShowing results for page {}:\nRank".format(idx) + result.to_string()[4:] + "\nCurrent rank for {0}: {1} (page {2})```".format(user.name, rank + 1, (rank // 10) + 1))
+
+	async def addGuildToDB(self, guild):
+		async with aiosqlite.connect("memberScores.db") as conn:
+			cursor = await conn.execute('CREATE TABLE "guild{0}" (ID integer PRIMARY KEY, Score integer DEFAULT 0, Name text)'.format(str(guild.id)))
+			await conn.commit()
 
 	async def handleMessage(self, message, bot):
 		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
@@ -90,14 +95,11 @@ class MessageHandler():
 			print(e)
 			return
 		if not (message.channel.id in bot.config["scoreIgnore"]):
-			score = await self.score(message.author, message.content.startswith('$'))
+			score = await self.score(message.author, message.content.startswith('$'), message.guild)
+			if str(message.guild.id) in bot.config["antispam"].keys():
+				await self.antiSpam(message, score)
 			if not (score is None) and message.guild.id in self.config["rankEnabled"]:
 				await self.checkRanks(message, score)
-			if not(str(message.guild.id) in bot.config["antispam"].keys()):
-				return
-			if not(await self.antiSpam(message, score)):
-				# this means either the db connection isn't initiated yet, or the user is spamming
-				return
 			
 
 	async def checkRanks(self, message, score):
@@ -144,7 +146,6 @@ class MessageHandler():
 			await asyncio.sleep(5)
 
 	async def antiSpam(self, message, score):
-
 		if score == -1:
 			return True
 		if not (str(message.guild.id) in self.bot.config["antispam"].keys()):
@@ -188,10 +189,11 @@ class MessageHandler():
 
 	async def mute(self, member, reason):
 		role = discord.utils.find(
-			lambda x: x.name.lower() == "muted", member.guild.allRoles)
+			lambda x: x.name.lower() == "muted", member.guild.roles)
 		await member.add_roles(role)
-		log = self.bot.get_channel(self.bot.config["logCh"])
-		await log.send("{2}\n{0} was banned for {1}".format(member.mention, reason, self.bot.get_user(self.config["owner"]).mention))
+		antispamCh = self.bot.get_channel(self.bot.config["antispam"][str(member.guild.id)]["ch"])
+		await antispamCh.send("{2}{0} was muted for {1}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"]))
+		await member.send("You have been muted by my auto-moderation; a mod is currently reviewing your case.")
 
 	async def test(self, guild, auth):
 		rankUpMsg = self.config["msgs"]["sr"]
@@ -203,7 +205,7 @@ class MessageHandler():
 		if message.channel.id == 696402682168082453:
 			return
 		content = re.sub(r'<[^>]+>', '', message.content).lower()
-		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content)):
+		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content or "nakasukasumi")):
 			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
 			await message.add_reaction(rxn)
 			self.cooldown = True
@@ -234,19 +236,19 @@ class MessageHandler():
 		await asyncio.sleep(cdTime)
 		self.cooldown = False
 
-	async def score(self, author, isCommand):
-		async with aiosqlite.connect("Nijicord.db") as conn:
+	async def score(self, author, isCommand, guild):
+		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
 			if not author.id in self.MRU:
-				cursor = await conn.execute("SELECT Score,Name FROM memberScores WHERE ID=?", (author.id,))
+				cursor = await conn.execute('SELECT Score,Name FROM "guild{0}" WHERE ID=?'.format(str(guild.id)), (author.id,))
 				newScore = await cursor.fetchone()
 				await cursor.close()
 				if newScore == None:
-					cursor = await conn.execute("INSERT INTO memberScores (ID,Name) VALUES (?,?)", (author.id, str(author)[:-5]))
+					cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)[:-5]))
 				else:
 					if isCommand:
 						return newScore[0]
-					cursor = await conn.execute("UPDATE memberScores SET Score=?,Name=? WHERE ID=?", (newScore[0] + 1, str(author)[:-5], author.id))
+					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (newScore[0] + 1, str(author)[:-5], author.id))
 					score = newScore[0] + 1
 				self.MRU.insert(0, author.id)
 				if len(self.MRU) > cache:
