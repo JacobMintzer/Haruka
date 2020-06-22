@@ -19,6 +19,8 @@ async def is_admin(ctx):
 		return False
 
 # used for purging, since we want to selectively check if messages are by the user currently being targetted. TODO find better way to implement this
+
+
 def isTarget(msg):
 	global target
 	if msg.author.id in target:
@@ -221,7 +223,11 @@ class Administration(commands.Cog):
 		people = ""
 		async with ctx.message.channel.typing():
 			for guild in self.bot.guilds:
+
 				bans += "\n**{0}**:\n".format(guild.name)
+				if guild.id in self.bot.config["ignoreBL"]:
+					bans += "Guild does not take part in blacklist"
+					continue
 				for user in users:
 					person = self.bot.get_user(int(user))
 					if person is None:
@@ -236,7 +242,8 @@ class Administration(commands.Cog):
 								self.bot.config["log"][str(guild.id)])
 							await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person), str(ctx.message.author)))
 					except Exception as e:
-						bans += ("{2} not banned from {0} because of {1}".format(guild.name, e, person.display_name) + "\n")
+						bans += ("{2} not banned from {0} because of {1}".format(guild.name,
+                                                               e, person.display_name) + "\n")
 		try:
 			await ctx.send(bans)
 		except:
@@ -276,18 +283,18 @@ class Administration(commands.Cog):
 	@antispam.command()
 	async def enable(self, ctx, mention=""):
 		"""enables antispam, and sets reporting channel to be the channel it is posted in"""
-		msg=""
+		msg = ""
 		if mention.lower() == "everyone":
 			msg = "@everyone"
-		elif len(ctx.message.mentions)>0:
+		elif len(ctx.message.mentions) > 0:
 			for member in ctx.message.mentions:
-				msg+=member.mention
-		elif len(ctx.message.role_mentions)>0:
+				msg += member.mention
+		elif len(ctx.message.role_mentions) > 0:
 			for role in ctx.message.role_mentions:
 				print("role {0}".format(role.mention))
-				msg+=role.mention
-		if len(msg)>1:
-			msg+="\n"
+				msg += role.mention
+		if len(msg) > 1:
+			msg += "\n"
 		obj = {"ch": ctx.message.channel.id, "mention": msg}
 		self.bot.config["antispam"][str(ctx.message.guild.id)] = obj
 		saveConfig(ctx)
@@ -329,13 +336,6 @@ class Administration(commands.Cog):
 				await rxnMsg.delete()
 				target.remove(ctx.message.author.id)
 			return
-
-	@commands.command()
-	@Checks.is_me()
-	async def announce(self, ctx, members: commands.Greedy[discord.User], *, msg: str):
-		memberList = ""
-		for member in members:
-			await member.send(msg)
 
 	@commands.command()
 	@commands.check(is_admin)
