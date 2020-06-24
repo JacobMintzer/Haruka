@@ -113,8 +113,32 @@ class Fun(commands.Cog):
 			await self.ignore(ctx)
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
+		elif idx.lower().startswith("add"):
+			await self.rankAdd(ctx, idx)
 
-	@rank.command
+	@rank.command(name="add")
+	@Checks.is_admin()
+	async def rankAdd(self, ctx, idx):
+		"""Adds a role that will be assigned upon reaching certain ranks. You can change the role name later. ex: `$rank add 500 New Recruit`."""
+		if (idx.split(" ")[1].isdigit()):
+			score = int(idx.split(" ")[1])
+			if len(idx.split(" ")) > 2:
+				roleName = idx.split(" ", 2)[2]
+			else:
+				roleName = None
+		else:
+			await ctx.send("Please give a score value for the rank role and optionally a name. ex. `$rank add 500 New Recruit`. You can change the role name later.")
+			return
+		if roleName is None:
+			role = await ctx.guild.create_role()
+		else:
+			role = await ctx.guild.create_role(name=roleName)
+		await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
+		self.bot.config["roleRanks"][str(ctx.guild.id)].append(
+			{"score": score, "role": role.id})
+		self.bot.config["roleRanks"][str(ctx.guild.id)] = sorted(
+			self.bot.config["roleRanks"][str(ctx.guild.id)], key=lambda x: x["score"])
+		Utils.saveConfig(ctx)
 
 	@rank.command()
 	@Checks.hasBest()
@@ -166,11 +190,14 @@ class Fun(commands.Cog):
 
 	@score.command(name="enable")
 	@Checks.is_admin()
-	async def scoreEnable(self,ctx):
+	async def scoreEnable(self, ctx):
+		if not(str(ctx.guild.id) in self.bot.config["roleRanks"].keys()):
+			self.bot.config["roleRanks"][str(ctx.guild.id)] = []
 		if ctx.message.guild.id in self.bot.config["scoreEnabled"]:
 			await ctx.send("scoring is already enabled")
-		await self.bot.messageHandler.addGuildToDB(ctx.message.guild)
-		self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
+		else:
+			await self.bot.messageHandler.addGuildToDB(ctx.message.guild)
+			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
 		Utils.saveConfig(ctx)
 
 	@commands.command()
@@ -252,13 +279,10 @@ class Fun(commands.Cog):
 				card["id"], card["rarity"]["abbreviation"], card["idol"]["firstName"], card["idol"]["lastName"], card["title"], card["idolizedTitle"])
 		return cardList + "```"
 
-
-		
 	@commands.command(hidden=True)
 	async def source(self, ctx, url: str = ""):
 		"""Uses SauceNao to attempt to find the source of an image. Either a direct link to the image, or uploading the image through discord works"""
 		await self.sauce(ctx, url)
-
 
 	@commands.command()
 	async def sauce(self, ctx, url: str = ""):
@@ -283,7 +307,7 @@ class Fun(commands.Cog):
 			result = output.check_file(file_name=file)
 			if (os.path.exists(file)):
 				os.remove(file)
-			
+
 			if (len(result) < 1):
 				await ctx.send("no source found")
 				return

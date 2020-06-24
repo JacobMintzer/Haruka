@@ -98,40 +98,55 @@ class MessageHandler():
 			score = await self.score(message.author, message.content.startswith('$'), message.guild)
 			if str(message.guild.id) in bot.config["antispam"].keys():
 				await self.antiSpam(message, score)
-			if not (score is None) and message.guild.id in self.config["rankEnabled"]:
-				await self.checkRanks(message, score)
-			
+			if not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys():
+				if message.guild.id == bot.config["nijiCord"]:
+					await self.checkNijiRanks(message, score)
+				elif not(message.author.bot):
+					await self.checkRanks(message, score)
 
 	async def checkRanks(self, message, score):
+		roles = self.config["roleRanks"][str(message.guild.id)]
+		for role in roles:
+			if score > role["score"]:
+				foundRole=message.guild.get_role(role["role"])
+				if not(foundRole in message.author.roles):
+					await message.author.add_roles(foundRole)
+					await message.channel.send("{0} has been promoted to the role {1}".format(str(message.author), str(foundRole)))
+			else:
+				break
+		
+		
+
+
+	async def checkNijiRanks(self, message, score):
 		thresh = self.config["threshold"]
-		givenRole=""
+		givenRole = ""
 		if score == 69 or score == 6969:
 			await message.channel.send("nice")
-		if score>thresh["exec"]:
+		if score > thresh["exec"]:
 			if not(self.roles["exec"] in message.author.roles):
-				givenRole="exec"
-				old=self.roles["sr"]
-		elif score>thresh["sr"]:
+				givenRole = "exec"
+				old = self.roles["sr"]
+		elif score > thresh["sr"]:
 			if not(self.roles["sr"] in message.author.roles):
-				givenRole="sr"
-				old=self.roles["jr"]
-		elif score>thresh["jr"]:
+				givenRole = "sr"
+				old = self.roles["jr"]
+		elif score > thresh["jr"]:
 			if not(self.roles["jr"] in message.author.roles):
-				givenRole="jr"
-				old=self.roles["new"]
-		elif score>thresh["new"]:
+				givenRole = "jr"
+				old = self.roles["new"]
+		elif score > thresh["new"]:
 			if not(self.roles["new"] in message.author.roles):
-				givenRole="new"
-				old=self.roles["app"]
-		if givenRole=="":
+				givenRole = "new"
+				old = self.roles["app"]
+		if givenRole == "":
 			return
 		rankUpMsg = self.config["msgs"][givenRole]
-		newRole=self.roles[givenRole]
+		newRole = self.roles[givenRole]
 		hug = Utils.getRandEmoji(self.bot.emojis, "suteki")
 		await message.author.remove_roles(old)
 		await message.author.add_roles(newRole)
 		await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))
-
 
 	async def antiSpamSrv(self):
 		print("starting service")
@@ -191,7 +206,8 @@ class MessageHandler():
 		role = discord.utils.find(
 			lambda x: x.name.lower() == "muted", member.guild.roles)
 		await member.add_roles(role)
-		antispamCh = self.bot.get_channel(self.bot.config["antispam"][str(member.guild.id)]["ch"])
+		antispamCh = self.bot.get_channel(
+			self.bot.config["antispam"][str(member.guild.id)]["ch"])
 		await antispamCh.send("{2}{0} was muted for {1}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"]))
 		await member.send("You have been muted by my auto-moderation; a mod is currently reviewing your case.")
 
@@ -258,7 +274,6 @@ class MessageHandler():
 				return None
 			return score
 
-	
 	# april fools day replacement
 	""" async def pdpIfy(self,message):
 		if(message.author.bot):
