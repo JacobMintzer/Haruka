@@ -249,6 +249,10 @@ class Administration(commands.Cog):
 		except:
 			await ctx.send("message too long, check my console/my log channels individually")
 			print("{0} were {1}".format(people, bans))
+		emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
+		if emoji is None:
+			emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
+		await ctx.message.add_reaction(emoji)
 
 	@commands.command()
 	@Checks.is_admin()
@@ -264,9 +268,13 @@ class Administration(commands.Cog):
 				person = await self.bot.fetch_user(int(user))
 			print(person)
 			try:
-				await ctx.message.guild.ban(person)
+				await ctx.message.guild.ban(person, reason="Blacklisted by {0} on this server.".format())
 				if log is not None:
 					await log.send("{0} was blacklisted by Haruka on this server.".format(str(person)))
+				emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
+				if emoji is None:
+					emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
+				await ctx.message.add_reaction(emoji)
 			except:
 				await ctx.send("Could not ban user, please check to make sure I have the `ban user` permission.")
 

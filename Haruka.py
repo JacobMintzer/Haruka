@@ -81,7 +81,7 @@ async def on_ready():
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
-		guildList, totalUsers,len(guildList)))
+		guildList, totalUsers,len(bot.guilds)))
 
 
 @bot.event

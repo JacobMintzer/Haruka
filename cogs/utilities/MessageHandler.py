@@ -50,6 +50,7 @@ class MessageHandler():
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
 
 	async def getPB(self, user, guild, idx=1):
+		return "This is currently disabled, please wait warmly for me to fix this <3"
 		if not self.isEnabled:
 			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
 		async with aiosqlite.connect("memberScores.db") as conn:
@@ -253,6 +254,7 @@ class MessageHandler():
 		self.cooldown = False
 
 	async def score(self, author, isCommand, guild):
+		return
 		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
 			if not author.id in self.MRU:

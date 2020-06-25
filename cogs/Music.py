@@ -94,7 +94,7 @@ class Music(commands.Cog):
 		#player.start()
 		while True:
 			if self.message==-1: #stop command
-				await bot.change_presence(activity = discord.Game("Making lunch for Kanata!",type=1))
+				await bot.change_presence(activity = discord.Game("Making Kanata's bed!",type=1))
 				await self.voice.disconnect()
 				self.voice=None
 				break
