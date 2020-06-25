@@ -212,7 +212,6 @@ class Administration(commands.Cog):
 				await rxnMsg.delete()
 				target.remove(ctx.message.author.id)
 
-		return
 
 	@commands.command()
 	@Checks.is_niji()
@@ -268,7 +267,7 @@ class Administration(commands.Cog):
 				person = await self.bot.fetch_user(int(user))
 			print(person)
 			try:
-				await ctx.message.guild.ban(person, reason="Blacklisted by {0} on this server.".format())
+				await ctx.message.guild.ban(person, reason="Blacklisted by {0} on this server.".format(str(ctx.message.author)))
 				if log is not None:
 					await log.send("{0} was blacklisted by Haruka on this server.".format(str(person)))
 				emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")

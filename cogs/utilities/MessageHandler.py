@@ -8,6 +8,7 @@ import json
 import pandas as pd
 from cogs.utilities import Utils
 import threading
+import yaml
 
 cache = 3
 spamCacheSize = 3
@@ -48,9 +49,10 @@ class MessageHandler():
 			self.niji.roles, name="Idol Club Applicant")
 		self.roles = roles
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
+		with open('Resources.yaml', "r") as file:
+			self.bot.cfg = yaml.full_load(file)
 
 	async def getPB(self, user, guild, idx=1):
-		return "This is currently disabled, please wait warmly for me to fix this <3"
 		if not self.isEnabled:
 			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
 		async with aiosqlite.connect("memberScores.db") as conn:
@@ -74,8 +76,6 @@ class MessageHandler():
 			await conn.commit()
 
 	async def handleMessage(self, message, bot):
-		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
-			return
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
@@ -86,7 +86,7 @@ class MessageHandler():
 				await message.delete()
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
-				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
+				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds? If that doesn't work message `Junior Mints#2525` to get this resolved")
 				return
 			await bot.process_commands(message)
 		try:
@@ -109,15 +109,12 @@ class MessageHandler():
 		roles = self.config["roleRanks"][str(message.guild.id)]
 		for role in roles:
 			if score > role["score"]:
-				foundRole=message.guild.get_role(role["role"])
+				foundRole = message.guild.get_role(role["role"])
 				if not(foundRole in message.author.roles):
 					await message.author.add_roles(foundRole)
 					await message.channel.send("{0} has been promoted to the role {1}".format(str(message.author), str(foundRole)))
 			else:
 				break
-		
-		
-
 
 	async def checkNijiRanks(self, message, score):
 		thresh = self.config["threshold"]
@@ -254,7 +251,6 @@ class MessageHandler():
 		self.cooldown = False
 
 	async def score(self, author, isCommand, guild):
-		return
 		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
 			if not author.id in self.MRU:
