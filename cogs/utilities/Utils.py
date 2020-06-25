@@ -6,6 +6,7 @@ import time
 import datetime
 import pytz
 import json
+import yaml
 
 def getRandEmoji(emojis,query=""):
 	if query is "":
@@ -35,3 +36,5 @@ def saveConfig(ctx):
 	print("saving")
 	with open('Resources.json', 'w') as outfile:
 		json.dump(ctx.bot.config, outfile)
+	with open('Resources.yaml', 'w') as outfile:
+		yaml.dump(ctx.bot.config, outfile)

@@ -11,6 +11,7 @@ import random
 import os
 import io
 import json
+import yaml
 import datetime
 import pytz
 from cogs.utilities import MessageHandler, Utils, Checks
@@ -57,15 +58,6 @@ def is_admin_enabled():
 	return commands.check(predicate)
 
 
-@bot.check
-def check_enabled(ctx):
-	if ctx.message.guild is None:
-		return True
-	if ctx.message.guild.id in bot.config["enabled"]:
-		return True
-	return False
-
-
 @bot.event
 async def on_ready():
 	for cog in cogList:
@@ -81,7 +73,7 @@ async def on_ready():
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
-		guildList, totalUsers,len(bot.guilds)))
+		guildList, totalUsers, len(bot.guilds)))
 
 
 @bot.event
