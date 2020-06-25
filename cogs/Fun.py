@@ -1,10 +1,10 @@
 import asyncio
 import discord
 import requests
+import json
 import pprint
 import pandas as pd
 import os
-from saucenao import SauceNao
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
 
@@ -13,6 +13,8 @@ class Fun(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		self.cooldown = []
+		with open('sauce.txt', 'r') as file_object:
+			self.SNKey = file_object.read().strip()
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -104,17 +106,17 @@ class Fun(commands.Cog):
 	@Checks.isScoreEnabled()
 	async def rank(self, ctx, *, idx="1"):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
-		print(str(idx))
 		if str(idx).isdigit():
 			idx = int(idx)
 			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author, ctx.message.guild, idx))
-		elif idx.lower() == 'ignore':
-			print("ignoring")
-			await self.ignore(ctx)
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
-		elif idx.lower().startswith("add"):
-			await self.rankAdd(ctx, idx)
+		elif(ctx.author.permissions_in(ctx.message.channel).administrator):
+			if idx.lower() == 'ignore':
+				print("ignoring")
+				await self.ignore(ctx)
+			elif idx.lower().startswith("add"):
+				await self.rankAdd(ctx, idx)
 
 	@rank.command(name="add")
 	@Checks.is_admin()
@@ -287,54 +289,37 @@ class Fun(commands.Cog):
 	@commands.command()
 	async def sauce(self, ctx, url: str = ""):
 		"""Uses SauceNao to attempt to find the source of an image. Either a direct link to the image, or uploading the image through discord works"""
-		async with ctx.typing():
-			try:
-				if (len(ctx.message.attachments) > 0):
-					url = ctx.message.attachments[0].url
-				file = "image." + url.split('.')[-1]
-				if (os.path.exists(file)):
-					os.remove(file)
-				request = requests.get(url, allow_redirects=True)
-				print(file)
-				open(file, 'wb').write(request.content)
-			except Exception:
-				await ctx.send("error downloading file")
-				if (os.path.exists(file)):
-					os.remove(file)
-				return
-			foundSauce = ""
-			output = SauceNao(directory='./', api_key=self.bot.config["sauce"])
-			result = output.check_file(file_name=file)
-			if (os.path.exists(file)):
-				os.remove(file)
+		try:
+			if (len(ctx.message.attachments) > 0):
+				url = ctx.message.attachments[0].url
+			request = requests.get(url, allow_redirects=True)
+			file = "image." + url.split('.')[-1]
+			open(file, 'wb').write(request.content)
+		except Exception as e:
+			print(e)
+			await ctx.send("error downloading file")
+			return
+		endpoint = 'http://saucenao.com/search.php?output_type=2&api_key={0}&db=999&numres=10'.format(
+			self.SNKey)
+		files = {'file': ('image.png', open(file, 'rb'))}
+		response = requests.post(endpoint, files=files)
+		if response.status_code != 200:
+			print("status code is {0}".format(response.status_code))
+		else:
+			print("all good")
+		output = json.loads(response.content.decode("utf-8"))
+		result = output["results"]
 
-			if (len(result) < 1):
-				await ctx.send("no source found")
-				return
-			for source in result:
-				if (float(source["header"]["similarity"]) < 90):
-					break
-				if "Pixiv ID" in source["data"]["content"][0]:
-					await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/" + source["data"]["content"][0].split("Pixiv ID: ")[1].split("\n")[0])
-					return
-				elif "Source: Pixiv" in source["data"]["content"][0]:
-					stuff = source["data"]["content"][0].split("\n")[0]
-					id = stuff.split("Source: Pixiv #")[1]
-					await ctx.send("I believe the source is:\nhttps://www.pixiv.net/en/artworks/" + id)
-					return
-				elif "dA ID" in source["data"]["content"][0]:
-					foundSauce = ("I believe the source is:\nhttps://deviantart.com/view/" +
-					              source["data"]["content"][0].split("dA ID: ")[1].split("\n")[0])
-				elif "Seiga ID:" in source["data"]["content"][0]:
-					foundSauce = ("I believe the source is:\nhttps://seiga.nicovideo.jp/seiga/im" +
-					              source["data"]["content"][0].split("Seiga ID: ")[1].split("\n")[0])
-			if (foundSauce != ""):
-				await ctx.send(foundSauce)
-				return
-			if len(result[0]["data"]["ext_urls"]) > 0:
-				await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
-				return
-			await ctx.send("sorry, I'm not sure what the source for this is.")
+		if (len(result) < 1):
+			await ctx.send("no source found")
+			return
+		if "source" in result[0]["data"].keys() and result[0]["data"]["source"] != "":
+			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["source"]))
+		elif(len(result[0]["data"]["ext_urls"]) == 1):
+			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["ext_urls"][0]))
+		elif len(result[0]["data"]["ext_urls"]) > 0:
+			await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
+		os.remove(file)
 
 
 def setup(bot):
