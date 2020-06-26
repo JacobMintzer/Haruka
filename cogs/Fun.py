@@ -115,13 +115,16 @@ class Fun(commands.Cog):
 			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author, ctx.message.guild, idx))
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
-		elif(ctx.author.permissions_in(ctx.message.channel).administrator):
-			
-			if idx.lower() == 'ignore':
-				print("ignoring")
+		elif idx.lower() == 'ignore':
+			if(ctx.author.permissions_in(ctx.message.channel).administrator):
 				await self.ignore(ctx)
-			elif idx.lower().startswith("add"):
+			else:
+				await ctx.send("This command is only available to an Administrator.")
+		elif idx.lower().startswith("add"):
+			if(ctx.author.permissions_in(ctx.message.channel).administrator):
 				await self.rankAdd(ctx, idx)
+			else:
+				await ctx.send("This command is only available to an Administrator.")
 
 
 	@rank.command(name="add")
