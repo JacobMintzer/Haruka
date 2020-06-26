@@ -94,7 +94,6 @@ class MessageHandler():
 			return
 		if not (message.channel.id in bot.config["scoreIgnore"]):
 			if (message.guild.id == bot.config["nijiCord"] or not(message.author.bot)):
-				print("not niji or a bot")
 				score = await self.score(message.author, message.content.startswith('$'), message.guild)
 				if str(message.guild.id) in bot.config["antispam"].keys():
 					await self.antiSpam(message, score)
@@ -107,7 +106,7 @@ class MessageHandler():
 	async def checkRanks(self, message, score):
 		roles = self.config["roleRanks"][str(message.guild.id)]
 		for role in roles:
-			if score > role["score"]:
+			if score >= role["score"]:
 				foundRole = message.guild.get_role(role["role"])
 				if not(foundRole in message.author.roles):
 					await message.author.add_roles(foundRole)
@@ -120,19 +119,19 @@ class MessageHandler():
 		givenRole = ""
 		if score == 69 or score == 6969:
 			await message.channel.send("nice")
-		if score > thresh["exec"]:
+		if score >= thresh["exec"]:
 			if not(self.roles["exec"] in message.author.roles):
 				givenRole = "exec"
 				old = self.roles["sr"]
-		elif score > thresh["sr"]:
+		elif score >= thresh["sr"]:
 			if not(self.roles["sr"] in message.author.roles):
 				givenRole = "sr"
 				old = self.roles["jr"]
-		elif score > thresh["jr"]:
+		elif score >= thresh["jr"]:
 			if not(self.roles["jr"] in message.author.roles):
 				givenRole = "jr"
 				old = self.roles["new"]
-		elif score > thresh["new"]:
+		elif score >= thresh["new"]:
 			if not(self.roles["new"] in message.author.roles):
 				givenRole = "new"
 				old = self.roles["app"]
