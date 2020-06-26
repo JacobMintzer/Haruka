@@ -69,7 +69,7 @@ class MessageHandler():
 
 	async def addGuildToDB(self, guild):
 		async with aiosqlite.connect("memberScores.db") as conn:
-			cursor = await conn.execute('CREATE TABLE "guild{0}" (ID integer PRIMARY KEY, Score integer DEFAULT 0, Name text)'.format(str(guild.id)))
+			await conn.execute('CREATE TABLE "guild{0}" (ID integer PRIMARY KEY, Score integer DEFAULT 0, Name text)'.format(str(guild.id)))
 			await conn.commit()
 
 	async def handleMessage(self, message, bot):
@@ -93,14 +93,16 @@ class MessageHandler():
 			print(e)
 			return
 		if not (message.channel.id in bot.config["scoreIgnore"]):
-			score = await self.score(message.author, message.content.startswith('$'), message.guild)
-			if str(message.guild.id) in bot.config["antispam"].keys():
-				await self.antiSpam(message, score)
-			if not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys():
-				if message.guild.id == bot.config["nijiCord"]:
-					await self.checkNijiRanks(message, score)
-				elif not(message.author.bot):
-					await self.checkRanks(message, score)
+			if (message.guild.id == bot.config["nijiCord"] or not(message.author.bot)):
+				print("not niji or a bot")
+				score = await self.score(message.author, message.content.startswith('$'), message.guild)
+				if str(message.guild.id) in bot.config["antispam"].keys():
+					await self.antiSpam(message, score)
+				if not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys():
+					if message.guild.id == bot.config["nijiCord"]:
+						await self.checkNijiRanks(message, score)
+					elif not(message.author.bot):
+						await self.checkRanks(message, score)
 
 	async def checkRanks(self, message, score):
 		roles = self.config["roleRanks"][str(message.guild.id)]
