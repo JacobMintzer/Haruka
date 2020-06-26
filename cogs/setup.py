@@ -1,6 +1,5 @@
 import asyncio
 import discord
-import json
 from discord.ext import commands
 from .utilities import Utils, Checks
 
@@ -9,6 +8,7 @@ class Setup(commands.Cog):
 
 	def __init__(self, bot):
 		self.bot = bot
+
 	@commands.command()
 	async def setup(self, ctx):
 		"""Gives information on helpful commands to get you started with Haruka"""

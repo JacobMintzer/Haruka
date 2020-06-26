@@ -3,7 +3,6 @@ import discord
 import time
 import datetime
 import pytz
-import json
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
 
@@ -40,8 +39,7 @@ class GuildFunctions(commands.Cog):
 				self.bot.config["welcomeCh"][str(
 					ctx.message.guild.id)] = ctx.message.channel.id
 				self.bot.config["welcomeMsg"][str(ctx.message.guild.id)] = msg
-			with open('Resources.json', 'w') as outfile:
-				json.dump(self.bot.config, outfile)
+			Utils.saveConfig(ctx)
 			emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
 			if emoji is None:
 				emoji = Utils.getRandEmoji(self.bot.emojis, "yay")

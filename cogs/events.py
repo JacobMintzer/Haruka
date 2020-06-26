@@ -1,6 +1,5 @@
 import asyncio
 import discord
-import json
 from discord.ext import commands
 from .utilities import Utils, Checks
 
@@ -11,10 +10,8 @@ class Events(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_guild_join(self, guild):
-		print("joined guild {0}".format(str(guild)))
-		self.bot.config["enabled"].append(guild.id)
-		with open('Resources.json', 'w') as outfile:
-			json.dump(self.bot.config, outfile)
+		print("I joined the guild: {0}".format(str(guild)))
+		
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):

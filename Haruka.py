@@ -10,7 +10,7 @@ import re
 import random
 import os
 import io
-import json
+import yaml
 import datetime
 import pytz
 from cogs.utilities import MessageHandler, Utils, Checks
@@ -29,8 +29,8 @@ bot = commands.Bot(command_prefix=[
 
 cogList = ['cogs.Music', 'cogs.Administration', 'cogs.Fun',
            'cogs.GuildFunctions', 'cogs.events', 'cogs.setup']
-with open('Resources.json', 'r') as file_object:
-	bot.config = json.load(file_object)
+with open('Resources.yaml', "r") as file:
+	bot.config = yaml.full_load(file)
 bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
 
 
@@ -51,21 +51,6 @@ def is_me():
 	return commands.check(predicate)
 
 
-def is_admin_enabled():
-	def predicate(ctx):
-		return ctx.message.guild.id in ctx.bot.config["modEnabled"]
-	return commands.check(predicate)
-
-
-@bot.check
-def check_enabled(ctx):
-	if ctx.message.guild is None:
-		return True
-	if ctx.message.guild.id in bot.config["enabled"]:
-		return True
-	return False
-
-
 @bot.event
 async def on_ready():
 	for cog in cogList:
@@ -80,7 +65,7 @@ async def on_ready():
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
-		guildList, totalUsers,len(bot.guilds)))
+		guildList, totalUsers, len(bot.guilds)))
 
 
 @bot.event
@@ -152,8 +137,8 @@ async def softReset(ctx, *, selectedCogs=None):
 			print("cannot unload cog {0}".format(cog))
 	print("cogs unloaded, reloading everything now")
 
-	with open('Resources.json', 'r') as file_object:
-		bot.config = json.load(file_object)
+	with open('Resources.yaml', "r") as file:
+		bot.config = yaml.full_load(file)
 	if msg:
 		importlib.reload(MessageHandler)
 		bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
