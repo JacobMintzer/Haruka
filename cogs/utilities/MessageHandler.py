@@ -4,7 +4,6 @@ import os
 import time
 import aiosqlite
 import asyncio
-import json
 import pandas as pd
 from cogs.utilities import Utils
 import threading
@@ -247,7 +246,6 @@ class MessageHandler():
 		self.cooldown = False
 
 	async def score(self, author, isCommand, guild):
-		return
 		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
 			if not author.id in self.MRU:
