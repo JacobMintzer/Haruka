@@ -4,7 +4,6 @@ import os
 import time
 import aiosqlite
 import asyncio
-import json
 import pandas as pd
 from cogs.utilities import Utils
 import threading
@@ -49,8 +48,6 @@ class MessageHandler():
 			self.niji.roles, name="Idol Club Applicant")
 		self.roles = roles
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
-		with open('Resources.yaml', "r") as file:
-			self.bot.cfg = yaml.full_load(file)
 
 	async def getPB(self, user, guild, idx=1):
 		if not self.isEnabled:
@@ -147,7 +144,6 @@ class MessageHandler():
 		await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))
 
 	async def antiSpamSrv(self):
-		print("starting service")
 		while True:
 			keys = list(self.antiSpamScores)
 			for user in keys:
@@ -209,16 +205,12 @@ class MessageHandler():
 		await antispamCh.send("{2}{0} was muted for {1}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"]))
 		await member.send("You have been muted by my auto-moderation; a mod is currently reviewing your case.")
 
-	async def test(self, guild, auth):
-		rankUpMsg = self.config["msgs"]["sr"]
-		hug = self.anataYay
-		return rankUpMsg.format(auth.mention, str(hug))
 
 	async def meme(self, message):
 		cdTime = 90
 		if message.channel.id == 696402682168082453:
 			return
-		content = re.sub(r'<[^>]+>', '', message.content).lower()
+		content = re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>', '', message.content).lower()
 		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content or "nakasukasumi")):
 			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
 			await message.add_reaction(rxn)
@@ -272,53 +264,4 @@ class MessageHandler():
 				return None
 			return score
 
-	# april fools day replacement
-	""" async def pdpIfy(self,message):
-		if(message.author.bot):
-			return False
-		if (message.content[0]=='|'):
-			return False
-		if (message.content[0]=="$"):
-			return False
-		content=message.content
-		content=re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',content)
-		testContent=content.lower().replace("again","")
-		testContent=testContent.replace("wait","")
-		testContent=testContent.replace("senpai","")
-		if bool([ele for ele in self.girls if(ele in testContent)]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
-			msg=content
-			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('nijigaku'),re.IGNORECASE)
-			msg=regex.sub('The PDP School',msg)
-			regex=re.compile(re.escape('niji'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('ayumu'),re.IGNORECASE)
-			msg=regex.sub('Honoka 3',msg)
-			regex=re.compile(re.escape('karin'),re.IGNORECASE)
-			msg=regex.sub('Kanan with tiddy moles',msg)
-			regex=re.compile(re.escape('kasumin'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('kasumi'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('setsuna'),re.IGNORECASE)
-			msg=regex.sub('The self-insert weeb idol',msg)
-			regex=re.compile(re.escape('shizuku'),re.IGNORECASE)
-			msg=regex.sub('Volleyball target practice',msg)
-			regex=re.compile(re.escape('kanata'),re.IGNORECASE)
-			msg=regex.sub('zzzzzzzzzzzzzzz',msg)
-			regex=re.compile(re.escape('emma'),re.IGNORECASE)
-			msg=regex.sub('Emma, consumer of smaller idols',msg)
-			regex=re.compile(re.escape('rina'),re.IGNORECASE)
-			msg=regex.sub('Overlord Board-sama and her loyal flesh-slave',msg)
-			regex=re.compile(re.escape('ai'),re.IGNORECASE)
-			msg=regex.sub('The safest gyaru design of all time',msg)
-			regex=re.compile(re.escape('haruka'),re.IGNORECASE)
-			msg=regex.sub('Boneless Ruby',msg)
-			regex=re.compile(re.escape('anata'),re.IGNORECASE)
-			msg=regex.sub('Me, but if i were cuter and always talking to other cute girls',msg)
-			await message.channel.send('{1} You mean `{0}`'.format(msg,message.author.mention))
-			return True
-		else:
-			return False
-	 """
+	

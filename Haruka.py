@@ -10,7 +10,6 @@ import re
 import random
 import os
 import io
-import json
 import yaml
 import datetime
 import pytz
@@ -30,8 +29,8 @@ bot = commands.Bot(command_prefix=[
 
 cogList = ['cogs.Music', 'cogs.Administration', 'cogs.Fun',
            'cogs.GuildFunctions', 'cogs.events', 'cogs.setup']
-with open('Resources.json', 'r') as file_object:
-	bot.config = json.load(file_object)
+with open('Resources.yaml', "r") as file:
+	bot.config = yaml.full_load(file)
 bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
 
 
@@ -49,12 +48,6 @@ async def is_admin(ctx):
 def is_me():
 	def predicate(ctx):
 		return ctx.message.author.id == ctx.bot.config["owner"]
-	return commands.check(predicate)
-
-
-def is_admin_enabled():
-	def predicate(ctx):
-		return ctx.message.guild.id in ctx.bot.config["modEnabled"]
 	return commands.check(predicate)
 
 
@@ -145,8 +138,8 @@ async def softReset(ctx, *, selectedCogs=None):
 			print("cannot unload cog {0}".format(cog))
 	print("cogs unloaded, reloading everything now")
 
-	with open('Resources.json', 'r') as file_object:
-		bot.config = json.load(file_object)
+	with open('Resources.yaml', "r") as file:
+		bot.config = yaml.full_load(file)
 	if msg:
 		importlib.reload(MessageHandler)
 		bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)

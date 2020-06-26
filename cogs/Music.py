@@ -11,7 +11,6 @@ import sys
 import mutagen
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
-import json
 import pandas as pd
 from .utilities import Utils, Checks
 
@@ -36,7 +35,7 @@ class Music(commands.Cog):
 		self.current = "nothing"
 		self.message = 0
 		self.requests = []
-		self.config = json.load(open('Resources.json'))
+		self.config = self.bot.config
 		self.voice = None
 
 	async def kill(self):

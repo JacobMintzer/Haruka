@@ -6,12 +6,11 @@ import os
 import io
 import pytz
 import datetime
-import json
 
 
-async def is_admin(ctx):
+async def score_enabled(ctx):
 	try:
-		if ctx.author.permissions_in(ctx.message.channel).administrator:
+		if ctx.guild.id in ctx.bot.config["scoreEnabled"]:
 			return True
 		return False
 	except Exception as e:
@@ -40,10 +39,6 @@ def adminRxn(rxn, user):
 		return False
 
 
-def saveConfig(ctx):
-	print("saving")
-	with open('Resources.json', 'w') as outfile:
-		json.dump(ctx.bot.config, outfile)
 
 
 class Administration(commands.Cog):
@@ -61,7 +56,7 @@ class Administration(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
-		if not(member.guild.id in self.bot.config["logEnabled"]):
+		if not(str(member.guild.id) in self.bot.config["log"].keys()):
 			return
 		log = self.bot.get_channel(
 			self.bot.config["log"][str(member.guild.id)])
@@ -71,7 +66,7 @@ class Administration(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_remove(self, member):
-		if not(member.guild.id in self.bot.config["logEnabled"]):
+		if not(str(member.guild.id) in self.bot.config["log"].keys()):
 			return
 		log = self.bot.get_channel(
 			self.bot.config["log"][str(member.guild.id)])
@@ -85,7 +80,7 @@ class Administration(commands.Cog):
 			return
 		if message.author.bot:
 			return
-		if not(message.guild.id in self.bot.config["logEnabled"]):
+		if not(str(message.author.guild.id) in self.bot.config["log"].keys()):
 			return
 		att = None
 		try:
@@ -130,7 +125,7 @@ class Administration(commands.Cog):
 			return
 		if message.author.bot:
 			return
-		if not(message.guild.id in self.bot.config["logEnabled"]):
+		if not(str(message.author.guild.id) in self.bot.config["log"].keys()):
 			return
 		if original.clean_content == message.clean_content:
 			return
@@ -153,27 +148,24 @@ class Administration(commands.Cog):
 		await log.send(embed=embd)
 
 	@commands.command()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def log(self, ctx, msg=""):
 		"""ADMIN ONLY! Use this command in your logs channel to enable logging. To disable logging type $log disable"""
 		async with ctx.message.channel.typing():
 			if msg.lower() == "disable":
-				if ctx.message.guild.id in self.bot.config["logEnabled"]:
-					self.bot.config["logEnabled"].remove(ctx.message.guild.id)
+				if str(ctx.message.author.guild.id) in self.bot.config["log"].keys():
 					del self.bot.config["log"][str(ctx.message.guild.id)]
 			else:
-				if not (ctx.message.guild.id in self.bot.config["logEnabled"]):
-					self.bot.config["logEnabled"].append(ctx.message.guild.id)
 				self.bot.config["log"][str(
 					ctx.message.guild.id)] = ctx.message.channel.id
 			emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
 			if emoji is None:
 				emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
 			await ctx.message.add_reaction(emoji)
-			saveConfig(ctx)
+			Utils.saveConfig(ctx)
 
 	@commands.command()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def autorole(self, ctx, *, role):
 		"""ADMIN ONLY! Use this command to set up an autorole for the server. ex. '$autorole member'. To clear type '$autorole clear'. Make sure the role is lower than Haruka's role."""
 		if role.lower() == "clear":
@@ -188,10 +180,10 @@ class Administration(commands.Cog):
 				self.bot.config["autorole"][str(
 					ctx.message.guild.id)] = autorole.id
 				await ctx.send("Autorole set to {0}. To remove this autorole, type `$autorole clear`".format(str(autorole)))
-		saveConfig(ctx)
+		Utils.saveConfig(ctx)
 
 	@commands.command()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def purge(self, ctx, *, msgs: int = 10):
 		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
 		global target
@@ -215,7 +207,7 @@ class Administration(commands.Cog):
 
 	@commands.command()
 	@Checks.is_niji()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def blacklistprop(self, ctx, *users):
 		"""NIJICORD ADMIN ONLY! This blacklists a user from all the servers Haruka is on. This is only used in exceedingly rare situations like gore-spammers."""
 		bans = ""
@@ -236,7 +228,7 @@ class Administration(commands.Cog):
 						await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord;
 						this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
 						bans += ("*{0}* was banned".format(person.display_name) + "\n")
-						if ctx.message.guild.id in self.bot.config["logEnabled"]:
+						if str(guild.id) in self.bot.config["log"].keys():
 							log = self.bot.get_channel(
 								self.bot.config["log"][str(guild.id)])
 							await log.send("{0} was banned through Haruka's auto-blacklist by {1} on Nijicord".format(str(person), str(ctx.message.author)))
@@ -258,7 +250,7 @@ class Administration(commands.Cog):
 	async def blacklist(self, ctx, *users):
 		"""This blacklists a user joining this server even if they aren't in the server currently."""
 		log = None
-		if ctx.message.guild.id in self.bot.config["logEnabled"]:
+		if str(ctx.message.author.guild.id) in self.bot.config["log"].keys():
 			log = self.bot.get_channel(
 				self.bot.config["log"][str(ctx.message.guild.id)])
 		for user in users:
@@ -279,7 +271,8 @@ class Administration(commands.Cog):
 
 	@commands.group()
 	@Checks.is_me()
-	@commands.check(is_admin)
+	@Checks.is_admin()
+	@commands.check(score_enabled)
 	async def antispam(self, ctx):
 		if ctx.invoked_subcommand is None:
 			await ctx.send("""For enabling antispam be sure to make a role named 'Muted', and run `$antispam enable 
@@ -304,17 +297,17 @@ class Administration(commands.Cog):
 			msg += "\n"
 		obj = {"ch": ctx.message.channel.id, "mention": msg}
 		self.bot.config["antispam"][str(ctx.message.guild.id)] = obj
-		saveConfig(ctx)
+		Utils.saveConfig(ctx)
 
 	@antispam.command()
 	async def ignore(self, ctx):
 		if not(ctx.message.channel.id in self.bot.config["antispamIgnore"]):
 			self.bot.config["antispamIgnore"].append(ctx.message.channel.id)
 			print("added")
-			saveConfig(ctx)
+			Utils.saveConfig(ctx)
 
 	@commands.command()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def ban(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
 		ex. '$ban 613501680469803045'"""
@@ -345,7 +338,7 @@ class Administration(commands.Cog):
 			return
 
 	@commands.command()
-	@commands.check(is_admin)
+	@Checks.is_admin()
 	async def prune(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Removes all messages by a given user"""
 		global target
