@@ -61,6 +61,7 @@ class Fun(commands.Cog):
 			if not(ctx.message.channel.id in self.bot.config["reDisabled"]):
 				self.bot.config["reDisabled"].append(ctx.message.channel.id)
 		Utils.saveConfig(ctx)
+		await Utils.yay(ctx)
 
 	@re.command()
 	async def enable(self, ctx, msg=""):
@@ -73,6 +74,7 @@ class Fun(commands.Cog):
 			if (ctx.message.channel.id in self.bot.config["reDisabled"]):
 				self.bot.config["reDisabled"].remove(ctx.message.channel.id)
 		Utils.saveConfig(ctx)
+		await Utils.yay(ctx)
 
 	@re.command()
 	async def slowmode(self, ctx, mode=""):
@@ -90,7 +92,9 @@ class Fun(commands.Cog):
 				self.bot.config["reSlow"].remove(ctx.message.guild.id)
 		else:
 			await ctx.send("please say '$re slowmode' to toggle $re cooldown, or '$re slowmode on' or '$re slowmode off' to turn it on or off respectively.")
+			return
 		Utils.saveConfig(ctx)
+		await Utils.yay(ctx)
 
 	@commands.command()
 	async def e(self, ctx, emote=""):
@@ -112,11 +116,13 @@ class Fun(commands.Cog):
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
 		elif(ctx.author.permissions_in(ctx.message.channel).administrator):
+			
 			if idx.lower() == 'ignore':
 				print("ignoring")
 				await self.ignore(ctx)
 			elif idx.lower().startswith("add"):
 				await self.rankAdd(ctx, idx)
+
 
 	@rank.command(name="add")
 	@Checks.is_admin()
@@ -133,9 +139,14 @@ class Fun(commands.Cog):
 			return
 		if roleName is None:
 			role = await ctx.guild.create_role()
+			await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
 		else:
-			role = await ctx.guild.create_role(name=roleName)
-		await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
+			role = discord.utils.find(lambda x: x.name == roleName, ctx.guild.roles)
+			if role is None:
+				role = await ctx.guild.create_role(name=roleName)
+				await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
+			else:
+				await ctx.send("Found role {0}; it will be assigned upon reaching a score of {1}.".format(role.name, score))
 		self.bot.config["roleRanks"][str(ctx.guild.id)].append(
 			{"score": score, "role": role.id})
 		self.bot.config["roleRanks"][str(ctx.guild.id)] = sorted(
@@ -174,6 +185,7 @@ class Fun(commands.Cog):
 		try:
 			await ctx.send("ignoring {ch.mention}")
 		except:
+			await Utils.yay(ctx)
 			pass
 		self.bot.config["scoreIgnore"].append(ch.id)
 		Utils.saveConfig(ctx)
@@ -183,12 +195,17 @@ class Fun(commands.Cog):
 	async def unignore(self, ctx, ch: discord.channel = None):
 		if ch is None:
 			ch = ctx.message.channel
-		await ctx.send("No longer ignoring {ch.mention}")
+		try:
+			await ctx.send("No longer ignoring {ch.mention}")
+		except:
+			await Utils.yay(ctx)
+			pass
 		try:
 			self.bot.config["scoreIgnore"].remove(ch.id)
 			Utils.saveConfig(ctx)
 		except:
 			print("could not remove channel from scoreIgnore")
+		
 
 	@score.command(name="enable")
 	@Checks.is_admin()
@@ -198,8 +215,12 @@ class Fun(commands.Cog):
 		if ctx.message.guild.id in self.bot.config["scoreEnabled"]:
 			await ctx.send("scoring is already enabled")
 		else:
-			await self.bot.messageHandler.addGuildToDB(ctx.message.guild)
+			try:
+				await self.bot.messageHandler.addGuildToDB(ctx.message.guild)
+			except:
+				pass
 			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
+			await Utils.yay(ctx)
 		Utils.saveConfig(ctx)
 
 	@commands.command()
