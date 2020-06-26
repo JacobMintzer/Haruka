@@ -73,7 +73,6 @@ async def on_ready():
 	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
 	await bot.messageHandler.initRoles(bot)
 	guild = bot.get_guild(bot.config["nijiCord"])
-	bot.allRoles = guild.roles
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
 	totalUsers = 0
@@ -169,8 +168,7 @@ async def softReset(ctx, *, selectedCogs=None):
 			await bot.messageHandler.initRoles(bot)
 		except Exception as e:
 			await ctx.send("WARNING: MessageHandler was not successfully reloaded for reason {0}".format(str(e)))
-	guild = bot.get_guild(bot.config["nijiCord"])
-	bot.allRoles = guild.roles
+	guild = bot.get_guild(bot.config["nijiCord"])	
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
 	totalUsers = 0

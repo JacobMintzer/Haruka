@@ -33,21 +33,22 @@ class MessageHandler():
 
 	async def initRoles(self, bot):
 		self.isEnabled = True
-		self.niji = discord.utils.get(bot.guilds, id=self.config["nijiCord"])
-		self.anataYay = discord.utils.get(self.niji.emojis, name="AnataYay")
-		roles = {}
-		roles["new"] = discord.utils.get(
-			self.niji.roles, name="New Club Member")
-		roles["jr"] = discord.utils.get(
-			self.niji.roles, name="Junior Club Member")
-		roles["sr"] = discord.utils.get(
-			self.niji.roles, name="Senior Club Member")
-		roles["exec"] = discord.utils.get(
-			self.niji.roles, name="Executive Club Member")
-		roles["app"] = discord.utils.get(
-			self.niji.roles, name="Idol Club Applicant")
-		self.roles = roles
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
+		self.niji = discord.utils.get(bot.guilds, id=self.config["nijiCord"])
+		# this prevents failure when not in nijicord, such as my test environment
+		if self.niji in bot.guilds:
+			roles = {}
+			roles["new"] = discord.utils.get(
+				self.niji.roles, name="New Club Member")
+			roles["jr"] = discord.utils.get(
+				self.niji.roles, name="Junior Club Member")
+			roles["sr"] = discord.utils.get(
+				self.niji.roles, name="Senior Club Member")
+			roles["exec"] = discord.utils.get(
+				self.niji.roles, name="Executive Club Member")
+			roles["app"] = discord.utils.get(
+				self.niji.roles, name="Idol Club Applicant")
+			self.roles = roles
 
 	async def getPB(self, user, guild, idx=1):
 		return "This is currently disabled, please wait warmly for me to fix this <3"
@@ -109,15 +110,12 @@ class MessageHandler():
 		roles = self.config["roleRanks"][str(message.guild.id)]
 		for role in roles:
 			if score > role["score"]:
-				foundRole=message.guild.get_role(role["role"])
+				foundRole = message.guild.get_role(role["role"])
 				if not(foundRole in message.author.roles):
 					await message.author.add_roles(foundRole)
 					await message.channel.send("{0} has been promoted to the role {1}".format(str(message.author), str(foundRole)))
 			else:
 				break
-		
-		
-
 
 	async def checkNijiRanks(self, message, score):
 		thresh = self.config["threshold"]
@@ -211,11 +209,6 @@ class MessageHandler():
 			self.bot.config["antispam"][str(member.guild.id)]["ch"])
 		await antispamCh.send("{2}{0} was muted for {1}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"]))
 		await member.send("You have been muted by my auto-moderation; a mod is currently reviewing your case.")
-
-	async def test(self, guild, auth):
-		rankUpMsg = self.config["msgs"]["sr"]
-		hug = self.anataYay
-		return rankUpMsg.format(auth.mention, str(hug))
 
 	async def meme(self, message):
 		cdTime = 90
