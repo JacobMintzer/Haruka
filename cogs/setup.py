@@ -59,6 +59,7 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 			self.bot.config["ignoreBL"].append(ctx.message.guild.id)
 			Utils.saveConfig(ctx)
 			await ctx.message.add_reaction(Utils.getRandEmoji(self.bot.emojis, "harukahug"))
+			
 
 	@Checks.is_admin()
 	@commands.command()
@@ -81,8 +82,8 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 			except Exception as e:
 				print("could not send message to user {0} because of {1}".format(
 					str(user), str(e)))
-		await ctx.message.delete()
 		await ctx.send(message)
+		await ctx.message.delete()
 
 
 def setup(bot):

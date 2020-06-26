@@ -158,10 +158,7 @@ class Administration(commands.Cog):
 			else:
 				self.bot.config["log"][str(
 					ctx.message.guild.id)] = ctx.message.channel.id
-			emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
-			if emoji is None:
-				emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
-			await ctx.message.add_reaction(emoji)
+			await Utils.yay(ctx)
 			Utils.saveConfig(ctx)
 
 	@commands.command()
@@ -171,6 +168,7 @@ class Administration(commands.Cog):
 		if role.lower() == "clear":
 			if str(ctx.message.guild.id) in self.bot.config["autorole"].keys():
 				del self.bot.config["autorole"][str(ctx.message.guild.id)]
+			await Utils.yay(ctx)
 		else:
 			autorole = discord.utils.find(
 				lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
@@ -268,6 +266,7 @@ class Administration(commands.Cog):
 				await ctx.message.add_reaction(emoji)
 			except:
 				await ctx.send("Could not ban user, please check to make sure I have the `ban user` permission.")
+		await Utils.yay(ctx)
 
 	@commands.group()
 	@Checks.is_me()
@@ -297,13 +296,14 @@ class Administration(commands.Cog):
 			msg += "\n"
 		obj = {"ch": ctx.message.channel.id, "mention": msg}
 		self.bot.config["antispam"][str(ctx.message.guild.id)] = obj
+		await Utils.yay(ctx)
 		Utils.saveConfig(ctx)
 
 	@antispam.command()
 	async def ignore(self, ctx):
 		if not(ctx.message.channel.id in self.bot.config["antispamIgnore"]):
 			self.bot.config["antispamIgnore"].append(ctx.message.channel.id)
-			print("added")
+			await Utils.yay(ctx)
 			Utils.saveConfig(ctx)
 
 	@commands.command()
@@ -330,6 +330,7 @@ class Administration(commands.Cog):
 					await person.ban(delete_message_days=7)
 				elif str(rxn.emoji) == "🔨":
 					await person.ban()
+					await Utils.yay(ctx)
 				else:
 					await ctx.send("cancelling the ban")
 			except asyncio.TimeoutError:
@@ -358,6 +359,10 @@ class Administration(commands.Cog):
 					for ch in ctx.message.guild.text_channels:
 						await ch.purge(check=isTarget)
 					target = None
+					try:
+						await ctx.send("prune complete")
+					except:
+						await Utils.yay(ctx)
 				elif str(rxn.emoji) == "🚫":
 					await ctx.send("cancelling prune")
 			except asyncio.TimeoutError:

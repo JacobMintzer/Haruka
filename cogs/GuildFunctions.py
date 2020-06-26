@@ -40,10 +40,7 @@ class GuildFunctions(commands.Cog):
 					ctx.message.guild.id)] = ctx.message.channel.id
 				self.bot.config["welcomeMsg"][str(ctx.message.guild.id)] = msg
 			Utils.saveConfig(ctx)
-			emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
-			if emoji is None:
-				emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
-			await ctx.message.add_reaction(emoji)
+			await Utils.yay(ctx)
 
 	@commands.command()
 	async def sinfo(self, ctx):
@@ -147,6 +144,7 @@ class GuildFunctions(commands.Cog):
 			return
 		if role.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			self.bot.config["asar"][str(ctx.message.guild.id)].remove(role.lower())
+			await Utils.yay(ctx)
 			Utils.saveConfig(ctx)
 		else:
 			await ctx.send("Role `{0}` not found in self assignable list.".format(role))
@@ -178,6 +176,7 @@ class GuildFunctions(commands.Cog):
 			await member.remove_roles(role)
 		else:
 			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+			return
 		rxn = Utils.getRandEmoji(ctx.guild.emojis, "hug")
 		if rxn is None:
 			rxn = "👍"

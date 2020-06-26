@@ -73,8 +73,6 @@ class MessageHandler():
 			await conn.commit()
 
 	async def handleMessage(self, message, bot):
-		if not((message.guild is None) or (message.guild.id in bot.config["enabled"])):
-			return
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
