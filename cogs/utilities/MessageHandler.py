@@ -50,7 +50,6 @@ class MessageHandler():
 			self.roles = roles
 
 	async def getPB(self, user, guild, idx=1):
-		return "This is currently disabled, please wait warmly for me to fix this <3"
 		if not self.isEnabled:
 			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
 		async with aiosqlite.connect("memberScores.db") as conn:
