@@ -97,11 +97,11 @@ class MessageHandler():
 				score = await self.score(message.author, message.content.startswith('$'), message.guild)
 				if str(message.guild.id) in bot.config["antispam"].keys():
 					await self.antiSpam(message, score)
-				if not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys():
-					if message.guild.id == bot.config["nijiCord"]:
-						await self.checkNijiRanks(message, score)
-					elif not(message.author.bot):
-						await self.checkRanks(message, score)
+					
+				if not (score is None) and message.guild.id == bot.config["nijiCord"]:
+					await self.checkNijiRanks(message, score)
+				elif not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys() and not(message.author.bot):
+					await self.checkRanks(message, score)
 
 	async def checkRanks(self, message, score):
 		roles = self.config["roleRanks"][str(message.guild.id)]
