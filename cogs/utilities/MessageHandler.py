@@ -24,9 +24,8 @@ class MessageHandler():
 		self.cooldown = False
 		with open("bad-words.txt") as f:
 			content = f.readlines()
-		self.badWords = [x.strip() for x in content]
-		self.badWords.remove("")
-		
+		self.badWords = [x.strip() for x in content if x.strip()]
+
 	def disconnect(self):
 		self.isEnabled = False
 		self.antispamLoop.cancel()
