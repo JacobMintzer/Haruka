@@ -292,6 +292,13 @@ class Administration(commands.Cog):
 			for role in ctx.message.role_mentions:
 				print("role {0}".format(role.mention))
 				msg += role.mention
+		elif len(mention)>5:
+			try:
+				role = ctx.guild.get_role(int(mention))
+				msg += role.mention
+			except Exception:
+				user = ctx.guild.get_user(int(mention))
+				msg += user.mention
 		if len(msg) > 1:
 			msg += "\n"
 		obj = {"ch": ctx.message.channel.id, "mention": msg}
