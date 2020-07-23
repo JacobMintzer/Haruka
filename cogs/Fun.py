@@ -5,16 +5,48 @@ import json
 import pprint
 import pandas as pd
 import os
+import yaml
+import sched
+import time
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
+from dateparser.search import search_dates
+from datetime import datetime as dt
+
 
 
 class Fun(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
+		self.scheduler = sched.scheduler(time.time, time.sleep)
 		self.cooldown = []
+		with open('Reminders.yaml', "r") as file:
+			self.events = yaml.full_load(file)
+			if self.events is None:
+				self.events = []
+		for event in self.events:
+			self.scheduleEvent(event)
 		with open('sauce.txt', 'r') as file_object:
 			self.SNKey = file_object.read().strip()
+		self.scheduler.run(blocking=False)
+
+	async def remind(self, event):
+		print("reminding")
+		await self.bot.get_user(event["user"]).send("You asked me to remind you ", event["message"])
+		self.events.remove(event)
+
+	async def shutdown(self, ctx):
+		self.exportEvents()
+
+	def exportEvents(self):
+		with open('Reminders.yaml', 'w') as outfile:
+			yaml.dump(self.events, outfile)
+
+	async def scheduleEvent(self, event):
+		self.scheduler.enterabs(event["time"], 0, remind, argument=(self, event))
+		print(self.scheduler.queue)
+		print(time.time)
+		self.scheduler.run(blocking=False)
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -126,7 +158,6 @@ class Fun(commands.Cog):
 			else:
 				await ctx.send("This command is only available to an Administrator.")
 
-
 	@rank.command(name="add")
 	@Checks.is_admin()
 	async def rankAdd(self, ctx, idx):
@@ -208,7 +239,6 @@ class Fun(commands.Cog):
 			Utils.saveConfig(ctx)
 		except:
 			print("could not remove channel from scoreIgnore")
-		
 
 	@score.command(name="enable")
 	@Checks.is_admin()
@@ -225,6 +255,26 @@ class Fun(commands.Cog):
 			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
 			await Utils.yay(ctx)
 		Utils.saveConfig(ctx)
+
+	@commands.group()
+	async def remindMe(self, ctx, *, content):
+		timeContent, time = (search_dates(
+			content, settings={'TIMEZONE': 'UTC'})[0])
+		message = content.split(timeContent)[1]
+		if time < dt.utcnow():
+			await ctx.send("you cannot specify a time in the past")
+			return
+		else:
+			await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message))
+		event = {
+			'user': ctx.message.author.id,
+			'time': time,
+			'message': message
+		}
+		self.events.append(event)
+		self.scheduleEvent(event)
+		"""if ctx.invoked_subcommand is None:
+			await ctx.send("Use `$remindme` to have haruka DM you when the time specified has occurred. Note that Haruka will use UTC unless a timezone is specified. ex: `$remindme at 6:45am to wake up Kanata` or `$remindme in 30 minutes to pick up groceries`.")"""
 
 	@commands.command()
 	async def llasID(self, ctx, id: int, lb="0"):
