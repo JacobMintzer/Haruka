@@ -6,19 +6,18 @@ import pprint
 import pandas as pd
 import os
 import yaml
-import sched
-import time
+import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
 from dateparser.search import search_dates
-from datetime import datetime as dt
-
+from datetime import datetime as dt, timezone
 
 
 class Fun(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
-		self.scheduler = sched.scheduler(time.time, time.sleep)
+		self.scheduler = AsyncIOScheduler(timezone=pytz.utc)
 		self.cooldown = []
 		with open('Reminders.yaml', "r") as file:
 			self.events = yaml.full_load(file)
@@ -28,11 +27,12 @@ class Fun(commands.Cog):
 			self.scheduleEvent(event)
 		with open('sauce.txt', 'r') as file_object:
 			self.SNKey = file_object.read().strip()
-		self.scheduler.run(blocking=False)
+		self.scheduler.start()
 
 	async def remind(self, event):
 		print("reminding")
-		await self.bot.get_user(event["user"]).send("You asked me to remind you ", event["message"])
+		user = self.bot.get_user(event["user"])
+		await user.send("You asked me to remind you " + str(event["message"]))
 		self.events.remove(event)
 
 	async def shutdown(self, ctx):
@@ -43,10 +43,14 @@ class Fun(commands.Cog):
 			yaml.dump(self.events, outfile)
 
 	async def scheduleEvent(self, event):
-		self.scheduler.enterabs(event["time"], 0, remind, argument=(self, event))
-		print(self.scheduler.queue)
-		print(time.time)
-		self.scheduler.run(blocking=False)
+		print(type(event["time"]))
+		self.scheduler.add_job(self.remind, args=[event], trigger="date", run_date=event["time"])
+		
+
+	#@commands.command()
+	#@Checks.is_me()
+	#async def owo(self, ctx):
+	#	await ctx.send(str(self.scheduler.queue))
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -175,7 +179,8 @@ class Fun(commands.Cog):
 			role = await ctx.guild.create_role()
 			await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
 		else:
-			role = discord.utils.find(lambda x: x.name == roleName, ctx.guild.roles)
+			role = discord.utils.find(
+				lambda x: x.name == roleName, ctx.guild.roles)
 			if role is None:
 				role = await ctx.guild.create_role(name=roleName)
 				await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
@@ -261,18 +266,20 @@ class Fun(commands.Cog):
 		timeContent, time = (search_dates(
 			content, settings={'TIMEZONE': 'UTC'})[0])
 		message = content.split(timeContent)[1]
-		if time < dt.utcnow():
+		if time < dt.now(timezone.utc):
 			await ctx.send("you cannot specify a time in the past")
 			return
 		else:
 			await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message))
+			await ctx.send(time)
+			await ctx.send(dt.now(timezone.utc))
 		event = {
 			'user': ctx.message.author.id,
 			'time': time,
 			'message': message
 		}
 		self.events.append(event)
-		self.scheduleEvent(event)
+		await self.scheduleEvent(event)
 		"""if ctx.invoked_subcommand is None:
 			await ctx.send("Use `$remindme` to have haruka DM you when the time specified has occurred. Note that Haruka will use UTC unless a timezone is specified. ex: `$remindme at 6:45am to wake up Kanata` or `$remindme in 30 minutes to pick up groceries`.")"""
 
@@ -330,7 +337,7 @@ class Fun(commands.Cog):
 		rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
 			data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
 		embd.set_author(name=data["idol"]["firstName"] +
-                  " " + data["idol"]["lastName"], icon_url=rarity.url)
+						" " + data["idol"]["lastName"], icon_url=rarity.url)
 		if lb < 0 or lb > 5:
 			lb = 0
 		embd.add_field(name="Appeal (LB{0})".format(
@@ -342,9 +349,9 @@ class Fun(commands.Cog):
 		embd.add_field(
 			name="Skill", value=data["primaryActiveAbilityText"], inline=False)
 		embd.add_field(name="Passive Ability",
-                 value=data["passiveAbility"]["abilityText"], inline=False)
+					   value=data["passiveAbility"]["abilityText"], inline=False)
 		embd.add_field(name="Active Ability",
-                 value=data["secondaryActiveAbilityText"], inline=False)
+					   value=data["secondaryActiveAbilityText"], inline=False)
 		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
 		return embd
 
