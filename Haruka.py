@@ -28,7 +28,7 @@ bot = commands.Bot(command_prefix=[
                    '$'], description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`", case_insensitive=True)
 
 cogList = ['cogs.Music', 'cogs.Administration', 'cogs.Fun',
-           'cogs.GuildFunctions', 'cogs.events', 'cogs.setup']
+           'cogs.GuildFunctions', 'cogs.events', 'cogs.setup', 'cogs.scheduler']
 with open('Resources.yaml', "r") as file:
 	bot.config = yaml.full_load(file)
 bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
@@ -68,7 +68,7 @@ async def on_ready():
 		guildList, totalUsers, len(bot.guilds)))
 
 
-@bot.event
+#@bot.event
 async def on_command_error(ctx, error):
 	if isinstance(error, KeyboardInterrupt):
 		print("is keyboard interrupt")

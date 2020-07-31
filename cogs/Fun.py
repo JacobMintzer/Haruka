@@ -7,45 +7,23 @@ import pandas as pd
 import os
 import yaml
 import pytz
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 from .utilities import MessageHandler, Utils, Checks
-from dateparser.search import search_dates
-from datetime import datetime as dt, timezone
 
 
 class Fun(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
-		self.scheduler = AsyncIOScheduler(timezone=pytz.utc)
 		self.cooldown = []
-		with open('Reminders.yaml', "r") as file:
-			self.events = yaml.full_load(file)
-			if self.events is None:
-				self.events = []
-		for event in self.events:
-			self.scheduleEvent(event)
 		with open('sauce.txt', 'r') as file_object:
 			self.SNKey = file_object.read().strip()
-		self.scheduler.start()
 
-	async def remind(self, event):
-		print("reminding")
-		user = self.bot.get_user(event["user"])
-		await user.send("You asked me to remind you " + str(event["message"]))
-		self.events.remove(event)
+	
 
 	async def shutdown(self, ctx):
-		self.exportEvents()
-
-	def exportEvents(self):
-		with open('Reminders.yaml', 'w') as outfile:
-			yaml.dump(self.events, outfile)
-
-	async def scheduleEvent(self, event):
-		print(type(event["time"]))
-		self.scheduler.add_job(self.remind, args=[event], trigger="date", run_date=event["time"])
-		
+		pass
+	
+	
 
 	#@commands.command()
 	#@Checks.is_me()
@@ -260,28 +238,6 @@ class Fun(commands.Cog):
 			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
 			await Utils.yay(ctx)
 		Utils.saveConfig(ctx)
-
-	@commands.group()
-	async def remindMe(self, ctx, *, content):
-		timeContent, time = (search_dates(
-			content, settings={'TIMEZONE': 'UTC'})[0])
-		message = content.split(timeContent)[1]
-		if time < dt.now(timezone.utc):
-			await ctx.send("you cannot specify a time in the past")
-			return
-		else:
-			await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message))
-			await ctx.send(time)
-			await ctx.send(dt.now(timezone.utc))
-		event = {
-			'user': ctx.message.author.id,
-			'time': time,
-			'message': message
-		}
-		self.events.append(event)
-		await self.scheduleEvent(event)
-		"""if ctx.invoked_subcommand is None:
-			await ctx.send("Use `$remindme` to have haruka DM you when the time specified has occurred. Note that Haruka will use UTC unless a timezone is specified. ex: `$remindme at 6:45am to wake up Kanata` or `$remindme in 30 minutes to pick up groceries`.")"""
 
 	@commands.command()
 	async def llasID(self, ctx, id: int, lb="0"):
