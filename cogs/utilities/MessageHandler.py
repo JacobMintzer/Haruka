@@ -10,7 +10,7 @@ import threading
 
 cache = 3
 spamCacheSize = 3
-maxPoints = 25
+maxPoints = 30
 
 
 class MessageHandler():
