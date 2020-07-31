@@ -2,7 +2,7 @@ import asyncio
 import discord
 import json
 from discord.ext import commands
-from .utilities import Utils, Checks
+from .utilities import utils, checks
 import aiosqlite
 import re
 
@@ -11,7 +11,7 @@ class Deprecated(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 	@commands.command()
-	@Checks.is_me()
+	@checks.is_me()
 	async def ps(self, ctx):
 		self.niji = discord.utils.get(
 			self.bot.guilds, id=self.bot.config["nijiCord"])

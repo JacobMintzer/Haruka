@@ -5,7 +5,7 @@ import time
 import aiosqlite
 import asyncio
 import pandas as pd
-from cogs.utilities import Utils
+from cogs.utilities import utils
 import threading
 
 cache = 3
@@ -139,7 +139,7 @@ class MessageHandler():
 			return
 		rankUpMsg = self.config["msgs"][givenRole]
 		newRole = self.roles[givenRole]
-		hug = Utils.getRandEmoji(self.bot.emojis, "suteki")
+		hug = utils.getRandEmoji(self.bot.emojis, "suteki")
 		await message.author.remove_roles(old)
 		await message.author.add_roles(newRole)
 		await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))

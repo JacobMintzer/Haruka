@@ -13,7 +13,7 @@ import io
 import yaml
 import datetime
 import pytz
-from cogs.utilities import MessageHandler, Utils, Checks
+from cogs.utilities import messageHandler, utils, checks
 import atexit
 
 logger = logging.getLogger('discord')
@@ -24,14 +24,17 @@ handler.setFormatter(logging.Formatter(
 	'%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-bot = commands.Bot(command_prefix=[
-                   '$'], description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`", case_insensitive=True)
+bot = commands.Bot(command_prefix=['$'],
+                   description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",
+                   case_insensitive=True)
 
-cogList = ['cogs.Music', 'cogs.Administration', 'cogs.Fun',
-           'cogs.GuildFunctions', 'cogs.events', 'cogs.setup', 'cogs.scheduler']
+cogList = ['cogs.music', 'cogs.administration', 'cogs.fun',
+           'cogs.guildFunctions', 'cogs.events', 'cogs.setup', 'cogs.scheduler']
+cogNames = ['Music', 'Administration', 'Fun',
+            'GuildFunctions', 'Events', 'Setup', 'Scheduler']
 with open('Resources.yaml', "r") as file:
 	bot.config = yaml.full_load(file)
-bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
+bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
 
 
 async def is_admin(ctx):
@@ -68,11 +71,11 @@ async def on_ready():
 		guildList, totalUsers, len(bot.guilds)))
 
 
-#@bot.event
+@bot.event
 async def on_command_error(ctx, error):
 	if isinstance(error, KeyboardInterrupt):
 		print("is keyboard interrupt")
-		await shutdown()
+		await shutdown(ctx)
 	ignored = (commands.CommandNotFound, commands.UserInputError)
 	if hasattr(ctx.command, 'on_error'):
 		print(error)
@@ -89,7 +92,7 @@ async def on_command_error(ctx, error):
 	raise (error)
 
 
-async def shutdown():
+async def shutdown(ctx):
 	print("shutting down messagehandler")
 	bot.messageHandler.disconnect()
 	print("shutting down music cog")
@@ -98,6 +101,9 @@ async def shutdown():
 	print("killed music cog")
 	for cog in cogList:
 		print("shutting down {0}".format(cog))
+		cogName = cog.replace("cogs.", "")
+		cogName = cogName[0].capitalize() + cogName[1:]
+		await bot.get_cog(cog).shutdown(ctx)
 		bot.unload_extension(cog)
 		print("shut down {0}".format(cog))
 	print("shutdown complete")
@@ -106,7 +112,8 @@ async def shutdown():
 	await x
 
 
-@Checks.is_me()
+
+@checks.is_me()
 @bot.command(hidden=True)
 async def softReset(ctx, *, selectedCogs=None):
 	await bot.change_presence(activity=discord.Game("Quickly doing a soft-reset for a minor update, will be back up soon!", type=1))
@@ -123,25 +130,28 @@ async def softReset(ctx, *, selectedCogs=None):
 		msg = False
 	if msg:
 		bot.messageHandler.disconnect()
-	music = bot.get_cog("cogs.Music")
-	if "cogs.Music" in selectedCogs or "Music" in selectedCogs:
+	music = bot.get_cog("Music")
+	if "cogs.music" in selectedCogs or "music" in selectedCogs:
 		try:
 			await music.kill()
 		except:
 			print("no music service active")
 	print("about to unload cogs")
 	for cog in cogs:
+		cogName = cog.replace("cogs.", "")
+		cogName = cogName[0].capitalize() + cogName[1:]
 		try:
+			await bot.get_cog(cogName).shutdown(ctx)
 			bot.unload_extension("cogs." + cog.replace("cogs.", ""))
 		except Exception as e:
-			print("cannot unload cog {0}".format(cog))
+			print("cannot unload cog {0} because of exception\n{1}".format(cog, e))
 	print("cogs unloaded, reloading everything now")
 
 	with open('Resources.yaml', "r") as file:
 		bot.config = yaml.full_load(file)
 	if msg:
-		importlib.reload(MessageHandler)
-		bot.messageHandler = MessageHandler.MessageHandler(bot.config, bot)
+		importlib.reload(messageHandler)
+		bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
 
 	for cog in cogs:
 		try:
@@ -152,8 +162,8 @@ async def softReset(ctx, *, selectedCogs=None):
 		try:
 			await bot.messageHandler.initRoles(bot)
 		except Exception as e:
-			await ctx.send("WARNING: MessageHandler was not successfully reloaded for reason {0}".format(str(e)))
-	guild = bot.get_guild(bot.config["nijiCord"])	
+			await ctx.send("WARNING: messageHandler was not successfully reloaded for reason {0}".format(str(e)))
+	guild = bot.get_guild(bot.config["nijiCord"])
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
 	totalUsers = 0
@@ -163,17 +173,17 @@ async def softReset(ctx, *, selectedCogs=None):
 	print("Currently in the current guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers))
 	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
-	rxn = Utils.getRandEmoji(bot.emojis, "hug")
+	rxn = utils.getRandEmoji(bot.emojis, "hug")
 	await ctx.message.add_reaction(rxn)
 
 
-@Checks.is_me()
+@checks.is_me()
 @bot.command(hidden=True)
 async def kill(ctx):
 	print("shutting down messagehandler")
 	bot.messageHandler.disconnect()
 	print("shutting down music cog")
-	music = bot.get_cog("Music")
+	music = bot.get_cog("music")
 	await music.kill()
 	print("killed music cog")
 	for cog in cogList:
