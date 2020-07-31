@@ -1,7 +1,7 @@
 import asyncio
 import discord
 from discord.ext import commands
-from .utilities import Utils, Checks
+from .utilities import utils, checks
 import os
 import io
 import pytz
@@ -47,12 +47,8 @@ class Administration(commands.Cog):
 		global target
 		target = []
 
-	@commands.command(hidden=True)
-	@Checks.is_me()
-	async def uwu(self, ctx, *, msg=" "):
-		"""test command please ignore"""
-		print(ctx.message.content)
-		await ctx.send(msg)
+	async def shutdown(self,ctx):
+		pass
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
@@ -60,7 +56,7 @@ class Administration(commands.Cog):
 			return
 		log = self.bot.get_channel(
 			self.bot.config["log"][str(member.guild.id)])
-		embd = Utils.genLog(member, "has joined the server.")
+		embd = utils.genLog(member, "has joined the server.")
 		embd.color = discord.Color.teal()
 		await log.send(embed=embd)
 
@@ -70,7 +66,7 @@ class Administration(commands.Cog):
 			return
 		log = self.bot.get_channel(
 			self.bot.config["log"][str(member.guild.id)])
-		embd = Utils.genLog(member, "has left the server.")
+		embd = utils.genLog(member, "has left the server.")
 		embd.color = discord.Color.dark_red()
 		await log.send(embed=embd)
 
@@ -148,7 +144,7 @@ class Administration(commands.Cog):
 		await log.send(embed=embd)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def log(self, ctx, msg=""):
 		"""ADMIN ONLY! Use this command in your logs channel to enable logging. To disable logging type $log disable"""
 		async with ctx.message.channel.typing():
@@ -158,17 +154,17 @@ class Administration(commands.Cog):
 			else:
 				self.bot.config["log"][str(
 					ctx.message.guild.id)] = ctx.message.channel.id
-			await Utils.yay(ctx)
-			Utils.saveConfig(ctx)
+			await utils.yay(ctx)
+			utils.saveConfig(ctx)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def autorole(self, ctx, *, role):
 		"""ADMIN ONLY! Use this command to set up an autorole for the server. ex. '$autorole member'. To clear type '$autorole clear'. Make sure the role is lower than Haruka's role."""
 		if role.lower() == "clear":
 			if str(ctx.message.guild.id) in self.bot.config["autorole"].keys():
 				del self.bot.config["autorole"][str(ctx.message.guild.id)]
-			await Utils.yay(ctx)
+			await utils.yay(ctx)
 		else:
 			autorole = discord.utils.find(
 				lambda x: x.name.lower() == role.lower(), ctx.guild.roles)
@@ -178,10 +174,10 @@ class Administration(commands.Cog):
 				self.bot.config["autorole"][str(
 					ctx.message.guild.id)] = autorole.id
 				await ctx.send("Autorole set to {0}. To remove this autorole, type `$autorole clear`".format(str(autorole)))
-		Utils.saveConfig(ctx)
+		utils.saveConfig(ctx)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def purge(self, ctx, *, msgs: int = 10):
 		"""ADMIN ONLY! removes the last x messages from the channel. Haruka will ask for confirmation. leave blank for default 10. ex. '$purge 200'"""
 		global target
@@ -204,8 +200,8 @@ class Administration(commands.Cog):
 
 
 	@commands.command()
-	@Checks.is_niji()
-	@Checks.is_admin()
+	@checks.is_niji()
+	@checks.is_admin()
 	async def blacklistprop(self, ctx, *users):
 		"""NIJICORD ADMIN ONLY! This blacklists a user from all the servers Haruka is on. This is only used in exceedingly rare situations like gore-spammers."""
 		bans = ""
@@ -238,13 +234,13 @@ class Administration(commands.Cog):
 		except:
 			await ctx.send("message too long, check my console/my log channels individually")
 			print("{0} were {1}".format(people, bans))
-		emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
+		emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 		if emoji is None:
-			emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
+			emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 		await ctx.message.add_reaction(emoji)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def blacklist(self, ctx, *users):
 		"""This blacklists a user joining this server even if they aren't in the server currently."""
 		log = None
@@ -260,17 +256,17 @@ class Administration(commands.Cog):
 				await ctx.message.guild.ban(person, reason="Blacklisted by {0} on this server.".format(str(ctx.message.author)))
 				if log is not None:
 					await log.send("{0} was blacklisted by Haruka on this server.".format(str(person)))
-				emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 				await ctx.message.add_reaction(emoji)
 			except:
 				await ctx.send("Could not ban user, please check to make sure I have the `ban user` permission.")
-		await Utils.yay(ctx)
+		await utils.yay(ctx)
 
 	@commands.group()
-	@Checks.is_me()
-	@Checks.is_admin()
+	@checks.is_me()
+	@checks.is_admin()
 	@commands.check(score_enabled)
 	async def antispam(self, ctx):
 		if ctx.invoked_subcommand is None:
@@ -303,18 +299,18 @@ class Administration(commands.Cog):
 			msg += "\n"
 		obj = {"ch": ctx.message.channel.id, "mention": msg}
 		self.bot.config["antispam"][str(ctx.message.guild.id)] = obj
-		await Utils.yay(ctx)
-		Utils.saveConfig(ctx)
+		await utils.yay(ctx)
+		utils.saveConfig(ctx)
 
 	@antispam.command()
 	async def ignore(self, ctx):
 		if not(ctx.message.channel.id in self.bot.config["antispamIgnore"]):
 			self.bot.config["antispamIgnore"].append(ctx.message.channel.id)
-			await Utils.yay(ctx)
-			Utils.saveConfig(ctx)
+			await utils.yay(ctx)
+			utils.saveConfig(ctx)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def ban(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
 		ex. '$ban 613501680469803045'"""
@@ -337,7 +333,7 @@ class Administration(commands.Cog):
 					await person.ban(delete_message_days=7)
 				elif str(rxn.emoji) == "🔨":
 					await person.ban()
-					await Utils.yay(ctx)
+					await utils.yay(ctx)
 				else:
 					await ctx.send("cancelling the ban")
 			except asyncio.TimeoutError:
@@ -346,7 +342,7 @@ class Administration(commands.Cog):
 			return
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def prune(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Removes all messages by a given user"""
 		global target
@@ -369,7 +365,7 @@ class Administration(commands.Cog):
 					try:
 						await ctx.send("prune complete")
 					except:
-						await Utils.yay(ctx)
+						await utils.yay(ctx)
 				elif str(rxn.emoji) == "🚫":
 					await ctx.send("cancelling prune")
 			except asyncio.TimeoutError:

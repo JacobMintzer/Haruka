@@ -5,8 +5,10 @@ import json
 import pprint
 import pandas as pd
 import os
+import yaml
+import pytz
 from discord.ext import commands
-from .utilities import MessageHandler, Utils, Checks
+from .utilities import messageHandler, utils, checks
 
 
 class Fun(commands.Cog):
@@ -15,6 +17,18 @@ class Fun(commands.Cog):
 		self.cooldown = []
 		with open('sauce.txt', 'r') as file_object:
 			self.SNKey = file_object.read().strip()
+
+	
+
+	async def shutdown(self, ctx):
+		pass
+	
+	
+
+	#@commands.command()
+	#@checks.is_me()
+	#async def owo(self, ctx):
+	#	await ctx.send(str(self.scheduler.queue))
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -33,7 +47,7 @@ class Fun(commands.Cog):
 		if ctx.message.channel.id in self.bot.config["reDisabled"]:
 			await ctx.message.add_reaction("❌")
 			return
-		emoji = Utils.getRandEmoji(ctx.bot.emojis, emote)
+		emoji = utils.getRandEmoji(ctx.bot.emojis, emote)
 		if ctx.message.guild.id in self.bot.config["reSlow"]:
 			if userHash in self.cooldown:
 				await ctx.send("Please wait a little while before using this command again")
@@ -60,8 +74,8 @@ class Fun(commands.Cog):
 		else:
 			if not(ctx.message.channel.id in self.bot.config["reDisabled"]):
 				self.bot.config["reDisabled"].append(ctx.message.channel.id)
-		Utils.saveConfig(ctx)
-		await Utils.yay(ctx)
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
 
 	@re.command()
 	async def enable(self, ctx, msg=""):
@@ -73,8 +87,8 @@ class Fun(commands.Cog):
 		else:
 			if (ctx.message.channel.id in self.bot.config["reDisabled"]):
 				self.bot.config["reDisabled"].remove(ctx.message.channel.id)
-		Utils.saveConfig(ctx)
-		await Utils.yay(ctx)
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
 
 	@re.command()
 	async def slowmode(self, ctx, mode=""):
@@ -93,8 +107,8 @@ class Fun(commands.Cog):
 		else:
 			await ctx.send("please say '$re slowmode' to toggle $re cooldown, or '$re slowmode on' or '$re slowmode off' to turn it on or off respectively.")
 			return
-		Utils.saveConfig(ctx)
-		await Utils.yay(ctx)
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
 
 	@commands.command()
 	async def e(self, ctx, emote=""):
@@ -107,7 +121,7 @@ class Fun(commands.Cog):
 			await ctx.send(str(emoji))
 
 	@commands.group()
-	@Checks.isScoreEnabled()
+	@checks.isScoreEnabled()
 	async def rank(self, ctx, *, idx="1"):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		if str(idx).isdigit():
@@ -126,9 +140,8 @@ class Fun(commands.Cog):
 			else:
 				await ctx.send("This command is only available to an Administrator.")
 
-
 	@rank.command(name="add")
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def rankAdd(self, ctx, idx):
 		"""Adds a role that will be assigned upon reaching certain ranks. You can change the role name later. ex: `$rank add 500 New Recruit`."""
 		if (idx.split(" ")[1].isdigit()):
@@ -144,7 +157,8 @@ class Fun(commands.Cog):
 			role = await ctx.guild.create_role()
 			await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
 		else:
-			role = discord.utils.find(lambda x: x.name == roleName, ctx.guild.roles)
+			role = discord.utils.find(
+				lambda x: x.name == roleName, ctx.guild.roles)
 			if role is None:
 				role = await ctx.guild.create_role(name=roleName)
 				await ctx.send("Created role {0} that will be assigned upon reaching a score of {1}.".format(role.mention, score))
@@ -154,10 +168,10 @@ class Fun(commands.Cog):
 			{"score": score, "role": role.id})
 		self.bot.config["roleRanks"][str(ctx.guild.id)] = sorted(
 			self.bot.config["roleRanks"][str(ctx.guild.id)], key=lambda x: x["score"])
-		Utils.saveConfig(ctx)
+		utils.saveConfig(ctx)
 
 	@rank.command()
-	@Checks.hasBest()
+	@checks.hasBest()
 	async def best(self, ctx):
 		"""Use this to show the rankings of what the most popular `best girl` role is"""
 		roleList = []
@@ -173,14 +187,14 @@ class Fun(commands.Cog):
 		await ctx.send("```fortran\n{0}```".format(series.to_string()))
 
 	@commands.group()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def score(self, ctx):
 		"""Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings"""
 		if ctx.invoked_subcommand is None:
 			await ctx.send("Use `$score ignore` or `$score unignore` to add or remove a channel from the ignore list for Haruka's rankings")
 
 	@score.command()
-	@Checks.isScoreEnabled()
+	@checks.isScoreEnabled()
 	async def ignore(self, ctx, ch: discord.channel = None):
 		"""Use `$score ignore` to have Haruka ignore a channel"""
 		if ch is None:
@@ -188,30 +202,29 @@ class Fun(commands.Cog):
 		try:
 			await ctx.send("ignoring {ch.mention}")
 		except:
-			await Utils.yay(ctx)
+			await utils.yay(ctx)
 			pass
 		self.bot.config["scoreIgnore"].append(ch.id)
-		Utils.saveConfig(ctx)
+		utils.saveConfig(ctx)
 
 	@score.command()
-	@Checks.isScoreEnabled()
+	@checks.isScoreEnabled()
 	async def unignore(self, ctx, ch: discord.channel = None):
 		if ch is None:
 			ch = ctx.message.channel
 		try:
 			await ctx.send("No longer ignoring {ch.mention}")
 		except:
-			await Utils.yay(ctx)
+			await utils.yay(ctx)
 			pass
 		try:
 			self.bot.config["scoreIgnore"].remove(ch.id)
-			Utils.saveConfig(ctx)
+			utils.saveConfig(ctx)
 		except:
 			print("could not remove channel from scoreIgnore")
-		
 
 	@score.command(name="enable")
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def scoreEnable(self, ctx):
 		if not(str(ctx.guild.id) in self.bot.config["roleRanks"].keys()):
 			self.bot.config["roleRanks"][str(ctx.guild.id)] = []
@@ -223,8 +236,8 @@ class Fun(commands.Cog):
 			except:
 				pass
 			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
-			await Utils.yay(ctx)
-		Utils.saveConfig(ctx)
+			await utils.yay(ctx)
+		utils.saveConfig(ctx)
 
 	@commands.command()
 	async def llasID(self, ctx, id: int, lb="0"):
@@ -280,7 +293,7 @@ class Fun(commands.Cog):
 		rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
 			data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
 		embd.set_author(name=data["idol"]["firstName"] +
-                  " " + data["idol"]["lastName"], icon_url=rarity.url)
+						" " + data["idol"]["lastName"], icon_url=rarity.url)
 		if lb < 0 or lb > 5:
 			lb = 0
 		embd.add_field(name="Appeal (LB{0})".format(
@@ -292,9 +305,9 @@ class Fun(commands.Cog):
 		embd.add_field(
 			name="Skill", value=data["primaryActiveAbilityText"], inline=False)
 		embd.add_field(name="Passive Ability",
-                 value=data["passiveAbility"]["abilityText"], inline=False)
+					   value=data["passiveAbility"]["abilityText"], inline=False)
 		embd.add_field(name="Active Ability",
-                 value=data["secondaryActiveAbilityText"], inline=False)
+					   value=data["secondaryActiveAbilityText"], inline=False)
 		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
 		return embd
 

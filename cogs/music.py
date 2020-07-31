@@ -12,7 +12,7 @@ import mutagen
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 import pandas as pd
-from .utilities import Utils, Checks
+from .utilities import utils, checks
 
 
 class Music(commands.Cog):
@@ -38,12 +38,15 @@ class Music(commands.Cog):
 		self.config = self.bot.config
 		self.voice = None
 
+	async def shutdown(self,ctx):
+		await self.kill()
+
 	async def kill(self):
 		if self.voice is not None:
 			await self.voice.disconnect()
 
 	@commands.command(hidden=True)
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def update(self, ctx):
 		"""Sometimes I forget when I learn new songs~"""
 		self.songList = os.listdir(self.mode)
@@ -142,19 +145,19 @@ class Music(commands.Cog):
 		return songList
 
 	@commands.command(no_pm=True)
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def skip(self, ctx):
 		"""If you want me to play another song"""
 		self.message = 5
 
 	@commands.command(no_pm=True)
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def stop(self, ctx):
 		"""stops music"""
 		self.message = -1
 
 	@commands.command(no_pm=True)
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def music(self, ctx):
 		"""Let's start the music!"""
 		msg = ctx.message.content.replace("!music ", "")
@@ -171,7 +174,7 @@ class Music(commands.Cog):
 			self.bot.loop.create_task(self.play(ctx))
 
 	@commands.command()
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def playing(self, ctx):
 		"""I tell you the song I am singing"""
 		data = mutagen.File(self.mode + self.current)
@@ -204,7 +207,7 @@ class Music(commands.Cog):
 		await ctx.send("```css\n[File]: " + self.current + title + artist + "```")
 
 	@commands.command()
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def queue(self, ctx):
 		"""See what songs will play next."""
 		requestList = "```"
@@ -218,18 +221,18 @@ class Music(commands.Cog):
 		await ctx.send(requestList)
 
 	@commands.command(no_pm=True, pass_context=True)
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def request(self, ctx, *, msg):
 		"""Request Haruka to play a song! If you only know some of the name that's fine, I can figure out what you're looking for!"""
 		potential = []
 		if msg.lower() == "gay":
-			await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis, "yay"))
+			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 			for song in self.songList:
 				if fuzz.ratio('Garasu no Hanazono'.lower() + '.mp3', song.lower()) > 95:
 					self.requests.append(song)
 					return 0
 		elif "lesbian" in msg.lower():
-			await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis, "yay"))
+			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 			for song in self.songList:
 				if fuzz.ratio('Zurui yo Magnetic today.mp3'.lower(), song.lower()) > 95:
 					self.requests.append(song)
@@ -239,7 +242,7 @@ class Music(commands.Cog):
 				if fuzz.ratio(msg.lower() + '.mp3', song.lower()) > 95:
 					self.requests.append(song)
 					# yield from bot.say("added")
-					await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis, "yay"))
+					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 					return 0
 				elif fuzz.partial_ratio(msg.lower(), song.lower()) > 85:
 					potential.append(song)
@@ -247,7 +250,7 @@ class Music(commands.Cog):
 				await ctx.send("Song not found, check your spelling or dm junior mints to add the song.")
 			elif len(potential) == 1:
 				# yield from bot.say("added")
-				await ctx.message.add_reaction(Utils.getRandEmoji(ctx.guild.emojis, "yay"))
+				await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 				self.requests.append(potential[0])
 			else:
 				response = "```These are potential matches, try being more specific with the name."

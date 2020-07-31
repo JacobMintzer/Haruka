@@ -1,13 +1,16 @@
 import asyncio
 import discord
 from discord.ext import commands
-from .utilities import Utils, Checks
+from .utilities import utils, checks
 
 
 class Events(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
+	async def shutdown(self,ctx):
+		pass
+	
 	@commands.Cog.listener()
 	async def on_guild_join(self, guild):
 		print("I joined the guild: {0}".format(str(guild)))

@@ -4,28 +4,32 @@ import time
 import datetime
 import pytz
 from discord.ext import commands
-from .utilities import MessageHandler, Utils, Checks
+from .utilities import messageHandler, utils, checks
 
 
 class GuildFunctions(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
+	async def shutdown(self,ctx):
+		pass
+
+	
 	@commands.command()
 	async def info(self, ctx, member: discord.Member = None):
 		"""$info for information on yourself"""
 		if member == None:
-			embd = Utils.genLog(ctx.message.author, "Info on {0}".format(
+			embd = utils.genLog(ctx.message.author, "Info on {0}".format(
 				ctx.message.author.display_name))
 			embd.color = discord.Color.gold()
 			await ctx.send(embed=embd)
 		else:
-			embd = Utils.genLog(member, "Info on {0}".format(member.display_name))
+			embd = utils.genLog(member, "Info on {0}".format(member.display_name))
 			embd.color = discord.Color.gold()
 			await ctx.send(embed=embd)
 
 	@commands.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def welcome(self, ctx, *, msg=""):
 		"""ADMIN ONLY! Use this command in your welcome channel to enable welcome messages. For your message, use {0} to say the user's name, and {1} to ping the user. To disable logging type $welcome stop"""
 		async with ctx.message.channel.typing():
@@ -39,8 +43,8 @@ class GuildFunctions(commands.Cog):
 				self.bot.config["welcomeCh"][str(
 					ctx.message.guild.id)] = ctx.message.channel.id
 				self.bot.config["welcomeMsg"][str(ctx.message.guild.id)] = msg
-			Utils.saveConfig(ctx)
-			await Utils.yay(ctx)
+			utils.saveConfig(ctx)
+			await utils.yay(ctx)
 
 	@commands.command()
 	async def sinfo(self, ctx):
@@ -79,11 +83,11 @@ class GuildFunctions(commands.Cog):
 			if role is None:
 				await ctx.send("Hmmm, it looks  like the role you requested has been deleted. I will remove it from self assignable.")
 				self.bot.config["asar"][str(ctx.message.guild.id)].remove(arole.lower())
-				Utils.saveConfig(ctx)
+				utils.saveConfig(ctx)
 			await ctx.message.author.add_roles(role)
-			rxn = Utils.getRandEmoji(guild.emojis, "hug")
+			rxn = utils.getRandEmoji(guild.emojis, "hug")
 			if rxn is None:
-				rxn = Utils.getRandEmoji(ctx.bot.emojis, "harukahug")
+				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
@@ -96,9 +100,9 @@ class GuildFunctions(commands.Cog):
 			role = discord.utils.find(lambda x: x.name.lower()
 			                          == arole.lower(), ctx.guild.roles)
 			await ctx.message.author.remove_roles(role)
-			rxn = Utils.getRandEmoji(guild.emojis, "hug")
+			rxn = utils.getRandEmoji(guild.emojis, "hug")
 			if rxn is None:
-				rxn = Utils.getRandEmoji(ctx.bot.emojis, "harukahug")
+				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
 			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
@@ -112,7 +116,7 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Self assignable roles here are: \n`{0}`.".format(roleMessage))
 
 	@asar.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def add(self, ctx, *, role=""):
 		"""ADMIN ONLY! Use this command to add roles to self-assignable with '$iam'. If a role with given name is not found, one will be created. Make sure the role is lower than haruka's highest role. ex. '$asar add roleName'"""
 		if role == "":
@@ -127,16 +131,16 @@ class GuildFunctions(commands.Cog):
 				await ctx.message.guild.create_role(name=role)
 				self.bot.config["asar"][str(ctx.message.guild.id)].append(role.lower())
 				await ctx.send("Role `{0}` was not found, so I created it, and it was added to the self-assignable roles.".format(role))
-				Utils.saveConfig(ctx)
+				utils.saveConfig(ctx)
 			except:
 				await ctx.send("Role `{0}` not found, and I was unable to create the role. Please modify my permissions to manage roles so I can assign roles.".format(role))
 		else:
 			self.bot.config["asar"][str(ctx.message.guild.id)].append(role.lower())
-			Utils.saveConfig(ctx)
+			utils.saveConfig(ctx)
 			await ctx.send("Role {0} added to self-assignable roles.".format(requestedRole.name))
 
 	@asar.command()
-	@Checks.is_admin()
+	@checks.is_admin()
 	async def remove(self, ctx, *, role=""):
 		"""ADMIN ONLY! Use this command to remove roles from self-assignable with '$iam'. ex. '$asar remove roleName'"""
 		if role == "":
@@ -144,8 +148,8 @@ class GuildFunctions(commands.Cog):
 			return
 		if role.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			self.bot.config["asar"][str(ctx.message.guild.id)].remove(role.lower())
-			await Utils.yay(ctx)
-			Utils.saveConfig(ctx)
+			await utils.yay(ctx)
+			utils.saveConfig(ctx)
 		else:
 			await ctx.send("Role `{0}` not found in self assignable list.".format(role))
 
@@ -177,7 +181,7 @@ class GuildFunctions(commands.Cog):
 		else:
 			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
-		rxn = Utils.getRandEmoji(ctx.guild.emojis, "hug")
+		rxn = utils.getRandEmoji(ctx.guild.emojis, "hug")
 		if rxn is None:
 			rxn = "👍"
 		await ctx.message.add_reaction(rxn)
@@ -197,7 +201,7 @@ class GuildFunctions(commands.Cog):
 		return
 
 	@commands.command()
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def seiyuu(self, ctx, *, role):
 		"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
 		roleNames = self.bot.config["seiyuu"]
@@ -210,7 +214,7 @@ class GuildFunctions(commands.Cog):
 		return
 
 	@commands.command()
-	@Checks.is_niji()
+	@checks.is_niji()
 	async def sub(self, ctx, *, role):
 		"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
 		roleNames = self.bot.config["sub"]
@@ -236,15 +240,15 @@ class GuildFunctions(commands.Cog):
 			if not(role == "clear"):
 				await member.add_roles(requestedRole)
 			if rxnChoice is None:
-				emoji = Utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji = Utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 			else:
 				if rxnChoice.lower() == "setsunayay":
 					rxnChoice = rxnChoice.replace("etsuna", "etsu")
-				emoji = Utils.getRandEmoji(self.bot.emojis, rxnChoice)
+				emoji = utils.getRandEmoji(self.bot.emojis, rxnChoice)
 				if emoji == "No Emoji Found" or emoji is None:
-					emoji = Utils.getRandEmoji(self.bot.emojis, "harukayay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
 			await ctx.message.add_reaction(emoji)  # "👍")
 		return
 
