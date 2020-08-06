@@ -7,6 +7,7 @@ from discord.ext import commands
 from dateparser.search import search_dates
 from datetime import datetime as dt, timezone, timedelta
 import re
+from .utilities import messageHandler, utils, checks
 
 gracePeriod = 600
 
@@ -81,6 +82,10 @@ class Scheduler(commands.Cog):
 		}
 		self.scheduleEvent(event)
 		self.saveEvents()
+		rxn = utils.getRandEmoji(ctx.message.guild.emojis, "hug")
+		if rxn is None:
+			rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
+		await ctx.message.add_reaction(rxn)
 
 	@commands.command()
 	async def cancelReminder(self, ctx, *, reminder: int = -1):
