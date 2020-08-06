@@ -64,7 +64,7 @@ class Scheduler(commands.Cog):
 		cleanContent = re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',cleanContent)
 		timeContent, time = (search_dates(
 			cleanContent, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0])
-		message = content.replace(timeContent, "")
+		message = content.replace(timeContent, "").replace("@","@"+u"\u200B")
 		utcNow = dt.now(timezone.utc)
 		if time< utcNow:
 			if time.month == utcNow.month and time.day == utcNow.day:
