@@ -39,7 +39,6 @@ class Scheduler(commands.Cog):
 		self.events.remove(event)
 		self.saveEvents()
 
-
 	def saveEvents(self):
 		with open('Reminders.yaml', 'w') as outfile:
 			yaml.dump(self.events, outfile)
@@ -69,6 +68,9 @@ class Scheduler(commands.Cog):
 				time = time + timedelta(hours=24)
 			else:
 				time = time.replace(time.year + 1)
+			if time < utcNow:
+				await ctx.send("You cannot specify a time in the past.")
+				return
 		await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message.strip()))
 		event = {
 			'user': ctx.message.author.id,
@@ -84,7 +86,7 @@ class Scheduler(commands.Cog):
 		events = filter(lambda x: x['user'] == ctx.author.id, self.events)
 		events = sorted(events, key=lambda event: event["time"])
 		if reminder <= 0:
-			if len(events)>0:
+			if len(events) > 0:
 				message = "```fortran\nPick an event to cancel. based on the ID below\n"
 				for x in range(len(events)):
 					message += f"{x+1}.\t{events[x]['time'].strftime('%b %d, %Y at %H:%M')}\t{events[x]['message']}\n"
@@ -93,11 +95,10 @@ class Scheduler(commands.Cog):
 				message = "You have no reminders scheduled!"
 			await ctx.send(message)
 		else:
-			reminder = reminder-1
+			reminder = reminder - 1
 			self.scheduler.remove_job(events[reminder]["id"])
 			self.events.remove(events[reminder])
 			self.saveEvents()
-
 
 
 def setup(bot):
