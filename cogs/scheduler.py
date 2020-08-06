@@ -85,7 +85,7 @@ class Scheduler(commands.Cog):
 		events = sorted(events, key=lambda event: event["time"])
 		if reminder <= 0:
 			if len(events)>0:
-				message = "```fortran\nPick an event to cancel. based on the ID below"
+				message = "```fortran\nPick an event to cancel. based on the ID below\n"
 				for x in range(len(events)):
 					message += f"{x+1}.\t{events[x]['time'].strftime('%b %d, %Y at %H:%M')}\t{events[x]['message']}\n"
 				message += "```"
