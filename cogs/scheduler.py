@@ -63,12 +63,12 @@ class Scheduler(commands.Cog):
 			cleanContent, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0])
 		message = content.replace(timeContent, "")
 		utcNow = dt.now(timezone.utc)
-		if time < utcNow:
+		if time.replace(tzinfo=None) < utcNow.replace(tzinfo=None):
 			if time.month == utcNow.month and time.day == utcNow.day:
 				time = time + timedelta(hours=24)
 			else:
 				time = time.replace(time.year + 1)
-			if time < utcNow:
+			if time.replace(tzinfo=None) < utcNow.replace(tzinfo=None):
 				await ctx.send("You cannot specify a time in the past.")
 				return
 		await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message.strip()))
