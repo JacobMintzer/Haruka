@@ -6,6 +6,7 @@ import pytz
 from discord.ext import commands
 from dateparser.search import search_dates
 from datetime import datetime as dt, timezone, timedelta
+import re
 
 gracePeriod = 600
 
@@ -59,16 +60,17 @@ class Scheduler(commands.Cog):
 			cleanContent = cleanContent[2:].strip()
 		if cleanContent.lower().startswith("at"):
 			cleanContent = cleanContent[2:].strip()
+		cleanContent = re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',cleanContent)
 		timeContent, time = (search_dates(
 			cleanContent, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0])
 		message = content.replace(timeContent, "")
 		utcNow = dt.now(timezone.utc)
-		if time.replace(tzinfo=None) < utcNow.replace(tzinfo=None):
+		if time< utcNow:
 			if time.month == utcNow.month and time.day == utcNow.day:
 				time = time + timedelta(hours=24)
 			else:
 				time = time.replace(time.year + 1)
-			if time.replace(tzinfo=None) < utcNow.replace(tzinfo=None):
+			if time < utcNow:
 				await ctx.send("You cannot specify a time in the past.")
 				return
 		await ctx.send("will remind you at `{0} UTC` {1}".format(time.strftime("%b %d, %Y at %H:%M"), message.strip()))
