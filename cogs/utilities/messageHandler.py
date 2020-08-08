@@ -212,6 +212,9 @@ class MessageHandler():
 		if message.channel.id == 696402682168082453:
 			return
 		content = re.sub(r'<[^>]+>', '', message.content).lower()
+		if "Krak" in message.clean_content or "KRAK" in message.clean_content:
+			rxn = discord.utils.get(self.bot.emojis, name="EmmaHelp")
+			await message.add_reaction(rxn)
 		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content or "nakasukasumi")):
 			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
 			await message.add_reaction(rxn)
