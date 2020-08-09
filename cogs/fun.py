@@ -207,6 +207,7 @@ class Fun(commands.Cog):
 		self.bot.config["scoreIgnore"].append(ch.id)
 		utils.saveConfig(ctx)
 
+
 	@score.command()
 	@checks.isScoreEnabled()
 	async def unignore(self, ctx, ch: discord.channel = None):
@@ -358,6 +359,13 @@ class Fun(commands.Cog):
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
 		os.remove(file)
 
+	@commands.command()
+	async def announcements(self,ctx):
+		await ctx.send("https://imgur.com/a/37W6U64")
+
+	@commands.command()
+	async def noinfo(self,ctx):
+		await ctx.send("https://imgur.com/a/sGooJcB")
 
 def setup(bot):
 	bot.add_cog(Fun(bot))
