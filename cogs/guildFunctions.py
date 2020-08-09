@@ -200,7 +200,7 @@ class GuildFunctions(commands.Cog):
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
 		return
 
-	@commands.command(alias=("seiyuu","seiyu"))
+	@commands.command(aliases=["seiyu"])
 	@checks.is_niji()
 	async def seiyuu(self, ctx, *, role):
 		"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""

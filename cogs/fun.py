@@ -359,7 +359,7 @@ class Fun(commands.Cog):
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
 		os.remove(file)
 
-	@commands.command()
+	@commands.command(aliases = ["announcement"]) 
 	async def announcements(self,ctx):
 		await ctx.send("https://imgur.com/a/37W6U64")
 

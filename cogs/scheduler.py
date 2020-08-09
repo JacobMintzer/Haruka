@@ -51,7 +51,7 @@ class Scheduler(commands.Cog):
 		event["id"] = job.id
 		self.events.append(event)
 
-	@commands.command(alias="remindme")
+	@commands.command(aliases=["remindme"])
 	async def remind(self, ctx, *, content):
 		"""Have Haruka remind you about something in relative or absolute time. Defaults to UTC, but you can specify a timezone. Remember that DST changes the timezone name (EST->EDT). Cancel with $cancelReminder."""
 		if content.lower().startswith("me"):
