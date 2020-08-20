@@ -32,7 +32,7 @@ class Fun(commands.Cog):
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
-		"""Searches for a random emote by search term. ex. '$re yay' will return a random 'yay' emote."""
+		"""Searches for a random emote by search term. Servers with NSFW emotes will be removed from the global emote pool. ex. '$re yay' will return a random 'yay' emote."""
 		if ctx.message.author.permissions_in(ctx.message.channel).administrator or ctx.message.guild is None:
 			if emote.lower() == "disable":
 				await self.disable(ctx, msg)
@@ -43,21 +43,24 @@ class Fun(commands.Cog):
 			elif emote.lower() == "slowmode":
 				await self.slowmode(ctx, msg)
 				return
-		userHash = (str(ctx.message.guild.id) + str(ctx.message.author.id))
-		if ctx.message.channel.id in self.bot.config["reDisabled"]:
-			await ctx.message.add_reaction("❌")
-			return
-		emoji = utils.getRandEmoji(ctx.bot.emojis, emote)
-		if ctx.message.guild.id in self.bot.config["reSlow"]:
-			if userHash in self.cooldown:
-				await ctx.send("Please wait a little while before using this command again")
+		emoji = utils.getRandEmoji(ctx.bot.emojis, emote, ctx=ctx)
+		if not (ctx.message.guild is None):
+			userHash = (str(ctx.message.guild.id) + str(ctx.message.author.id))
+			if ctx.message.channel.id in self.bot.config["reDisabled"]:
+				await ctx.message.add_reaction("❌")
 				return
+			if ctx.message.guild.id in self.bot.config["reSlow"]:
+				if userHash in self.cooldown:
+					await ctx.send("Please wait a little while before using this command again")
+					return
 		if emoji is None:
 			await ctx.send("emoji not found")
-		else:
+		elif not (ctx.message.guild is None):
 			await ctx.send(str(emoji))
 			if ctx.message.guild.id in self.bot.config["reSlow"]:
 				self.bot.loop.create_task(self.reCool(userHash))
+		else:
+			await ctx.send(str(emoji))
 
 	async def reCool(self, hash):
 		self.cooldown.append(hash)
@@ -113,8 +116,11 @@ class Fun(commands.Cog):
 	@commands.command()
 	async def e(self, ctx, emote=""):
 		"""Gets an emote from the server name. ex. $e aRinaPat."""
-		emoji = discord.utils.find(
-			lambda emoji: emoji.name.lower() == emote.lower(), self.bot.emojis)
+		banned = ctx.bot.config["emoteBanned"].copy()
+		if ctx.message.guild:
+			banned.remove(ctx.message.guild.id)
+		emoji = discord.utils.find(	lambda emoji: ((emoji.name.lower() == emote.lower()) and (not emoji.guild.id in banned)), self.bot.emojis)
+		
 		if emoji is None:
 			await ctx.send("emoji not found")
 		else:
