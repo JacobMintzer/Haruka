@@ -204,6 +204,17 @@ class Administration(commands.Cog):
 		utils.saveConfig(ctx)
 
 	@commands.command()
+	@checks.is_me()
+	async def dumpEmotes(self, ctx):
+		out = ""
+		for emote in self.bot.emojis:
+			if (len(str(emote))+len(out))>=2000:
+				await ctx.send(out)
+				out=str(emote)
+			else:
+				out += str(emote)
+		await ctx.send(out)
+	@commands.command()
 	@checks.is_niji()
 	@checks.is_admin()
 	async def blacklistprop(self, ctx, *users):
