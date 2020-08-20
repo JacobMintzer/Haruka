@@ -16,10 +16,10 @@ Discord bot for management of the Nijigasaki Discord and adjacent Love Live serv
 
 To invite Haruka to your server, use this link: https://discord.com/api/oauth2/authorize?client_id=613501680469803045&permissions=268774468&scope=bot
 ### TODO
-* Scheduling
+* Scheduling (base scheduler is working, just need to implement the birthday/mutes)
   * birthday messages to users/girls
   * mutes/umutes
-  * $remindMe function
+  * <s>$remindMe function</s>
 * <s>Allow true multi-server support without breaking everything</s> (just need to do music, <s>scoring</s>, and automod)
 * Youtube support, including revamping the queue system
 * Specific ban system for when people inevitably abuse this system
