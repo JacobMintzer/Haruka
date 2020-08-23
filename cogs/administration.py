@@ -39,15 +39,13 @@ def adminRxn(rxn, user):
 		return False
 
 
-
-
 class Administration(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		global target
 		target = []
 
-	async def shutdown(self,ctx):
+	async def shutdown(self, ctx):
 		pass
 
 	@commands.Cog.listener()
@@ -198,7 +196,24 @@ class Administration(commands.Cog):
 				await rxnMsg.delete()
 				target.remove(ctx.message.author.id)
 
+	@commands.command()
+	@checks.is_me()
+	async def banEmote(self, ctx, *, emote: discord.Emoji):
+		print(emote.guild.name)
+		self.bot.config["emoteBanned"].append(emote.guild.id)
+		utils.saveConfig(ctx)
 
+	@commands.command()
+	@checks.is_me()
+	async def dumpEmotes(self, ctx):
+		out = ""
+		for emote in self.bot.emojis:
+			if (len(str(emote))+len(out))>=2000:
+				await ctx.send(out)
+				out=str(emote)
+			else:
+				out += str(emote)
+		await ctx.send(out)
 	@commands.command()
 	@checks.is_niji()
 	@checks.is_admin()
@@ -288,7 +303,7 @@ class Administration(commands.Cog):
 			for role in ctx.message.role_mentions:
 				print("role {0}".format(role.mention))
 				msg += role.mention
-		elif len(mention)>5:
+		elif len(mention) > 5:
 			try:
 				role = ctx.guild.get_role(int(mention))
 				msg += role.mention
