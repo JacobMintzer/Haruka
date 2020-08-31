@@ -4,6 +4,7 @@ import time
 import datetime
 import pytz
 from discord.ext import commands
+from typing import Union
 from .utilities import messageHandler, utils, checks
 
 
@@ -11,10 +12,9 @@ class GuildFunctions(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
-	async def shutdown(self,ctx):
+	async def shutdown(self, ctx):
 		pass
 
-	
 	@commands.command()
 	async def info(self, ctx, member: discord.Member = None):
 		"""$info for information on yourself"""
@@ -45,6 +45,46 @@ class GuildFunctions(commands.Cog):
 				self.bot.config["welcomeMsg"][str(ctx.message.guild.id)] = msg
 			utils.saveConfig(ctx)
 			await utils.yay(ctx)
+
+	@commands.group()
+	@checks.is_admin()
+	async def starboard(self, ctx, emote: Union[discord.Emoji, str] = "⭐", count: Union[int, discord.TextChannel] = 1):
+		"""ADMIN ONLY! Use this in a channel to have haruka post them when they hit a reaction threshold. ex. `$starboard ⭐ 4` will post when a post hits 4 ⭐ reactions. To have Haruka ignore a channel, use `$starboard ignore #channel`"""
+		async with ctx.message.channel.typing():
+			try:
+				await ctx.message.add_reaction(emote)
+			except Exception:
+				if emote.lower() == "ignore":
+					await self.starboardIgnore(ctx, count)
+					return
+				await ctx.send("please send a valid emote")
+				return
+			if ctx.message.guild.id in ctx.bot.config["starboard"].keys():
+				ctx.bot.config["starboard"][ctx.message.guild.id]["emote"] = str(emote)
+				ctx.bot.config["starboard"][ctx.message.guild.id]["count"] = count
+			else:
+				ctx.bot.config["starboard"][ctx.message.guild.id] = {"emote": str(
+					emote), "count": count, "channel": ctx.message.channel.id, "ignore": []}
+			utils.saveConfig(ctx)
+			await ctx.send("Posts that reach {0} {1} reactions will be posted in this channel.".format(count, emote))
+			await ctx.message.delete()
+
+	@starboard.command(name="ignore")
+	async def starboardIgnore(self, ctx, channel: discord.TextChannel):
+		"""Have Haruka ignore a channel so it's messages won't be posted in the starboard channel. No parameter passed will add the current channel. ex. `$starboard ignore #announcements` (mention the channel)"""
+		if channel == 1:
+			channel = ctx.message.channel
+		ctx.bot.config["starboard"][ctx.message.guild.id]["ignore"].append(
+			channel.id)
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
+
+	@starboard.command(name="unignore")
+	async def starboardUnignore(self, ctx, channel: discord.TextChannel):
+		ctx.bot.config["starboard"][ctx.message.guild.id]["ignore"].remove(
+			channel.id)
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
 
 	@commands.command()
 	async def sinfo(self, ctx):

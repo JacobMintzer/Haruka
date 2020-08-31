@@ -8,9 +8,8 @@ class Setup(commands.Cog):
 
 	def __init__(self, bot):
 		self.bot = bot
-	
-	
-	async def shutdown(self,ctx):
+
+	async def shutdown(self, ctx):
 		pass
 
 	@commands.command()
@@ -63,7 +62,19 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 			self.bot.config["ignoreBL"].append(ctx.message.guild.id)
 			utils.saveConfig(ctx)
 			await ctx.message.add_reaction(utils.getRandEmoji(self.bot.emojis, "harukahug"))
-			
+
+	@checks.is_me()
+	@commands.command()
+	async def addConfig(self, ctx, key: str, value: str = "str"):
+		value = value.lower().strip()
+		if value == "str" or value =="string":
+			self.bot.config[key]=""
+		elif value == "list":
+			self.bot.config[key]=[]
+		elif value == "dict":
+			self.bot.config[key]={}
+		utils.saveConfig(ctx)
+
 
 	@checks.is_admin()
 	@commands.command()

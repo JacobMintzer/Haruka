@@ -51,7 +51,5 @@ def genLog(member, what):
 
 def saveConfig(ctx):
 	print("saving")
-	with open('Resources.json', 'w') as outfile:
-		json.dump(ctx.bot.config, outfile)
 	with open('Resources.yaml', 'w') as outfile:
 		yaml.dump(ctx.bot.config, outfile)
