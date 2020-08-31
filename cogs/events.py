@@ -64,9 +64,6 @@ class Events(commands.Cog):
 				if len(reaction.message.attachments) > 0:
 					embd.set_image(url=reaction.message.attachments[0].url)
 				await ch.send(embed=embd)
-			else:
-				print("not enough @ {0}".format((list(filter(lambda x: str(
-                                    x.emoji) == self.bot.config["starboard"][reaction.message.guild.id]["emote"], reaction.message.reactions)))))
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
