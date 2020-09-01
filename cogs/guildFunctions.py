@@ -57,6 +57,7 @@ class GuildFunctions(commands.Cog):
 				if emote.lower() == "ignore":
 					await self.starboardIgnore(ctx, count)
 					return
+				pass
 				await ctx.send("please send a valid emote")
 				return
 			if ctx.message.guild.id in ctx.bot.config["starboard"].keys():
