@@ -118,7 +118,8 @@ class Fun(commands.Cog):
 		"""Gets an emote from the server name. ex. $e aRinaPat."""
 		banned = ctx.bot.config["emoteBanned"].copy()
 		if ctx.message.guild:
-			banned.remove(ctx.message.guild.id)
+			if ctx.message.guild.id in banned:
+				banned.remove(ctx.message.guild.id)
 		emoji = discord.utils.find(	lambda emoji: ((emoji.name.lower() == emote.lower()) and (not emoji.guild.id in banned)), self.bot.emojis)
 		
 		if emoji is None:

@@ -13,7 +13,8 @@ def getRandEmoji(emojis, query="", ctx=None):
 	if ctx:
 		banned = ctx.bot.config["emoteBanned"].copy()
 		if ctx.message.guild:
-			banned.remove(ctx.message.guild.id)
+			if ctx.message.guild.id in banned:
+				banned.remove(ctx.message.guild.id)
 		emojis = list(filter(lambda x: not(x.guild.id in banned), emojis))
 	if query is "":
 		return random.choice(emojis)
