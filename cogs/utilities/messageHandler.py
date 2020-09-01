@@ -10,7 +10,7 @@ import threading
 
 cache = 3
 spamCacheSize = 3
-maxPoints = 30
+maxPoints = 60
 
 
 class MessageHandler():
@@ -170,9 +170,9 @@ class MessageHandler():
 				await self.mute(message.author, "banned word:\n {0}\n in {1}".format(message.content, message.channel))
 				return False
 		if score is None or score < 10:
+			modifier = 8
+		elif score < 200:
 			modifier = 4
-		elif score < 100:
-			modifier = 2
 		else:
 			modifier = 1
 		points = 1
