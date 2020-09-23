@@ -2,6 +2,7 @@ import asyncio
 import discord
 import datetime
 import io
+import yaml
 import pytz
 from discord.ext import commands
 from .utilities import utils, checks
@@ -10,7 +11,7 @@ from .utilities import utils, checks
 class Events(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
-		self.starboardQueue = []
+		self.starboardQueue = self.bot.config["sbq"]
 
 	async def shutdown(self, ctx):
 		pass
@@ -29,6 +30,8 @@ class Events(commands.Cog):
 		if message.clean_content:
 			# add zero width space to get rid of the @everyones
 			content = message.clean_content.replace("@", "@​")
+			if len(content)>1023:
+				content=(content[:1020]+"...")
 			embd = embd.add_field(name='Message', value=content, inline=False)
 		embd = embd.add_field(
 			name='Jump Link', value="[Here](" + message.jump_url + ")")
@@ -36,34 +39,47 @@ class Events(commands.Cog):
 		return embd
 
 	@commands.Cog.listener()
-	async def on_reaction_add(self, reaction, user):
-		if not(reaction.message.guild.id in self.bot.config["starboard"].keys()):
+	async def on_raw_reaction_add(self, payload):
+		emoji = payload.emoji
+		if not(payload.guild_id in self.bot.config["starboard"].keys()):
 			return
-		if reaction.message.channel.id == self.bot.config["starboard"][reaction.message.guild.id]["channel"]:
+		if payload.channel_id == self.bot.config["starboard"][payload.guild_id]["channel"]:
 			return
-		if reaction.message.channel.id in self.bot.config["starboard"][reaction.message.guild.id]["ignore"]:
+		if payload.channel_id in self.bot.config["starboard"][payload.guild_id]["ignore"]:
 			return
-		if str(reaction.emoji) == self.bot.config["starboard"][reaction.message.guild.id]["emote"]:
-			if user.id == reaction.message.author.id or user.bot:
+		if str(emoji) == self.bot.config["starboard"][payload.guild_id]["emote"]:
+			messageChannel = self.bot.get_channel(payload.channel_id)
+			message = await messageChannel.fetch_message(payload.message_id)
+			if message.created_at + datetime.timedelta(days=31) < datetime.datetime.now():
+				return
+			user = payload.member
+			if user.id == message.author.id or user.bot:
+				reaction = (list(filter(lambda x: str(
+					x.emoji) == self.bot.config["starboard"][message.guild.id]["emote"], message.reactions)))[0]
 				try:
-					await reaction.remove(reaction.message.author)
+					await reaction.remove(message.author)
 				except Exception:
 					pass
 				return
-			if reaction.message.id in self.starboardQueue:
+			if message.id in self.starboardQueue:
 				return
 			reactions = (list(filter(lambda x: str(
-				x.emoji) == self.bot.config["starboard"][reaction.message.guild.id]["emote"], reaction.message.reactions)))
+				x.emoji) == self.bot.config["starboard"][message.guild.id]["emote"], message.reactions)))
 			if len(reactions) < 1:
 				return
-			if reactions[0].count >= self.bot.config["starboard"][reaction.message.guild.id]["count"]:
-				ch = reaction.message.guild.get_channel(
-					self.bot.config["starboard"][reaction.message.guild.id]["channel"])
-				self.starboardQueue.append(reaction.message.id)
-				embd = self.genStarboardPost(reaction.message)
-				if len(reaction.message.attachments) > 0:
-					embd.set_image(url=reaction.message.attachments[0].url)
+			if reactions[0].count == self.bot.config["starboard"][message.guild.id]["count"]:
+				ch = message.guild.get_channel(
+					self.bot.config["starboard"][message.guild.id]["channel"])
+				embd = self.genStarboardPost(message)
+				if len(message.attachments) > 0:
+					embd.set_image(url=message.attachments[0].url)
 				await ch.send(embed=embd)
+				self.starboardQueue.append(message.id)
+				if len(self.starboardQueue) > 500:
+					self.starboardQueue.pop(0)
+				self.bot.config["sbq"] = self.starboardQueue
+				with open('Resources.yaml', 'w') as outfile:
+					yaml.dump(self.bot.config, outfile)
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
