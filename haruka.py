@@ -170,8 +170,8 @@ async def softReset(ctx, *, selectedCogs=None):
 	for guild in bot.guilds:
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
-	print("Currently in the current guilds: {0} with a total userbase of {1}".format(
-		guildList, totalUsers))
+	print("Currently in the {2} guilds: {0} with a total userbase of {1}".format(
+		guildList, totalUsers, len(bot.guilds)))
 	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
 	rxn = utils.getRandEmoji(bot.emojis, "hug")
 	await ctx.message.add_reaction(rxn)

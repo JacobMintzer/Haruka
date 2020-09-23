@@ -100,6 +100,16 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 		await ctx.send(message)
 		await ctx.message.delete()
 
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def uwu(self,ctx):
+		print("uwu")
+
+		
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def umu(self,ctx):
+		pass
 
 def setup(bot):
 	bot.add_cog(Setup(bot))
