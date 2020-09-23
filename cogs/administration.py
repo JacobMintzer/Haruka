@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from .utilities import utils, checks
 import os
+import requests
 import io
 import pytz
 import datetime
@@ -202,6 +203,18 @@ class Administration(commands.Cog):
 		print(emote.guild.name)
 		self.bot.config["emoteBanned"].append(emote.guild.id)
 		utils.saveConfig(ctx)
+
+	@commands.command()
+	@checks.is_me()
+	async def exportEmotes(self, ctx):
+		for emote in ctx.message.guild.emojis:
+			if emote.animated:
+				try:
+					request = requests.get(emote.url, allow_redirects=True)
+					file = "./rina/{0}.gif".format(emote.name)
+					open(file, 'wb').write(request.content)
+				except:
+					print("can't do {0}".format(str(emote)))
 
 	@commands.command()
 	@checks.is_me()
