@@ -228,15 +228,14 @@ class GuildFunctions(commands.Cog):
 		await ctx.message.add_reaction(rxn)
 
 	@commands.command(name="best")
-	async def best(self, ctx, *, role):
+	async def best(self, ctx, *, role=None):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 		if not(str(ctx.message.guild.id) in ctx.bot.config["best"].keys()):
+			print("not here fam")
 			return
 		roleNames = self.bot.config["best"][str(ctx.message.guild.id)]
-		if role.lower() == "clear":
-			role = "clear"
-		elif role.title() not in roleNames:
-			await ctx.send("Not a valid role.")
+		if role is None:
+			await ctx.send("Best roles include {0}".format(", ".join(self.bot.config["best"][str(ctx.message.guild.id)])))
 			return
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
 		return
@@ -271,15 +270,21 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Not a valid subunit")
 		await self.setRole(ctx, roleNames, roleName)
 
-	async def setRole(self, ctx, allRoles, role, rxnChoice=None):
+	async def setRole(self, ctx, roleNames, roleName, rxnChoice=None):
 		async with ctx.typing():
-			member = ctx.message.author
-			roles = list(filter(lambda x: x.name in allRoles, ctx.message.guild.roles))
-			requestedRole = discord.utils.find(
-				lambda x: x.name.lower() == role.lower(), roles)
-			await member.remove_roles(*roles, atomic=True)
-			if not(role == "clear"):
-				await member.add_roles(requestedRole)
+
+			if roleName.lower() == "clear":
+				roleName = "clear"
+				newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) 
+				newRole=None
+			elif roleName.title() not in roleNames:
+				await ctx.send("Not a valid role.")
+				return
+			else:
+				newRole=discord.utils.find(lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
+			print(type(ctx.author.roles))
+			newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) + [newRole]
+			await ctx.author.edit(roles=newRoles)
 			if rxnChoice is None:
 				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
