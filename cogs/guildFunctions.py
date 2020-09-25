@@ -231,7 +231,6 @@ class GuildFunctions(commands.Cog):
 	async def best(self, ctx, *, role=None):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 		if not(str(ctx.message.guild.id) in ctx.bot.config["best"].keys()):
-			print("not here fam")
 			return
 		roleNames = self.bot.config["best"][str(ctx.message.guild.id)]
 		if role is None:
@@ -272,7 +271,6 @@ class GuildFunctions(commands.Cog):
 
 	async def setRole(self, ctx, roleNames, roleName, rxnChoice=None):
 		async with ctx.typing():
-
 			if roleName.lower() == "clear":
 				roleName = "clear"
 				newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) 
@@ -282,7 +280,6 @@ class GuildFunctions(commands.Cog):
 				return
 			else:
 				newRole=discord.utils.find(lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
-			print(type(ctx.author.roles))
 			newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) + [newRole]
 			await ctx.author.edit(roles=newRoles)
 			if rxnChoice is None:
