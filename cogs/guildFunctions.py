@@ -2,6 +2,7 @@ import asyncio
 import discord
 import time
 import datetime
+import random
 import pytz
 from discord.ext import commands
 from typing import Union
@@ -259,28 +260,73 @@ class GuildFunctions(commands.Cog):
 		roleNames = self.bot.config["sub"]
 		if role.lower() == "diverdiva" or role.lower() == "diver diva":
 			roleName = "DiverDiva"
+			rxnChoice = random.choice(["karin", "ai"]) + "yay"
 		elif role.lower() == "azuna" or role.lower() == "a・zu・na":
 			roleName = "A・ZU・NA"
+			rxnChoice = random.choice(["ayumu", "shizu", "setsu"]) + "yay"
 		elif role.lower() == "qu4rtz" or role.lower() == "quartz":
 			roleName = "QU4RTZ"
+			rxnChoice = random.choice(["rina", "emma", "kasu", "kanata"]) + "yay"
 		elif role.lower() == "clear":
+			rxnChoice = None
 			roleName = "clear"
 		else:
 			await ctx.send("Not a valid subunit")
-		await self.setRole(ctx, roleNames, roleName)
+		async with ctx.typing():
+			if roleName.lower() == "clear":
+				roleName = "clear"
+				newRoles = list(filter(lambda x: not(
+					x.name.title() in roleNames), ctx.author.roles))
+				await ctx.author.edit(roles=newRoles)
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
+				if emoji is None:
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
+				await ctx.message.add_reaction(emoji)
+				return
+			elif roleName not in roleNames:
+				await ctx.send("Not a valid subunit.")
+				return
+			else:
+				newRole = discord.utils.find(
+					lambda x: x.name == roleName, ctx.message.guild.roles)
+			newRoles = list(filter(lambda x: not(
+				x.name in roleNames), ctx.author.roles)) + [newRole]
+			if newRole not in newRoles:
+				newRoles.append(newRole)
+			await ctx.author.edit(roles=newRoles)
+			if rxnChoice is None:
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
+				if emoji is None:
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
+			else:
+				emoji = utils.getRandEmoji(self.bot.emojis, rxnChoice)
+				if emoji == "No Emoji Found" or emoji is None:
+					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
+			await ctx.message.add_reaction(emoji)
+		return
 
 	async def setRole(self, ctx, roleNames, roleName, rxnChoice=None):
 		async with ctx.typing():
 			if roleName.lower() == "clear":
 				roleName = "clear"
-				newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) 
-				newRole=None
-			elif roleName.title() not in roleNames:
+				newRoles = list(filter(lambda x: not(
+					x.name.title() in roleNames), ctx.author.roles))
+				await ctx.author.edit(roles=newRoles)
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
+				if emoji is None:
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
+				await ctx.message.add_reaction(emoji)
+				return
+			elif roleName.title() not in roleNames and roleName not in roleNames:
 				await ctx.send("Not a valid role.")
 				return
 			else:
-				newRole=discord.utils.find(lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
-			newRoles=list(filter(lambda x: not(x.name.title() in roleNames), ctx.author.roles)) + [newRole]
+				newRole = discord.utils.find(
+					lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
+			newRoles = list(filter(lambda x: not(
+				x.name.title() in roleNames), ctx.author.roles)) 
+			if newRole not in newRoles:
+				newRoles.append(newRole)
 			await ctx.author.edit(roles=newRoles)
 			if rxnChoice is None:
 				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
@@ -292,7 +338,7 @@ class GuildFunctions(commands.Cog):
 				emoji = utils.getRandEmoji(self.bot.emojis, rxnChoice)
 				if emoji == "No Emoji Found" or emoji is None:
 					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
-			await ctx.message.add_reaction(emoji)  # "👍")
+			await ctx.message.add_reaction(emoji)
 		return
 
 
