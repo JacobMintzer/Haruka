@@ -106,6 +106,7 @@ class Scheduler(commands.Cog):
 			self.scheduler.remove_job(events[reminder]["id"])
 			self.events.remove(events[reminder])
 			self.saveEvents()
+			await utils.yay(ctx)
 
 
 def setup(bot):
