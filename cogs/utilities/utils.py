@@ -28,7 +28,7 @@ def getRandEmoji(emojis, query="", ctx=None):
 async def yay(ctx):
 	emoji = getRandEmoji(ctx.message.guild.emojis, "yay")
 	if emoji is None:
-		emoji = getRandEmoji(ctx.bot.emojis, yay)
+		emoji = getRandEmoji(ctx.bot.emojis, "yay")
 	await ctx.message.add_reaction(emoji)
 
 
