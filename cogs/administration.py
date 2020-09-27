@@ -284,10 +284,6 @@ class Administration(commands.Cog):
 				await ctx.message.guild.ban(person, reason="Blacklisted by {0} on this server.".format(str(ctx.message.author)))
 				if log is not None:
 					await log.send("{0} was blacklisted by Haruka on this server.".format(str(person)))
-				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
-				if emoji is None:
-					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
-				await ctx.message.add_reaction(emoji)
 			except:
 				await ctx.send("Could not ban user, please check to make sure I have the `ban user` permission.")
 		await utils.yay(ctx)
