@@ -79,10 +79,9 @@ class Music(commands.Cog):
 			if ch.id == channel:
 				return ch
 
-	async def play(self, ctx):
+	async def play(self, ctx, ch):
 		bot = ctx.bot
 		await bot.wait_until_ready()
-		ch = self.get_vc(ctx, int(self.config["musicCh"]))
 		self.voice = await ch.connect()
 		songs = self.shuff()
 		if len(self.requests) > 0:
@@ -156,22 +155,6 @@ class Music(commands.Cog):
 		"""stops music"""
 		self.message = -1
 
-	@commands.command(no_pm=True)
-	@checks.is_niji()
-	async def music(self, ctx):
-		"""Let's start the music!"""
-		msg = ctx.message.content.replace("!music ", "")
-		if msg.lower() == "muse" or msg.lower() == "u\'s" or "μ" in msg.lower():
-			self.artist = "M"
-		elif msg.lower() == "aqours":
-			self.artist = "A"
-		else:
-			self.artist = "none"
-		if msg.lower() == "aquors":
-			await ctx.send("never heard of them")
-		if self.message != 2:
-			self.message = 1
-			self.bot.loop.create_task(self.play(ctx))
 
 	@commands.command()
 	@checks.is_niji()
@@ -220,7 +203,7 @@ class Music(commands.Cog):
 		requestList = requestList + "```"
 		await ctx.send(requestList)
 
-	@commands.command(no_pm=True, pass_context=True)
+	@commands.command(no_pm=True, pass_context=True, aliases=["req"])
 	@checks.is_niji()
 	async def request(self, ctx, *, msg):
 		"""Request Haruka to play a song! If you only know some of the name that's fine, I can figure out what you're looking for!"""
@@ -268,6 +251,23 @@ class Music(commands.Cog):
 			await ctx.message.author.send(songName)
 		await ctx.message.author.send("If there are any songs that should be here, please DM Junior Mints#2525")
 
+	@commands.command(no_pm=True)
+	@checks.is_niji()
+	async def music(self, ctx, *, mode=""):
+		"""Let's start the music!"""
+		mode=mode.lower()
+		if mode == "muse" or mode == "u\'s" or "μ" in mode:
+			self.artist = "M"
+		elif mode == "aqours":
+			self.artist = "A"
+		else:
+			self.artist = "none"
+		if mode == "aquors":
+			await ctx.send("never heard of them")
+		if self.message != 2:
+			ch = ctx.message.author.voice.channel
+			self.message = 1
+			self.bot.loop.create_task(self.play(ctx, ch))
 
 def setup(bot):
 	bot.add_cog(Music(bot))

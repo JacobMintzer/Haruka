@@ -120,7 +120,7 @@ class Administration(commands.Cog):
 			return
 		if message.author.bot:
 			return
-		if not(str(message.author.guild.id) in self.bot.config["log"].keys()):
+		if not(str(message.guild.id) in self.bot.config["log"].keys()):
 			return
 		if original.clean_content == message.clean_content:
 			return
