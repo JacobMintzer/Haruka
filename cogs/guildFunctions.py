@@ -237,6 +237,8 @@ class GuildFunctions(commands.Cog):
 		if role is None:
 			await ctx.send("Best roles include {0}".format(", ".join(self.bot.config["best"][str(ctx.message.guild.id)])))
 			return
+		if not (role.title() in roleNames):
+			return
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
 		return
 
