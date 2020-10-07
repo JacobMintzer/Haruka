@@ -1,11 +1,13 @@
 import asyncio
-import discord
 import datetime
 import io
-import yaml
+
+import discord
 import pytz
+import yaml
 from discord.ext import commands
-from .utilities import utils, checks
+
+from .utilities import checks, utils
 
 
 class Events(commands.Cog):

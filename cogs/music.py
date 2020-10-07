@@ -1,17 +1,18 @@
 import asyncio
-import discord
-from discord.ext import commands
-import re
-import random
-import os
-import time
 import datetime
-from random import shuffle
+import os
+import random
+import re
 import sys
+import time
+from random import shuffle
+
+import discord
 import mutagen
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
-from .utilities import utils, checks
+from discord.ext import commands
+from fuzzywuzzy import fuzz, process
+
+from .utilities import checks, utils
 from .utilities.musicPlayer import MusicPlayer, Song
 
 

@@ -1,20 +1,22 @@
-import sys
-import logging
-import requests
-import time
-import discord
-from discord.ext import commands
-import importlib
 import asyncio
-import re
-import random
-import os
-import io
-import yaml
-import datetime
-import pytz
-from cogs.utilities import messageHandler, utils, checks
 import atexit
+import datetime
+import importlib
+import io
+import logging
+import os
+import random
+import re
+import sys
+import time
+
+import discord
+import pytz
+import requests
+import yaml
+from discord.ext import commands
+
+from cogs.utilities import checks, messageHandler, utils
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)

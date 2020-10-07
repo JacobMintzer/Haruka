@@ -1,7 +1,9 @@
 import asyncio
+
 import discord
 from discord.ext import commands
-from .utilities import utils, checks
+
+from .utilities import checks, utils
 
 
 class Setup(commands.Cog):

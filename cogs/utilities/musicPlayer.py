@@ -1,15 +1,15 @@
-import discord
-from discord.ext import commands
-
 import asyncio
 import itertools
+import os
 import sys
 import traceback
-from async_timeout import timeout
 from functools import partial
-import mutagen
 from random import shuffle
-import os
+
+import discord
+import mutagen
+from async_timeout import timeout
+from discord.ext import commands
 
 
 class MusicPlayer:

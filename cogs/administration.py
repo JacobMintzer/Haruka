@@ -1,12 +1,14 @@
 import asyncio
-import discord
-from discord.ext import commands
-from .utilities import utils, checks
-import os
-import requests
-import io
-import pytz
 import datetime
+import io
+import os
+
+import discord
+import pytz
+import requests
+from discord.ext import commands
+
+from .utilities import checks, utils
 
 
 async def score_enabled(ctx):

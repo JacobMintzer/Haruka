@@ -1,14 +1,16 @@
 import asyncio
-import discord
-import requests
 import json
-import pprint
-import pandas as pd
 import os
-import yaml
+import pprint
+
+import discord
+import pandas as pd
 import pytz
+import requests
+import yaml
 from discord.ext import commands
-from .utilities import messageHandler, utils, checks
+
+from .utilities import checks, messageHandler, utils
 
 
 class Fun(commands.Cog):
