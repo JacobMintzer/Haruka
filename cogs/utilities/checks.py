@@ -41,6 +41,20 @@ def isScoreEnabled():
 			return False
 	return commands.check(predicate)
 
+def isMusicEnabled():
+	async def predicate(ctx):
+		try:
+			if ctx.message.guild is None:
+				return False
+			if ctx.message.guild.id in ctx.bot.config["musicEnabled"]:
+				return True
+			else:
+				return False
+		except Exception as e:
+			print(e)
+			return False
+	return commands.check(predicate)
+
 
 def is_me():
 	def predicate(ctx):

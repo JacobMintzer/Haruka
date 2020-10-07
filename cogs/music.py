@@ -11,18 +11,16 @@ import sys
 import mutagen
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
-import pandas as pd
 from .utilities import utils, checks
+from .utilities.musicPlayer import MusicPlayer, Song
 
 
 class Music(commands.Cog):
-
 	def __init__(self, bot):
 		self.bot = bot
-		self.mode = "../Haruka/music/"
-		self.artist = "none"
-		self.songList = os.listdir(self.mode)
-		self.songList = sorted(self.songList, key=str.casefold)
+		self.players = {}
+		self.dir = "../Haruka/music/"
+		self.songList = sorted(os.listdir(self.dir), key=str.casefold)
 		self.songs = ['```']
 		for song in self.songList:
 			if len(self.songs[-1]) > 1800:
@@ -32,24 +30,28 @@ class Music(commands.Cog):
 				self.songs[-1] += song.replace('.mp3', '')
 				self.songs[-1] += '\n'
 		self.songs[-1] += '```'
-		self.current = "nothing"
-		self.message = 0
-		self.requests = []
-		self.config = self.bot.config
-		self.voice = None
 
-	async def shutdown(self,ctx):
+	async def shutdown(self, ctx):
 		await self.kill()
 
-	async def kill(self):
-		if self.voice is not None:
-			await self.voice.disconnect()
+	def kill(self):
+		for guild, player in self.players:
+			player.destroy(guild)
+
+	def get_player(self, ctx):
+		"""Retrieve the guild player, or generate one."""
+		try:
+			player = self.players[ctx.guild.id]
+		except KeyError:
+			player = MusicPlayer(ctx)
+			self.players[ctx.guild.id] = player
+		return player
 
 	@commands.command(hidden=True)
-	@checks.is_niji()
+	@checks.is_me()
 	async def update(self, ctx):
 		"""Sometimes I forget when I learn new songs~"""
-		self.songList = os.listdir(self.mode)
+		self.songList = os.listdir(self.dir)
 		self.songList.sort()
 		self.songs = ['```']
 		for song in self.songList:
@@ -61,183 +63,147 @@ class Music(commands.Cog):
 				self.songs[-1] += '\n'
 		self.songs[-1] += '```'
 
-	async def status(self, ctx):
-		data = mutagen.File(self.mode + self.current)
-		title = self.current
-		if "TPE1" in data.keys():
-	                artist = str(data["TPE1"])
-		elif "TXXX:artist_en" in data.keys():
-			artist = str(data["TXXX:artist_en"])
-		elif "TXXX:artist_jp" in data.keys():
-			artist = str(data["TXXX:artist_jp"])
+	@commands.command(no_pm=True)
+	@checks.isMusicEnabled()
+	async def music(self, ctx, *, channel: discord.VoiceChannel = None):
+		"""I'll join your channel and start playing music!"""
+		if channel is None:
+			try:
+				channel = ctx.message.author.voice.channel
+			except Exception:
+				await ctx.send("You must either be in a voice channel I can join, or supply a voice channel.")
+				return
+		vc = ctx.voice_client
+		if vc:
+			if vc.channel.id == channel.id:
+				return
+			try:
+				await vc.move_to(channel)
+			except asyncio.TimeoutError:
+				await ctx.send("Unable to switch to channel: timed out.")
 		else:
-			artist = "artist unknown, pm junior mints to add one"
-		await ctx.bot.change_presence(activity=discord.Game(title.replace(".mp3", "") + " by " + artist, type=1))
-
-	def get_vc(self, ctx, channel):
-		for ch in ctx.guild.voice_channels:
-			if ch.id == channel:
-				return ch
-
-	async def play(self, ctx, ch):
-		bot = ctx.bot
-		await bot.wait_until_ready()
-		self.voice = await ch.connect()
-		songs = self.shuff()
-		if len(self.requests) > 0:
-			self.current = self.requests.pop(0)
-		else:
-			self.current = songs.pop(0)
-		player = self.voice.play(discord.FFmpegPCMAudio(
-			self.mode + self.current, options="-q:a 7"))
-		await self.status(ctx)
-		# player.start()
-		while True:
-			if self.message == -1:  # stop command
-				await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
-				await self.voice.disconnect()
-				self.voice = None
-				break
-			elif self.message == 5:  # skip song
-				self.message = 1
-				self.voice.stop()
-				if len(songs) < 1:
-					songs = self.shuff()
-				if len(self.requests) > 0:
-					self.current = self.requests.pop(0)
-				else:
-					self.current = songs.pop(0)
-					if ".mp3" not in self.current:
-						self.current = songs.pop(0)
-				await self.status(ctx)
-				self.voice.play(discord.FFmpegPCMAudio(
-					self.mode + self.current, options="-q:a 7"))
-			elif self.voice.is_playing():
-				#print("is playing")
-				await asyncio.sleep(4)
-			else:
-				if len(songs) < 1:
-					songs = self.shuff()
-				if len(self.requests) > 0:
-					self.current = self.requests.pop(0)
-				else:
-					self.current = songs.pop(0)
-					if ".mp3" not in self.current:
-						self.current = songs.pop(0)
-				await self.status(ctx)
-				self.voice.play(discord.FFmpegPCMAudio(
-					self.mode + self.current, options="-q:a 7"))
-
-	def shuff(self):
-		if self.artist == "M":
-			with open("playlist/muse.txt") as f:
-				songList = f.readlines()
-			songList = [x.strip() for x in songList]
-		elif self.artist == "A":
-			with open("playlist/Aqours.txt") as f:
-				songList = f.readlines()
-			songList = [x.strip() for x in songList]
-		else:
-			songList = os.listdir(self.mode)
-			self.artist = "none"
-		shuffle(songList)
-		return songList
+			try:
+				await channel.connect()
+			except asyncio.TimeoutError:
+				await ctx.send("Unable to join channel: timed out.")
+		self.get_player(ctx)
 
 	@commands.command(no_pm=True)
-	@checks.is_niji()
+	@checks.isMusicEnabled()
 	async def skip(self, ctx):
 		"""If you want me to play another song"""
-		self.message = 5
+		vc = ctx.voice_client
+		if vc.is_paused():
+			pass
+		elif not vc.is_playing():
+			return
+
+		vc.stop()
 
 	@commands.command(no_pm=True)
-	@checks.is_niji()
+	@checks.isMusicEnabled()
 	async def stop(self, ctx):
 		"""stops music"""
-		self.message = -1
+		vc = ctx.voice_client
 
+		if not vc or not vc.is_connected():
+			return await ctx.send('I am not currently playing anything!', delete_after=20)
 
-	@commands.command()
-	@checks.is_niji()
-	async def playing(self, ctx):
-		"""I tell you the song I am singing"""
-		data = mutagen.File(self.mode + self.current)
-		title = "\n[Title]: "
-		if "TIT2" in data.keys():
-			title += str(data["TIT2"])
-			title += "\n"
-		if "TXXX:title_en" in data.keys():
-			title += "\tEN: "
-			title += str(data["TXXX:title_en"])
-			title += "\n"
-		if "TXXX:title_jp" in data.keys():
-			title += "\tJP: "
-			title += str(data["TXXX:title_jp"])
-			title += "\n"
-		artist = "[Artist]: "
-		if "TPE1" in data.keys():
-			artist += str(data["TPE1"])
-			artist += " \n"
-		if "TXXX:artist_en" in data.keys():
-			artist += "\tEN: "
-			artist += str(data["TXXX:artist_en"])
-			artist += "\n"
-		if "TXXX:artist_jp" in data.keys():
-			artist += "\tJP: "
-			artist += str(data["TXXX:artist_jp"])
-			artist += "\n"
-		if not("TPE1" in data.keys() or "TXXX:artist_en" in data.keys() or "TXXX:artist_jp" in data.keys()):
-			artist = "\nArtist unknown, pm junior mints to add one"
-		await ctx.send("```css\n[File]: " + self.current + title + artist + "```")
+		await self.cleanup(ctx.guild)
+
+	async def cleanup(self, guild):
+		try:
+			await guild.voice_client.disconnect()
+		except AttributeError:
+			pass
+
+		try:
+			del self.players[guild.id]
+		except KeyError:
+			pass
 
 	@commands.command()
-	@checks.is_niji()
+	@checks.isMusicEnabled()
 	async def queue(self, ctx):
 		"""See what songs will play next."""
-		requestList = "```"
-		if len(self.requests) == 0:
-			requestList = requestList + "Queue is empty"
-		else:
-			for request in self.requests:
-				requestList = requestList + request
-				requestList = requestList + "\n"
-		requestList = requestList + "```"
-		await ctx.send(requestList)
+		player = self.get_player(ctx)
+		msg = ""
+		i = 1
+		for song in player.queue:
+			title, artist = song.getQueueInfo()
+			msg = msg + "{0}.\t{1} by {2}\n".format(i, title, artist)
+			i += 1
+		if i < 10:
+			msg = msg + "These songs selected randomly:\n"
+			for song in player.randQueue[:11 - i]:
+				title, artist = song.getQueueInfo()
+				msg = msg + "{0}.\t{1} by {2}\n".format(i, title, artist)
+				i += 1
+		await ctx.send("```css\n{0}```".format(msg.strip()))
 
-	@commands.command(no_pm=True, pass_context=True, aliases=["req"])
-	@checks.is_niji()
+	@commands.command()
+	@checks.isMusicEnabled()
+	async def playing(self, ctx):
+		"""Check which song is playing"""
+		player = self.get_player(ctx)
+		title, artist = player.current.getPlaying()
+		current = "[Current]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+			title, artist)
+		if len(player.history) > 0:
+			title, artist = player.history[-1].getPlaying()
+			previous = "[Previous]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+				title, artist)
+		else:
+			previous = ""
+		if len(player.queue) > 0:
+			song = player.queue[0]
+		else:
+			song = player.randQueue[0]
+		title, artist = song.getPlaying()
+		upcoming = "[Next]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+			title, artist)
+		await ctx.send("```css\n{0}{1}{2}```".format(current, previous, upcoming))
+
+	@commands.command(aliases=["req"])
+	@checks.isMusicEnabled()
 	async def request(self, ctx, *, msg):
 		"""Request Haruka to play a song! If you only know some of the name that's fine, I can figure out what you're looking for!"""
+		player = self.get_player(ctx)
 		potential = []
 		if msg.lower() == "gay":
+			player.queue.append(Song("Garasu no Hanazono.mp3"))
 			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
-			for song in self.songList:
-				if fuzz.ratio('Garasu no Hanazono'.lower() + '.mp3', song.lower()) > 95:
-					self.requests.append(song)
-					return 0
+			return
 		elif "lesbian" in msg.lower():
+			player.queue.append(Song("Zurui yo Magnetic today.mp3"))
 			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
-			for song in self.songList:
-				if fuzz.ratio('Zurui yo Magnetic today.mp3'.lower(), song.lower()) > 95:
-					self.requests.append(song)
-					return 0
+			return
 		else:
-			for song in self.songList:
-				if fuzz.ratio(msg.lower() + '.mp3', song.lower()) > 95:
-					self.requests.append(song)
-					# yield from bot.say("added")
+			potential = list(filter(lambda song: fuzz.ratio(
+				msg.lower(), song.replace(".mp3", "").lower()) > 95, self.songList))
+			if len(potential) == 1:
+				player.queue.append(Song(potential[0]))
+				await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+				return
+			if len(potential) < 1:
+				potential = list(filter(lambda song: fuzz.partial_ratio(
+                                    msg.lower(), song.replace(".mp3", "").lower()) >= 95, self.songList))
+				if len(potential) == 1:
+					player.queue.append(Song(potential[0]))
 					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
-					return 0
-				elif fuzz.partial_ratio(msg.lower(), song.lower()) > 85:
-					potential.append(song)
+					return
+			if len(potential) < 1:
+				potential = list(filter(lambda song: fuzz.partial_ratio(
+                                    msg.lower(), song.replace(".mp3", "").lower()) >= 85, self.songList))
+				if len(potential) == 1:
+					player.queue.append(Song(potential[0]))
+					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+					return
 			if len(potential) == 0:
 				await ctx.send("Song not found, check your spelling or dm junior mints to add the song.")
-			elif len(potential) == 1:
-				# yield from bot.say("added")
-				await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
-				self.requests.append(potential[0])
-			else:
+				return
+			if len(potential) > 1:
 				response = "```These are potential matches, try being more specific with the name."
-				x = 0
 				for song in potential:
 					response += '\n'
 					response += song
@@ -251,23 +217,6 @@ class Music(commands.Cog):
 			await ctx.message.author.send(songName)
 		await ctx.message.author.send("If there are any songs that should be here, please DM Junior Mints#2525")
 
-	@commands.command(no_pm=True)
-	@checks.is_niji()
-	async def music(self, ctx, *, mode=""):
-		"""Let's start the music!"""
-		mode=mode.lower()
-		if mode == "muse" or mode == "u\'s" or "μ" in mode:
-			self.artist = "M"
-		elif mode == "aqours":
-			self.artist = "A"
-		else:
-			self.artist = "none"
-		if mode == "aquors":
-			await ctx.send("never heard of them")
-		if self.message != 2:
-			ch = ctx.message.author.voice.channel
-			self.message = 1
-			self.bot.loop.create_task(self.play(ctx, ch))
 
 def setup(bot):
 	bot.add_cog(Music(bot))
