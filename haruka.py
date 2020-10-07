@@ -23,10 +23,11 @@ handler = logging.FileHandler(
 handler.setFormatter(logging.Formatter(
 	'%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
-
+intents = discord.Intents.default()
+intents.members = True
 bot = commands.Bot(command_prefix=['$'],
                    description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",
-                   case_insensitive=True)
+                   case_insensitive=True, intents=intents)
 
 cogList = ['cogs.music', 'cogs.administration', 'cogs.fun',
            'cogs.guildFunctions', 'cogs.events', 'cogs.setup', 'cogs.scheduler']
