@@ -30,8 +30,8 @@ class Events(commands.Cog):
 		if message.clean_content:
 			# add zero width space to get rid of the @everyones
 			content = message.clean_content.replace("@", "@​")
-			if len(content)>1023:
-				content=(content[:1020]+"...")
+			if len(content) > 1023:
+				content = (content[:1020] + "...")
 			embd = embd.add_field(name='Message', value=content, inline=False)
 		embd = embd.add_field(
 			name='Jump Link', value="[Here](" + message.jump_url + ")")
@@ -100,6 +100,11 @@ class Events(commands.Cog):
 				await member.add_roles(autorole)
 			except Exception:
 				print("error adding autorole in {0}".format(member.guild.name))
+		for watchedName in self.bot.config["watchlist"]:
+			if watchedName.lower() in member.name.lower():
+				ch = self.bot.get_channel(self.bot.config["modCh"])
+				await ch.send("user {2} with `thinkpad` in their name joined {0} with id {1}.".format(member.guild.name, member.id, member.name))
+		
 
 
 def setup(bot):
