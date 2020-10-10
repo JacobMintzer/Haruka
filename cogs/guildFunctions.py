@@ -1,5 +1,7 @@
 import asyncio
 import datetime
+import io
+import os
 import random
 import time
 from typing import Union
@@ -14,9 +16,22 @@ from .utilities import checks, messageHandler, utils
 class GuildFunctions(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
+		self.nijicord = None
+		if self.bot.config["nijiBannerSwap"]:
+			self.bot.loop.create_task(self.bannerCycle(self.bot))
 
 	async def shutdown(self, ctx):
 		pass
+
+	async def bannerCycle(self, bot):
+		await asyncio.sleep(21600)
+		if self.nijicord is None:
+			self.nijicord = bot.get_guild(bot.config["nijicord"])
+		files = os.listdir("../Haruka/banners/")
+		file = open(random.choice(files), 'rb')
+		await self.nijicord.edit(banner=file.read())
+		file.close()
+		await asyncio.sleep(21600)
 
 	@commands.command()
 	async def info(self, ctx, member: discord.Member = None):
@@ -328,7 +343,7 @@ class GuildFunctions(commands.Cog):
 				newRole = discord.utils.find(
 					lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
 			newRoles = list(filter(lambda x: not(
-				x.name.title() in roleNames), ctx.author.roles)) 
+				x.name.title() in roleNames), ctx.author.roles))
 			if newRole not in newRoles:
 				newRoles.append(newRole)
 			await ctx.author.edit(roles=newRoles)
