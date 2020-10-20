@@ -208,6 +208,12 @@ async def on_message(message):
 @bot.command(hidden=True)
 @commands.check(is_admin)
 async def s(ctx, *, msg=""):
+	if ctx.message.guild.id == int(ctx.bot.config["nijiCord"]) and ctx.message.author.id == 257309012519813120:
+		if "say it yourself smh" in msg.lower():
+			await ctx.send("no")
+		else:
+			await ctx.send("say it yourself smh")
+		return
 	fileList = [discord.File(io.BytesIO(await x.read(use_cached=True)), filename=x.filename) for x in ctx.message.attachments]
 	await ctx.send(msg, files=fileList)
 	await ctx.message.delete()
