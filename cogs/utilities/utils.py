@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import json
 import random
 import time
 
@@ -17,7 +16,7 @@ def getRandEmoji(emojis, query="", ctx=None):
 			if ctx.message.guild.id in banned:
 				banned.remove(ctx.message.guild.id)
 		emojis = list(filter(lambda x: not(x.guild.id in banned), emojis))
-	if query is "":
+	if query == "":
 		return random.choice(emojis)
 	choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 	if len(choices) < 1:
