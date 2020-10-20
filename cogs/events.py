@@ -102,7 +102,7 @@ class Events(commands.Cog):
 				await member.add_roles(autorole)
 			except Exception:
 				print("error adding autorole in {0}".format(member.guild.name))
-		for watchedName in self.bot.config["watchlist"]:
+		for watchedName in self.bot.config["watchList"]:
 			if watchedName.lower() in member.name.lower():
 				ch = self.bot.get_channel(self.bot.config["modCh"])
 				await ch.send("user {2} with `thinkpad` in their name joined {0} with id {1}.".format(member.guild.name, member.id, member.name))
