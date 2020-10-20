@@ -134,11 +134,7 @@ class Song:
 		return title, artist
 
 	def getQueueInfo(self):
-		info = self.getInfo()
-		if "title-en" in info.keys():
-			title = info["title-en"]
-		else:
-			title = info["title"]
+		title=self.name
 		if "artist-en" in info.keys():
 			artist = info["artist-en"]
 		else:
@@ -151,7 +147,7 @@ class Song:
 		if "TIT2" in data.keys():
 			songInfo["title"] = str(data["TIT2"])
 		if "TXXX:title_en" in data.keys():
-			songInfo["title-en"] = str(data["TXXX:title_en"])
+			songInfo["title-en"] = self.name
 		if "TXXX:title_jp" in data.keys():
 			songInfo["title-jp"] = str(data["TXXX:title_jp"])
 		if "TPE1" in data.keys():
