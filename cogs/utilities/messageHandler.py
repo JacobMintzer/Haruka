@@ -27,7 +27,7 @@ class MessageHandler():
 		with open("bad-words.txt") as f:
 			content = f.readlines()
 		self.badWords = [x.strip() for x in content if x.strip()]
-		self.tempRegex = re.compile(r"(-?)(\d{1,3})(C|F)")
+		self.tempRegex = re.compile(r"(-?)(\d{1,3})(C|F|c|f)")
 
 	def disconnect(self):
 		self.isEnabled = False
@@ -93,10 +93,10 @@ class MessageHandler():
 						magnitude = 0-(int(temperature[1:-1]))
 					else:
 						magnitude = int(temperature[:-1])
-					if unit == 'C':
-						res = "{0} is {1:.1f}F".format(temperature,magnitude*9/5+32)
+					if unit.lower() == 'c':
+						res = "{0}​C is {1:.1f}​F".format(magnitude,magnitude*9/5+32)
 					else:
-						res = "{0} is {1:.1f}C".format(temperature,(magnitude-32)*5/9)
+						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
