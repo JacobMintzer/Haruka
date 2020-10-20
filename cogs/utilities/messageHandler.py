@@ -85,18 +85,19 @@ class MessageHandler():
 				await message.channel.send("No")
 				await message.delete()
 				return
-			if temp:=self.tempRegex.search(message.content):
-				temperature = temp.group()
-				unit=temp[-1]
-				if temp[0] == '-':
-					magnitude = 0-(int(temp[1:-1]))
-				else:
-					magnitude = int(temp[:-1])
-				if unit == 'C':
-					res = "{0} is {1}F".format(temp,magnitude*9/5+32)
-				else:
-					res = "{0} is {1}C".format(temp,(magnitude-32)*5/9)
-				await ctx.send(res)
+			if not (self.cooldown or message.author.bot):
+				if tempMatch:=self.tempRegex.search(message.content):
+					temperature = tempMatch.group(0)
+					unit = temperature[-1]
+					if temperature[0] == '-':
+						magnitude = 0-(int(temperature[1:-1]))
+					else:
+						magnitude = int(temperature[:-1])
+					if unit == 'C':
+						res = "{0} is {1:.1f}F".format(temperature,magnitude*9/5+32)
+					else:
+						res = "{0} is {1:.1f}C".format(temperature,(magnitude-32)*5/9)
+					await message.channel.send(res)
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
 				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
