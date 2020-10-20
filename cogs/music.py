@@ -10,7 +10,7 @@ from random import shuffle
 import discord
 import mutagen
 from discord.ext import commands
-from fuzzywuzzy import fuzz, process
+from rapidfuzz import fuzz, process
 
 from .utilities import checks, utils
 from .utilities.musicPlayer import MusicPlayer, Song
@@ -33,7 +33,7 @@ class Music(commands.Cog):
 		self.songs[-1] += '```'
 
 	async def shutdown(self, ctx):
-		await self.kill()
+		self.kill()
 
 	def kill(self):
 		for guild, player in self.players:
