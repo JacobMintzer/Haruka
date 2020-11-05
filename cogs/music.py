@@ -37,7 +37,7 @@ class Music(commands.Cog):
 
 	def kill(self):
 		for guild, player in self.players:
-			player.destroy(guild)
+			player.destroy()
 
 	def get_player(self, ctx):
 		"""Retrieve the guild player, or generate one."""
@@ -63,6 +63,8 @@ class Music(commands.Cog):
 				self.songs[-1] += song.replace('.mp3', '')
 				self.songs[-1] += '\n'
 		self.songs[-1] += '```'
+		for _,player in self.players:
+			player.update()
 
 	@commands.command(no_pm=True)
 	@checks.isMusicEnabled()
@@ -106,22 +108,24 @@ class Music(commands.Cog):
 	async def stop(self, ctx):
 		"""stops music"""
 		vc = ctx.voice_client
+		await self.cleanup(ctx.guild, ctx)
 
-		if not vc or not vc.is_connected():
-			return await ctx.send('I am not currently playing anything!', delete_after=20)
+	@commands.command(no_pm=True)
+	@checks.isMusicEnabled()
+	async def removeDupes(self, ctx):
+		player = self.get_player(ctx)
+		player.remove_dupes()
+		await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 
-		await self.cleanup(ctx.guild)
-
-	async def cleanup(self, guild):
+	async def cleanup(self, guild, ctx):
 		try:
 			await guild.voice_client.disconnect()
 		except AttributeError:
 			pass
-
 		try:
 			del self.players[guild.id]
 		except KeyError:
-			pass
+			return await ctx.send('I am not currently playing anything!', delete_after=20)
 
 	@commands.command()
 	@checks.isMusicEnabled()
@@ -142,11 +146,7 @@ class Music(commands.Cog):
 				i += 1
 		await ctx.send("```css\n{0}```".format(msg.strip()))
 
-	@commands.command()
-	@checks.isMusicEnabled()
-	async def playing(self, ctx):
-		"""Check which song is playing"""
-		player = self.get_player(ctx)
+	def getSong(self, player):
 		title, artist = player.current.getPlaying()
 		current = "[Current]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
 			title, artist)
@@ -163,7 +163,15 @@ class Music(commands.Cog):
 		title, artist = song.getPlaying()
 		upcoming = "[Next]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
 			title, artist)
-		await ctx.send("```css\n{0}{1}{2}```".format(current, previous, upcoming))
+		return("```css\n{0}{1}{2}```".format(current, previous, upcoming))
+
+	@commands.command()
+	@checks.isMusicEnabled()
+	async def playing(self, ctx):
+		"""Check which song is playing"""
+		player = self.get_player(ctx)
+		np = await ctx.send(self.getSong(player))
+		player.np=np
 
 	@commands.command(aliases=["req"])
 	@checks.isMusicEnabled()
