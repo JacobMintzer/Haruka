@@ -27,7 +27,7 @@ class MessageHandler():
 		with open("bad-words.txt") as f:
 			content = f.readlines()
 		self.badWords = [x.strip() for x in content if x.strip()]
-		self.tempRegex = re.compile(r"(-?)(\d{1,3})(C|F|c|f)")
+		self.tempRegex = re.compile(r"""(-?)(\d{1,3})(C|F|c|f)(?![^\s.,;?!`':>"])""")
 
 	def disconnect(self):
 		self.isEnabled = False
@@ -85,7 +85,7 @@ class MessageHandler():
 				await message.channel.send("No")
 				await message.delete()
 				return
-			if not (self.cooldown or message.author.bot):
+			if not (message.author.bot):
 				if tempMatch:=self.tempRegex.search(message.content):
 					temperature = tempMatch.group(0)
 					unit = temperature[-1]
