@@ -5,6 +5,7 @@ import sys
 import traceback
 from functools import partial
 from random import shuffle
+import datetime
 
 import discord
 import mutagen
@@ -14,6 +15,7 @@ from discord.ext import commands
 
 class MusicPlayer:
 	def __init__(self, ctx):
+		self.ctx = ctx
 		self.bot = ctx.bot
 		self._guild = ctx.guild
 		self._channel = ctx.channel
@@ -35,9 +37,8 @@ class MusicPlayer:
 
 		await self.bot.wait_until_ready()
 		while not self.bot.is_closed():
-			if len(self.vc.channel.voice_states)<2:
-				self.destroy(self._guild)
-			
+			if len(self.vc.channel.voice_states) < 2:
+				self.destroy()
 			self.next.clear()
 			if len(self.queue) > 0:
 				song = self.queue.pop(0)
@@ -50,14 +51,22 @@ class MusicPlayer:
 			song.volume = self.volume
 			self.current = song
 			source = await discord.FFmpegOpusAudio.from_probe(song.fullPath, options="-b:a 96k")
-			self._guild.voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
-			# self.np = await self._channel.send(f'**Now Playing:** `{song.title}` requested by `{source.requester}`')
+			if self._guild.voice_client:
+				self._guild.voice_client.play(
+					source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
+			else:
+				return
+			if self.np:
+				if (self.np.created_at + datetime.timedelta(hours=2)) > datetime.datetime.utcnow():
+					await self.np.edit(content=self.getPlaying())
+				else:
+					self.np = None
 			await self.next.wait()
 
 			# Make sure the FFmpeg process is cleaned up.
 			source.cleanup()
 			self.history.append(self.current)
-			if len(self.history)>10:
+			if len(self.history) > 10:
 				self.history.pop(0)
 			self.current = None
 			"""
@@ -67,10 +76,37 @@ class MusicPlayer:
 			except discord.HTTPException:
 				pass"""
 
-	def destroy(self, guild):
+	def destroy(self):
 		"""Disconnect and cleanup the player."""
-		return self.bot.loop.create_task(self._cog.cleanup(guild))
+		return self.bot.loop.create_task(self._cog.cleanup(self._guild, self.ctx))
 
+	def update(self):
+		self.randQueue = list(map(lambda x: Song(x), os.listdir("./music/")))
+		shuffle(self.randQueue)
+	
+	def getPlaying(self):
+		title, artist = self.current.getPlaying()
+		current = "[Current]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+			title, artist)
+		if len(self.history) > 0:
+			title, artist = self.history[-1].getPlaying()
+			previous = "[Previous]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+				title, artist)
+		else:
+			previous = ""
+		if len(self.queue) > 0:
+			song = self.queue[0]
+		else:
+			song = self.randQueue[0]
+		title, artist = song.getPlaying()
+		upcoming = "[Next]:\n\t[Title]:\n\t\t{0}\n\t[Artist]:\n\t\t{1}\n\n".format(
+			title, artist)
+		return("```css\n{0}{1}{2}```".format(current, previous, upcoming))
+
+	def remove_dupes(self):
+		newQ=[]
+		[newQ.append(x) for x in self.queue if x not in newQ]
+		self.queue = newQ
 
 class Song:
 	def __init__(self, name, source="local"):
@@ -106,6 +142,12 @@ class Song:
 			artist = "JP: {0}\n\tEN:{1}".format(en, jp)
 		return "```css\nCurrent:\n[Title]: {0}\n[Artist]: {1}```".format(title, artist)
 
+	def __eq__(self, obj):
+		return obj.fullPath == self.fullPath
+
+	def __ne__(self, obj):
+		return not (obj.fullPath == self.fullPath)
+
 	def getPlaying(self):
 		songInfo = self.getInfo()
 		if "title-jp" in songInfo.keys():
@@ -115,6 +157,8 @@ class Song:
 			title = self.name
 		jp = None
 		en = None
+		if "artist" in songInfo.keys():
+			artist = songInfo["artist"]
 		if "artist-jp" in songInfo.keys():
 			jp = songInfo["artist-jp"]
 		if "artist-en" in songInfo.keys():
@@ -126,15 +170,15 @@ class Song:
 			if "artist" in songInfo.keys():
 				en = songInfo["artist"]
 		if jp == en:
-			if jp == None:
-				artist = songInfo["artist"]
-			artist = jp
+			if not(jp is None):
+				artist = jp
 		elif jp != None and en != None:
 			artist = "JP: {0}\n\t\tEN:{1}".format(en, jp)
 		return title, artist
 
 	def getQueueInfo(self):
-		title=self.name
+		title = self.name
+		info = self.getInfo()
 		if "artist-en" in info.keys():
 			artist = info["artist-en"]
 		else:
