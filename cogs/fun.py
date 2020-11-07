@@ -20,16 +20,12 @@ class Fun(commands.Cog):
 		with open('sauce.txt', 'r') as file_object:
 			self.SNKey = file_object.read().strip()
 
-	
-
 	async def shutdown(self, ctx):
 		pass
-	
-	
 
-	#@commands.command()
-	#@checks.is_me()
-	#async def owo(self, ctx):
+	# @commands.command()
+	# @checks.is_me()
+	# async def owo(self, ctx):
 	#	await ctx.send(str(self.scheduler.queue))
 
 	@commands.group()
@@ -122,8 +118,9 @@ class Fun(commands.Cog):
 		if ctx.message.guild:
 			if ctx.message.guild.id in banned:
 				banned.remove(ctx.message.guild.id)
-		emoji = discord.utils.find(	lambda emoji: ((emoji.name.lower() == emote.lower()) and (not emoji.guild.id in banned)), self.bot.emojis)
-		
+		emoji = discord.utils.find(lambda emoji: ((emoji.name.lower(
+		) == emote.lower()) and (not emoji.guild.id in banned)), self.bot.emojis)
+
 		if emoji is None:
 			await ctx.send("emoji not found")
 		else:
@@ -216,7 +213,6 @@ class Fun(commands.Cog):
 		self.bot.config["scoreIgnore"].append(ch.id)
 		utils.saveConfig(ctx)
 
-
 	@score.command()
 	@checks.isScoreEnabled()
 	async def unignore(self, ctx, ch: discord.channel = None):
@@ -303,7 +299,7 @@ class Fun(commands.Cog):
 		rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
 			data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
 		embd.set_author(name=data["idol"]["firstName"] +
-						" " + data["idol"]["lastName"], icon_url=rarity.url)
+                  " " + data["idol"]["lastName"], icon_url=rarity.url)
 		if lb < 0 or lb > 5:
 			lb = 0
 		embd.add_field(name="Appeal (LB{0})".format(
@@ -313,11 +309,13 @@ class Fun(commands.Cog):
 		embd.add_field(name="Technique (LB{0})".format(
 			str(lb)), value=data["technique"]["lb{0}".format(lb)])
 		embd.add_field(
-			name="Skill", value=data["primaryActiveAbilityText"], inline=False)
-		embd.add_field(name="Passive Ability",
-					   value=data["passiveAbility"]["abilityText"], inline=False)
-		embd.add_field(name="Active Ability",
-					   value=data["secondaryActiveAbilityText"], inline=False)
+			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["effect"]}', inline=False)
+		embd.add_field(
+			name="Passive Ability",
+				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
+		embd.add_field(
+			name="Active Ability",
+				value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
 		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
 		return embd
 
@@ -368,13 +366,14 @@ class Fun(commands.Cog):
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
 		os.remove(file)
 
-	@commands.command(aliases = ["announcement"], hidden=True) 
-	async def announcements(self,ctx):
+	@commands.command(aliases=["announcement"], hidden=True)
+	async def announcements(self, ctx):
 		await ctx.send("https://imgur.com/a/37W6U64")
 
 	@commands.command(hidden=True)
-	async def noinfo(self,ctx):
+	async def noinfo(self, ctx):
 		await ctx.send("https://imgur.com/a/sGooJcB")
+
 
 def setup(bot):
 	bot.add_cog(Fun(bot))
