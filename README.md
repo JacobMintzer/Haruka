@@ -21,7 +21,7 @@ To invite Haruka to your server, use this link: https://discord.com/api/oauth2/a
   * mutes/umutes
   * <s>$remindMe function</s>
 * <s>Allow true multi-server support without breaking everything</s> (just need to do music, <s>scoring</s>, and automod)
-* Youtube support, including revamping the queue system
+* Youtube support, <s>including revamping the queue system</s>
 * Specific ban system for when people inevitably abuse this system
 * <s>Import and improve Maribot's antispam automoderation</s> done
 * Haruka specific message when people boost
