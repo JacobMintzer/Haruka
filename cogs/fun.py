@@ -309,7 +309,7 @@ class Fun(commands.Cog):
 		embd.add_field(name="Technique (LB{0})".format(
 			str(lb)), value=data["technique"]["lb{0}".format(lb)])
 		embd.add_field(
-			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["effect"]}', inline=False)
+			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["appliesTo"]}', inline=False)
 		embd.add_field(
 			name="Passive Ability",
 				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
@@ -373,6 +373,11 @@ class Fun(commands.Cog):
 	@commands.command(hidden=True)
 	async def noinfo(self, ctx):
 		await ctx.send("https://imgur.com/a/sGooJcB")
+
+	@commands.command(hidden=True)
+	async def ig(self, ctx, *, url):
+		embd = utils.getInstaEmbed(ctx.bot.config["instagramAccessToken"], url)
+		await ctx.send(embed=embd)
 
 
 def setup(bot):
