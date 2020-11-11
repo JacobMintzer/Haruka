@@ -98,6 +98,12 @@ class MessageHandler():
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
+				elif instaURL:=re.search("(?P<url>https?://[^\s]+)", message.content).group("url"):
+					try:
+						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], message.content)
+						await message.channel.send(embed=embd)
+					except Exception:
+						pass
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
 				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
