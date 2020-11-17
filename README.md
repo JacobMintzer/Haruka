@@ -13,6 +13,8 @@ Discord bot for management of the Nijigasaki Discord and adjacent Love Live serv
 * SIFAS card lookups using https://github.com/bocktagon/LLAS_API
 * A subscribable newsletter for Haruka updates.
 * Reverse Image searching using the SauceNao API
+* Starboard with custom emotes/minimum stars
+* Custom instagram Embeds.
 
 To invite Haruka to your server, use this link: https://discord.com/api/oauth2/authorize?client_id=613501680469803045&permissions=268774468&scope=bot
 ### TODO
@@ -20,10 +22,10 @@ To invite Haruka to your server, use this link: https://discord.com/api/oauth2/a
   * birthday messages to users/girls
   * mutes/umutes
   * <s>$remindMe function</s>
-* <s>Allow true multi-server support without breaking everything</s> (just need to do music, <s>scoring</s>, and automod)
-* Youtube support, <s>including revamping the queue system</s>
-* Specific ban system for when people inevitably abuse this system
+* <s>Allow true multi-server support without breaking everything</s> (just need to do <s>music</s>, <s>scoring</s>, and automod)
+* Youtube support, <s>including revamping the queue system</s> done
 * <s>Import and improve Maribot's antispam automoderation</s> done
 * Haruka specific message when people boost
 * SIF/<s>SIFAS</s> card info lookups 
 * Extract image from pixiv links
+* Bring instagram embeds to everyone
