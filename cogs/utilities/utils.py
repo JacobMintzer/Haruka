@@ -57,24 +57,28 @@ def saveConfig(ctx):
 	with open('Resources.yaml', 'w') as outfile:
 		yaml.dump(ctx.bot.config, outfile)
 
-def getInstaEmbed(token,url):
-	baseHtmlEmbed=requests.get(f"https://graph.facebook.com/v8.0/instagram_oembed?url={url}&access_token={token}").json()
-	authorUserName=baseHtmlEmbed["author_name"]
-	imgUrl=baseHtmlEmbed["thumbnail_url"]
-	soup=BeautifulSoup(baseHtmlEmbed["html"], features="html.parser")
-	comment=soup.p.a.contents[0]
-	authorName=(soup.find_all("p")[1]).contents[1].contents[0].strip()
-	time=(soup.find_all("p")[1]).contents[3].contents[0]
-	timestamp = search_dates(time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0]
-	profileUrl=f"https://www.instagram.com/{authorUserName}/"
-	profileInfo=requests.get(f"{profileUrl}?__a=1").json()
-	profilePicUrl=profileInfo["graphql"]["user"]["profile_pic_url"]
+
+def getInstaEmbed(token, url):
+	baseHtmlEmbed = requests.get(
+		f"https://graph.facebook.com/v8.0/instagram_oembed?url={url}&access_token={token}").json()
+	authorUserName = baseHtmlEmbed["author_name"]
+	imgUrl = baseHtmlEmbed["thumbnail_url"]
+	soup = BeautifulSoup(baseHtmlEmbed["html"], features="html.parser")
+	comment = soup.p.a.contents[0]
+	authorName = (soup.find_all("p")[1]).contents[1].contents[0].strip()
+	time = (soup.find_all("p")[1]).contents[3].contents[0]
+	timestamp = search_dates(
+		time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0]
+	profileUrl = f"https://www.instagram.com/{authorUserName}/"
+	#profileInfo = requests.get(f"{profileUrl}?__a=1").json()
+	#profilePicUrl = profileInfo["graphql"]["user"]["profile_pic_url"]
 	embd = discord.Embed()
 	embd.type = "rich"
 	embd.color = discord.Color.purple()
 	embd.title = f"Instagram Post by {authorName}"
-	print(profilePicUrl)
-	embd = embd.set_author(name = f"{authorName} ({authorUserName})", url=profileUrl, icon_url=profilePicUrl)
+	embd = embd.set_author(
+		name=f"{authorName} ({authorUserName})", url=profileUrl)
+	#, icon_url=profilePicUrl)
 	embd = embd.set_image(url=imgUrl)
 	embd.url = url
 	embd.description = comment
