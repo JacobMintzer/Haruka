@@ -98,11 +98,12 @@ class MessageHandler():
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
-				elif instaURL:=re.search("(?P<url>https?://[^\s]+)", message.content).group("url"):
+				elif instaURL:=re.search("(?P<url>https?://[^\s]+)", message.content):
 					try:
-						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], message.content)
+						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL)
 						await message.channel.send(embed=embd)
-					except Exception:
+					except Exception as e:
+						print(f"error while parsing insta embed:\n {str(e)}")
 						pass
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
@@ -290,6 +291,7 @@ class MessageHandler():
 			if score < 0:
 				return None
 			return score
+
 
 	# april fools day replacement
 	""" async def pdpIfy(self,message):
