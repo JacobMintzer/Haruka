@@ -77,7 +77,7 @@ class Events(commands.Cog):
 					embd.set_image(url=message.attachments[0].url)
 				await ch.send(embed=embd)
 				self.starboardQueue.append(message.id)
-				if len(self.starboardQueue) > 500:
+				if len(self.starboardQueue) > 100:
 					self.starboardQueue.pop(0)
 				self.bot.config["sbq"] = self.starboardQueue
 				with open('Resources.yaml', 'w') as outfile:
