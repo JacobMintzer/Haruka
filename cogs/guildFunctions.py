@@ -295,7 +295,7 @@ class GuildFunctions(commands.Cog):
 		elif pronoun.lower().strip() == 'he':
 			role=discord.utils.find(lambda x: x.name == "p:he/him", ctx.guild.roles)
 		else:
-			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
 
 		if action.strip().lower() == "add":
@@ -303,7 +303,7 @@ class GuildFunctions(commands.Cog):
 		elif action.strip().lower() == "remove":
 			await member.remove_roles(role)
 		else:
-			await ctx.send("please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
+			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
 		rxn=utils.getRandEmoji(ctx.guild.emojis, "hug")
 		if rxn is None:
@@ -319,10 +319,11 @@ class GuildFunctions(commands.Cog):
 		if role is None:
 			await ctx.send("Best roles include {0}".format(", ".join(self.bot.config["best"][str(ctx.message.guild.id)])))
 			return
+		if role.lower() == "clear":
+			role="clear"
 		if not (role.title() in roleNames):
 			return
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
-		return
 
 	@ commands.command(aliases=["seiyu"])
 	@ checks.is_niji()
@@ -335,7 +336,6 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Not a valid role.")
 			return
 		await self.setRole(ctx, roleNames, role)
-		return
 
 	@ commands.command()
 	@ checks.is_niji()
