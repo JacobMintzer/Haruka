@@ -350,15 +350,12 @@ class Fun(commands.Cog):
 		response = requests.post(endpoint, files=files)
 		if response.status_code != 200:
 			print("status code is {0}".format(response.status_code))
-		else:
-			print("all good")
 		output = json.loads(response.content.decode("utf-8"))
 		result = output["results"]
 
-		if (len(result) < 1):
+		if (len(result) < 1) or float(result[0]["header"]["similarity"])<50:
 			await ctx.send("no source found")
-			return
-		if "source" in result[0]["data"].keys() and result[0]["data"]["source"] != "":
+		elif "source" in result[0]["data"].keys() and result[0]["data"]["source"] != "":
 			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["source"]))
 		elif(len(result[0]["data"]["ext_urls"]) == 1):
 			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["ext_urls"][0]))
