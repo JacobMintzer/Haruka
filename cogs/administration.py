@@ -30,6 +30,13 @@ def isTarget(msg):
 	return False
 
 
+def isPruneTarget(msg):
+	global pruneTarget
+	if msg.author.id in pruneTarget:
+		return True
+	return False
+
+
 def adminRxn(rxn, user):
 	global target
 	if not rxn.message.author.id == 613501680469803045:
@@ -46,7 +53,9 @@ class Administration(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		global target
+		global pruneTarget
 		target = []
+		pruneTarget = []
 
 	async def shutdown(self, ctx):
 		pass
@@ -201,10 +210,13 @@ class Administration(commands.Cog):
 
 	@commands.command()
 	@checks.is_me()
-	async def banEmote(self, ctx, *, emote: discord.Emoji):
-		print(emote.guild.name)
-		self.bot.config["emoteBanned"].append(emote.guild.id)
-		utils.saveConfig(ctx)
+	async def banEmote(self, ctx, *, emote: int):
+		foundEmote = discord.utils.find(
+			lambda emoji: (emoji.id == emote), self.bot.emojis)
+		if foundEmote:
+			self.bot.config["emoteBanned"].append(foundEmote.guild.id)
+			await ctx.send(f"server is {foundEmote.guild}")
+			utils.saveConfig(ctx)
 
 	@commands.command()
 	@checks.is_me()
@@ -223,12 +235,13 @@ class Administration(commands.Cog):
 	async def dumpEmotes(self, ctx):
 		out = ""
 		for emote in self.bot.emojis:
-			if (len(str(emote))+len(out))>=2000:
+			if (len(str(emote)) + len(out)) >= 2000:
 				await ctx.send(out)
-				out=str(emote)
+				out = str(emote)
 			else:
 				out += str(emote)
 		await ctx.send(out)
+
 	@commands.command()
 	@checks.is_niji()
 	@checks.is_admin()
@@ -372,10 +385,8 @@ class Administration(commands.Cog):
 	async def prune(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Removes all messages by a given user"""
 		global target
-		while target != None:
-			await asyncio.sleep(10)
-		rxnMsg = await ctx.send("""Are you sure you want to delete all messages in the past 2 weeks by 
-		{0}? React {1} to confirm or 🚫 to cancel.""".format(str(person), u"\U0001F5D1"))
+		global pruneTarget
+		rxnMsg = await ctx.send("""Are you sure you want to delete all messages in the past 2 weeks by {0}? React {1} to confirm or 🚫 to cancel.""".format(str(person), u"\U0001F5D1"))
 		async with ctx.message.channel.typing():
 			await rxnMsg.add_reaction(u"\U0001F5D1")
 			await rxnMsg.add_reaction("🚫")
@@ -384,10 +395,10 @@ class Administration(commands.Cog):
 				rxn, user = await self.bot.wait_for('reaction_add', check=adminRxn, timeout=20.0)
 				target.remove(ctx.message.author.id)
 				if str(rxn.emoji) == u"\U0001F5D1":
-					target = person
+					pruneTarget.append(person)
 					for ch in ctx.message.guild.text_channels:
-						await ch.purge(check=isTarget)
-					target = None
+						await ch.purge(check=isPruneTarget)
+					pruneTarget.remove(person)
 					try:
 						await ctx.send("prune complete")
 					except:
