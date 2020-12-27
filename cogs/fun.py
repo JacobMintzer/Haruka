@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 import json
 import os
 import pprint
@@ -312,10 +313,10 @@ class Fun(commands.Cog):
 			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["appliesTo"]}', inline=False)
 		embd.add_field(
 			name="Passive Ability",
-				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
+                				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
 		embd.add_field(
 			name="Active Ability",
-				value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
+                				value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
 		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
 		return embd
 
@@ -353,7 +354,7 @@ class Fun(commands.Cog):
 		output = json.loads(response.content.decode("utf-8"))
 		result = output["results"]
 
-		if (len(result) < 1) or float(result[0]["header"]["similarity"])<50:
+		if (len(result) < 1) or float(result[0]["header"]["similarity"]) < 80:
 			await ctx.send("no source found")
 		elif "source" in result[0]["data"].keys() and result[0]["data"]["source"] != "":
 			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["source"]))
@@ -375,6 +376,13 @@ class Fun(commands.Cog):
 	async def ig(self, ctx, *, url):
 		embd = utils.getInstaEmbed(ctx.bot.config["instagramAccessToken"], url)
 		await ctx.send(embed=embd)
+
+	@commands.command()
+	async def masterpost(self, ctx):
+		"""Gets the most recent version of the r/ll discord masterpost."""
+		await ctx.send(ctx.bot.config["masterpost"])
+
+
 
 
 def setup(bot):
