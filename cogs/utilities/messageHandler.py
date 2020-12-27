@@ -12,7 +12,7 @@ from cogs.utilities import utils
 
 cache = 3
 spamCacheSize = 3
-maxPoints = 60
+maxPoints = 80
 
 
 class MessageHandler():
@@ -102,9 +102,9 @@ class MessageHandler():
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
-				elif instaURL:=re.search("(?P<url>https?://[^\s]+)", message.content):
+				elif instaURL:=re.search("(?P<url>https?://[^\s]+instagram\.com[^\s]+)", message.content, re.IGNORECASE):
 					try:
-						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL)
+						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL.group(0))
 						await message.channel.send(embed=embd)
 					except Exception as e:
 						print(f"error while parsing insta embed:\n {str(e)}")
@@ -125,7 +125,7 @@ class MessageHandler():
 				score = await self.score(message.author, message.content.startswith('$'), message.guild)
 				if str(message.guild.id) in bot.config["antispam"].keys():
 					await self.antiSpam(message, score)
-					
+
 				if not (score is None) and message.guild.id == bot.config["nijiCord"]:
 					await self.checkNijiRanks(message, score)
 				elif not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys() and not(message.author.bot):
@@ -195,14 +195,17 @@ class MessageHandler():
 			return True
 		for badWord in self.badWords:
 			if badWord in message.content.lower():
-				await self.mute(message.author, "banned word:\n {0}\n in {1}".format(message.content, message.channel))
+				await self.mute(message.author, "banned word in {0}; check the logs".format( message.channel))
+				await message.delete()
 				return False
 		if score is None or score < 10:
 			modifier = 8
 		elif score < 200:
 			modifier = 4
-		else:
+		elif score < 500:
 			modifier = 1
+		else:
+			return True
 		points = 1
 		if '@everyone' in message.content:
 			points += modifier
@@ -277,21 +280,23 @@ class MessageHandler():
 	async def score(self, author, isCommand, guild):
 		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
+			cursor = await conn.execute('SELECT Score,Name FROM "guild{0}" WHERE ID=?'.format(str(guild.id)), (author.id,))
+			oldScore = await cursor.fetchone()
+			await cursor.close()
 			if not author.id in self.MRU:
-				cursor = await conn.execute('SELECT Score,Name FROM "guild{0}" WHERE ID=?'.format(str(guild.id)), (author.id,))
-				newScore = await cursor.fetchone()
-				await cursor.close()
-				if newScore == None:
+				if oldScore == None:
 					cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)[:-5]))
 				else:
 					if isCommand:
-						return newScore[0]
-					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (newScore[0] + 1, str(author)[:-5], author.id))
-					score = newScore[0] + 1
+						return oldScore[0]
+					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (oldScore[0] + 1, str(author)[:-5], author.id))
+					score = oldScore[0] + 1
+					await conn.commit()
 				self.MRU.insert(0, author.id)
 				if len(self.MRU) > cache:
 					self.MRU.pop()
-			await conn.commit()
+			else:
+				score = oldScore[0] if oldScore else -1
 			if score < 0:
 				return None
 			return score
@@ -300,55 +305,3 @@ class MessageHandler():
 		async with aiosqlite.connect("NijiMessages.db") as conn:
 			await conn.execute('INSERT INTO "Messages" (user_id,content,clean_content,channel,datetime,attachments,jump,msg_id) VALUES (?,?,?,?,?,?,?,?)', (message.author.id, message.content, message.clean_content,message.channel.id,message.created_at.timestamp(),len(message.attachments),message.jump_url,message.id))
 			await conn.commit()
-
-
-	# april fools day replacement
-	""" async def pdpIfy(self,message):
-		if(message.author.bot):
-			return False
-		if (message.content[0]=='|'):
-			return False
-		if (message.content[0]=="$"):
-			return False
-		content=message.content
-		content=re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',content)
-		testContent=content.lower().replace("again","")
-		testContent=testContent.replace("wait","")
-		testContent=testContent.replace("senpai","")
-		if bool([ele for ele in self.girls if(ele in testContent)]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
-			msg=content
-			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('nijigaku'),re.IGNORECASE)
-			msg=regex.sub('The PDP School',msg)
-			regex=re.compile(re.escape('niji'),re.IGNORECASE)
-			msg=regex.sub('PDP',msg)
-			regex=re.compile(re.escape('ayumu'),re.IGNORECASE)
-			msg=regex.sub('Honoka 3',msg)
-			regex=re.compile(re.escape('karin'),re.IGNORECASE)
-			msg=regex.sub('Kanan with tiddy moles',msg)
-			regex=re.compile(re.escape('kasumin'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('kasumi'),re.IGNORECASE)
-			msg=regex.sub('KasuKasu',msg)
-			regex=re.compile(re.escape('setsuna'),re.IGNORECASE)
-			msg=regex.sub('The self-insert weeb idol',msg)
-			regex=re.compile(re.escape('shizuku'),re.IGNORECASE)
-			msg=regex.sub('Volleyball target practice',msg)
-			regex=re.compile(re.escape('kanata'),re.IGNORECASE)
-			msg=regex.sub('zzzzzzzzzzzzzzz',msg)
-			regex=re.compile(re.escape('emma'),re.IGNORECASE)
-			msg=regex.sub('Emma, consumer of smaller idols',msg)
-			regex=re.compile(re.escape('rina'),re.IGNORECASE)
-			msg=regex.sub('Overlord Board-sama and her loyal flesh-slave',msg)
-			regex=re.compile(re.escape('ai'),re.IGNORECASE)
-			msg=regex.sub('The safest gyaru design of all time',msg)
-			regex=re.compile(re.escape('haruka'),re.IGNORECASE)
-			msg=regex.sub('Boneless Ruby',msg)
-			regex=re.compile(re.escape('anata'),re.IGNORECASE)
-			msg=regex.sub('Me, but if i were cuter and always talking to other cute girls',msg)
-			await message.channel.send('{1} You mean `{0}`'.format(msg,message.author.mention))
-			return True
-		else:
-			return False
-	 """
