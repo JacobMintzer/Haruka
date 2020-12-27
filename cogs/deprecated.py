@@ -5,11 +5,18 @@ from discord.ext import commands
 from .utilities import utils, checks
 import aiosqlite
 import re
+from datetime import datetime
 
 class Deprecated(commands.Cog):
 	"""This class is for commands that either were designed for a single use for setting things up, or are no longer used, and are here for future use"""
 	def __init__(self, bot):
 		self.bot = bot
+		with open('greetings.yaml', "r") as file:
+			self.greetings = yaml.full_load(file)
+		with open('xmas.yaml', "r") as file:
+			self.xmas = yaml.full_load(file)
+
+
 	@commands.command()
 	@checks.is_me()
 	async def ps(self, ctx):
@@ -130,6 +137,105 @@ class Deprecated(commands.Cog):
 			return True
 		else:
 			return False
+
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command()
+	async def fixXmas(self,ctx,*,person: discord.Member):
+		id=person.id
+		self.xmas[id]["last_present"] = 0
+		self.save_xmas
+
+	@checks.is_niji()
+	@commands.command()
+	async def present(self, ctx):
+		if ctx.message.channel.id != 790292236524716052:
+			await ctx.send("Wrong channel!")
+			return
+		if ctx.author.id in self.xmas.keys():
+			if datetime.now() < datetime.fromtimestamp(self.xmas[ctx.author.id]["last_present"]) + timedelta(hours=12):
+				elapsed_time = datetime.fromtimestamp(
+					self.xmas[ctx.author.id]["last_present"]) + timedelta(hours=12) - datetime.now()
+				await ctx.send(f"You already received your present for the day! Try again in {elapsed_time.seconds//3600} hours {(elapsed_time.seconds//60)%60} minutes.")
+				return
+		else:
+			self.xmas[ctx.author.id] = {
+				"last_present": 0, "girls": [], "gifts": []}
+			self.save_xmas()
+		embd = discord.Embed()
+		embd.color = discord.Color.red()
+		embd.type = "rich"
+		embd.set_image(url="https://kachagain.com/images/llsif/boxes/box_05.png")
+		embd.description = "Click the reaction to open your present"
+		embd.title = f"{ctx.message.author.display_name} has received a present!"
+		present = await ctx.send(embed=embd)
+
+		def presentCheck(reaction, user):
+			return user == ctx.message.author and reaction.emoji.name == "harukaPresent"
+
+		emoji = discord.utils.find(
+			lambda emoji: emoji.name == "harukaPresent", self.bot.emojis)
+		await present.add_reaction(emoji)
+		try:
+			_, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=presentCheck)
+		except asyncio.TimeoutError:
+			await present.delete()
+			return
+		else:
+			if isChristmas and self.find_best(ctx.message.author) and (self.find_best(ctx.message.author) not in self.xmas[ctx.message.author.id]["girls"]):
+				girl = self.find_best(ctx.message.author)
+			elif (len(self.greetings["Image"].keys())==len(self.xmas[ctx.message.author.id]["girls"])):
+				girl = random.choice(self.greetings["Image"])
+			else:
+				girl = random.choice([x for x in self.greetings["Image"].keys(
+				) if x not in self.xmas[ctx.message.author.id]["girls"]])
+			embd = self.gen_present(ctx, girl)
+			if girl == self.find_best(ctx.message.author):
+				embd.add_field(
+					name=f"{girl}:", value=f"Hey, {ctx.message.author.mention}, can you meet me behind the school later? I have something I want to say in private (check your DMs)", inline=True)
+				await present.edit(embed=embd)
+				await asyncio.sleep(5)
+				embd = self.gen_present(ctx, girl)
+				greeting = self.greetings["Message"][girl]
+				embd.add_field(name=f"{girl}:", value=greeting, inline=True)
+				await ctx.message.author.send(embed=embd)
+				self.xmas[ctx.message.author.id]["girls"].append(girl)
+				self.xmas[ctx.message.author.id]["last_present"] = datetime.now().timestamp()
+				self.save_xmas()
+				return
+			embd = self.gen_present(ctx, girl)
+			gift = random.choice([x for x in self.greetings["Gifts"] if x not in self.xmas[ctx.message.author.id]["girls"]])
+			greeting = f"I got you {gift} for Christmas!"
+			embd.add_field(name=f"{girl}:", value=greeting, inline=True)
+			self.xmas[ctx.message.author.id]["girls"].append(girl)
+			self.xmas[ctx.message.author.id]["last_present"] = datetime.now().timestamp()
+			self.xmas[ctx.message.author.id]["gifts"] .append(gift)
+			self.save_xmas()
+			await present.edit(embed=embd)
+
+	def gen_present(self, ctx, girl):
+		embd = discord.Embed()
+		embd.color = discord.Color.green()
+		embd.type = "rich"
+		image = self.greetings["Image"][girl]
+		if girl == "Haruka":
+			embd.set_author(name="Link to original image", url="https://www.pixiv.net/en/artworks/85591672")
+		elif girl == "Yu":
+			embd.set_author(name="Link to Sei's tweet", url="https://twitter.com/seion_alter/status/1341419302939975680")
+		embd.set_image(url=image)
+		embd.title = f"{ctx.message.author.display_name} received a gift from {girl}!"
+		return embd
+
+	def save_xmas(self):
+		with open('xmas.yaml', 'w') as outfile:
+			yaml.dump(self.xmas, outfile)
+
+	def find_best(self, member):
+		bestRoles = self.bot.config["best"]['610931193516392472']
+		for role in member.roles:
+			if role.name in bestRoles:
+				return role.name
+		return None
 
 def setup(bot):
 	bot.add_cog(Deprecated(bot))
