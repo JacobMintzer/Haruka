@@ -59,29 +59,47 @@ def saveConfig(ctx):
 
 
 def getInstaEmbed(token, url):
-	baseHtmlEmbed = requests.get(
-		f"https://graph.facebook.com/v8.0/instagram_oembed?url={url}&access_token={token}").json()
-	authorUserName = baseHtmlEmbed["author_name"]
-	imgUrl = baseHtmlEmbed["thumbnail_url"]
+	baseHtmlEmbed = requests.get(f"https://graph.facebook.com/v8.0/instagram_oembed?url={url}&access_token={token}").json()
+	if "author_name" in baseHtmlEmbed.keys():
+		authorUserName = baseHtmlEmbed["author_name"]
+	else:
+		authorUserName = ""
+	try:
+		imgUrl = baseHtmlEmbed["thumbnail_url"]
+	except:
+		print(baseHtmlEmbed)
 	soup = BeautifulSoup(baseHtmlEmbed["html"], features="html.parser")
-	comment = soup.p.a.contents[0]
-	authorName = (soup.find_all("p")[1]).contents[1].contents[0].strip()
-	time = (soup.find_all("p")[1]).contents[3].contents[0]
-	timestamp = search_dates(
-		time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0]
+	try:
+		comment = soup.p.a.contents[0]
+	except:
+		comment = ""
+	try:
+		authorName = (soup.find_all("p")[-1]).contents[-1].contents[0].strip()
+		if comment == authorName:
+			comment = ""
+		if "A post shared by " in authorName:
+			authorName = authorName.replace("A post shared by ","")
+	except:
+		authorName = ""
+	try:
+		time = (soup.find_all("p")[1]).contents[3].contents[0]
+		timestamp = search_dates(
+			time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0]
+	except:
+		timestamp = None
 	profileUrl = f"https://www.instagram.com/{authorUserName}/"
 	#profileInfo = requests.get(f"{profileUrl}?__a=1").json()
 	#profilePicUrl = profileInfo["graphql"]["user"]["profile_pic_url"]
 	embd = discord.Embed()
 	embd.type = "rich"
 	embd.color = discord.Color.purple()
-	embd.title = f"Instagram Post by {authorName}"
-	embd = embd.set_author(
-		name=f"{authorName} ({authorUserName})", url=profileUrl)
+	embd.title = f"Instagram Post by {authorName if authorName else authorUserName}"
+	embd = embd.set_author(name=f"{authorName} ({authorUserName})", url=profileUrl) if (not ("@" in authorName) and authorName) else embd.set_author(name=f"{authorName}", url=profileUrl)
 	#, icon_url=profilePicUrl)
 	embd = embd.set_image(url=imgUrl)
 	embd.url = url
-	embd.description = comment
-	embd.timestamp = timestamp[1]
+	embd.description = comment[:1023]
+	if timestamp:
+		embd.timestamp = timestamp[1] 
 	return embd
 
