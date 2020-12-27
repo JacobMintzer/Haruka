@@ -58,9 +58,6 @@ class GuildFunctions(commands.Cog):
 			await self.nijicord.edit(banner=file.read())
 			file.close()
 
-
-	
-
 	@commands.command()
 	@checks.is_admin()
 	@checks.is_niji()
@@ -96,10 +93,8 @@ class GuildFunctions(commands.Cog):
 			return
 		await utils.saveConfig(ctx)
 
-
-
 	@ commands.command()
-	async def info(self, ctx, member: discord.Member=None):
+	async def info(self, ctx, member: discord.Member = None):
 		"""$info for information on yourself"""
 		if member == None:
 			embd = utils.genLog(ctx.message.author, "Info on {0}".format(
@@ -131,7 +126,7 @@ class GuildFunctions(commands.Cog):
 
 	@ commands.group()
 	@ checks.is_admin()
-	async def starboard(self, ctx, emote: Union[discord.Emoji, str]="⭐", count: Union[int, discord.TextChannel]=1):
+	async def starboard(self, ctx, emote: Union[discord.Emoji, str] = "⭐", count: Union[int, discord.TextChannel] = 1):
 		"""ADMIN ONLY! Use this in a channel to have haruka post them when they hit a reaction threshold. ex. `$starboard ⭐ 4` will post when a post hits 4 ⭐ reactions. To have Haruka ignore a channel, use `$starboard ignore #channel`"""
 		async with ctx.message.channel.typing():
 			try:
@@ -209,33 +204,33 @@ class GuildFunctions(commands.Cog):
 				self.bot.config["asar"][str(ctx.message.guild.id)].remove(arole.lower())
 				utils.saveConfig(ctx)
 			await ctx.message.author.add_roles(role)
-			rxn=utils.getRandEmoji(guild.emojis, "hug")
+			rxn = utils.getRandEmoji(guild.emojis, "hug")
 			if rxn is None:
-				rxn=utils.getRandEmoji(ctx.bot.emojis, "harukahug")
+				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
-			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
+			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
 
 	@ commands.command(name="iamn")
 	async def Iamn(self, ctx, *, arole=''):
 		"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
-		guild=ctx.message.guild
+		guild = ctx.message.guild
 		if arole.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
-			role=discord.utils.find(lambda x: x.name.lower()
-			                          == arole.lower(), ctx.guild.roles)
+			role = discord.utils.find(lambda x: x.name.lower()
+                             == arole.lower(), ctx.guild.roles)
 			await ctx.message.author.remove_roles(role)
-			rxn=utils.getRandEmoji(guild.emojis, "hug")
+			rxn = utils.getRandEmoji(guild.emojis, "hug")
 			if rxn is None:
-				rxn=utils.getRandEmoji(ctx.bot.emojis, "harukahug")
+				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
-			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format(str(self.bot.asar)))
+			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
 
 	@ commands.group()
 	async def asar(self, ctx):
 		"""Use this command to list all self-assignable roles. Admins can add and remove roles from asar with '$asar add rolename' and '$asar remove rolename'"""
 		if ctx.invoked_subcommand is None:
-			roleMessage="`, `".join(
+			roleMessage = "`, `".join(
 				self.bot.config["asar"][str(ctx.message.guild.id)])
 			await ctx.send("Self assignable roles here are: \n`{0}`.".format(roleMessage))
 
@@ -247,8 +242,8 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Please enter a role")
 			return
 		if not str(ctx.message.guild.id) in self.bot.config["asar"].keys():
-			self.bot.config["asar"][str(ctx.message.guild.id)]=[]
-		requestedRole=discord.utils.find(
+			self.bot.config["asar"][str(ctx.message.guild.id)] = []
+		requestedRole = discord.utils.find(
 			lambda x: x.name.lower() == role.lower(), ctx.message.guild.roles)
 		if requestedRole is None:
 			try:
@@ -280,8 +275,8 @@ class GuildFunctions(commands.Cog):
 	@ commands.command(name="pronoun")
 	async def Pronoun(self, ctx, action='', pronoun=''):
 		"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
-		member=ctx.message.author
-		theyRole=discord.utils.find(
+		member = ctx.message.author
+		theyRole = discord.utils.find(
 			lambda x: x.name == "p:they/them", ctx.guild.roles)
 		if theyRole is None:
 			return
@@ -289,11 +284,11 @@ class GuildFunctions(commands.Cog):
 			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
 		if pronoun.lower().strip() == 'they':
-			role=theyRole
+			role = theyRole
 		elif pronoun.lower().strip() == 'she':
-			role=discord.utils.find(lambda x: x.name == "p:she/her", ctx.guild.roles)
+			role = discord.utils.find(lambda x: x.name == "p:she/her", ctx.guild.roles)
 		elif pronoun.lower().strip() == 'he':
-			role=discord.utils.find(lambda x: x.name == "p:he/him", ctx.guild.roles)
+			role = discord.utils.find(lambda x: x.name == "p:he/him", ctx.guild.roles)
 		else:
 			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
@@ -305,9 +300,9 @@ class GuildFunctions(commands.Cog):
 		else:
 			await ctx.send("Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod.")
 			return
-		rxn=utils.getRandEmoji(ctx.guild.emojis, "hug")
+		rxn = utils.getRandEmoji(ctx.guild.emojis, "hug")
 		if rxn is None:
-			rxn="👍"
+			rxn = "👍"
 		await ctx.message.add_reaction(rxn)
 
 	@ commands.command(name="best")
@@ -315,23 +310,26 @@ class GuildFunctions(commands.Cog):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 		if not(str(ctx.message.guild.id) in ctx.bot.config["best"].keys()):
 			return
-		roleNames=self.bot.config["best"][str(ctx.message.guild.id)]
+		roleNames = self.bot.config["best"][str(ctx.message.guild.id)]
 		if role is None:
 			await ctx.send("Best roles include {0}".format(", ".join(self.bot.config["best"][str(ctx.message.guild.id)])))
 			return
 		if role.lower() == "clear":
-			role="clear"
-		if not (role.title() in roleNames):
+			role = "clear"
+		elif not (role.title() in roleNames):
+			await ctx.send("Not a valid role.")
 			return
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
 
 	@ commands.command(aliases=["seiyu"])
-	@ checks.is_niji()
-	async def seiyuu(self, ctx, *, role):
+	async def seiyuu(self, ctx, *, role=None):
 		"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
-		roleNames=self.bot.config["seiyuu"]
+		if not(ctx.message.guild.id in ctx.bot.config["seiyuu"].keys()):
+			return
+
+		roleNames = self.bot.config[self.bot.config["seiyuu"][ctx.message.guild.id]]
 		if role.lower() == "clear":
-			role="clear"
+			role = "clear"
 		elif role.title() not in roleNames:
 			await ctx.send("Not a valid role.")
 			return
@@ -341,87 +339,87 @@ class GuildFunctions(commands.Cog):
 	@ checks.is_niji()
 	async def sub(self, ctx, *, role):
 		"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
-		roleNames=self.bot.config["sub"]
+		roleNames = self.bot.config["sub"]
 		if role.lower() == "diverdiva" or role.lower() == "diver diva":
-			roleName="DiverDiva"
-			rxnChoice=random.choice(["karin", "ai"]) + "yay"
+			roleName = "DiverDiva"
+			rxnChoice = random.choice(["karin", "ai"]) + "yay"
 		elif role.lower() == "azuna" or role.lower() == "a・zu・na":
-			roleName="A・ZU・NA"
-			rxnChoice=random.choice(["ayumu", "shizu", "setsu"]) + "yay"
+			roleName = "A・ZU・NA"
+			rxnChoice = random.choice(["ayumu", "shizu", "setsu"]) + "yay"
 		elif role.lower() == "qu4rtz" or role.lower() == "quartz":
-			roleName="QU4RTZ"
-			rxnChoice=random.choice(["rina", "emma", "kasu", "kanata"]) + "yay"
+			roleName = "QU4RTZ"
+			rxnChoice = random.choice(["rina", "emma", "kasu", "kanata"]) + "yay"
 		elif role.lower() == "clear":
-			rxnChoice=None
-			roleName="clear"
+			rxnChoice = None
+			roleName = "clear"
 		else:
 			await ctx.send("Not a valid subunit")
 		async with ctx.typing():
 			if roleName.lower() == "clear":
-				roleName="clear"
-				newRoles=list(filter(lambda x: not(
+				roleName = "clear"
+				newRoles = list(filter(lambda x: not(
 					x.name.title() in roleNames), ctx.author.roles))
 				await ctx.author.edit(roles=newRoles)
-				emoji=utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 				await ctx.message.add_reaction(emoji)
 				return
 			elif roleName not in roleNames:
 				await ctx.send("Not a valid subunit.")
 				return
 			else:
-				newRole=discord.utils.find(
+				newRole = discord.utils.find(
 					lambda x: x.name == roleName, ctx.message.guild.roles)
-			newRoles=list(filter(lambda x: not(
+			newRoles = list(filter(lambda x: not(
 				x.name in roleNames), ctx.author.roles)) + [newRole]
 			if newRole not in newRoles:
 				newRoles.append(newRole)
 			await ctx.author.edit(roles=newRoles)
 			if rxnChoice is None:
-				emoji=utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 			else:
-				emoji=utils.getRandEmoji(self.bot.emojis, rxnChoice)
+				emoji = utils.getRandEmoji(self.bot.emojis, rxnChoice)
 				if emoji == "No Emoji Found" or emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "harukayay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
 			await ctx.message.add_reaction(emoji)
 		return
 
 	async def setRole(self, ctx, roleNames, roleName, rxnChoice=None):
 		async with ctx.typing():
 			if roleName.lower() == "clear":
-				roleName="clear"
-				newRoles=list(filter(lambda x: not(
+				roleName = "clear"
+				newRoles = list(filter(lambda x: not(
 					x.name.title() in roleNames), ctx.author.roles))
 				await ctx.author.edit(roles=newRoles)
-				emoji=utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 				await ctx.message.add_reaction(emoji)
 				return
 			elif roleName.title() not in roleNames and roleName not in roleNames:
 				await ctx.send("Not a valid role.")
 				return
 			else:
-				newRole=discord.utils.find(
+				newRole = discord.utils.find(
 					lambda x: x.name.title() == roleName.title(), ctx.message.guild.roles)
-			newRoles=list(filter(lambda x: not(
+			newRoles = list(filter(lambda x: not(
 				x.name.title() in roleNames), ctx.author.roles))
 			if newRole not in newRoles:
 				newRoles.append(newRole)
 			await ctx.author.edit(roles=newRoles)
 			if rxnChoice is None:
-				emoji=utils.getRandEmoji(ctx.guild.emojis, "yay")
+				emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 				if emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "yay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 			else:
 				if rxnChoice.lower() == "setsunayay":
-					rxnChoice=rxnChoice.replace("etsuna", "etsu")
-				emoji=utils.getRandEmoji(self.bot.emojis, rxnChoice)
+					rxnChoice = rxnChoice.replace("etsuna", "etsu")
+				emoji = utils.getRandEmoji(self.bot.emojis, rxnChoice)
 				if emoji == "No Emoji Found" or emoji is None:
-					emoji=utils.getRandEmoji(self.bot.emojis, "harukayay")
+					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
 			await ctx.message.add_reaction(emoji)
 		return
 
