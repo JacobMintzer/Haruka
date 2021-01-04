@@ -12,7 +12,7 @@ from cogs.utilities import utils
 
 cache = 3
 spamCacheSize = 3
-maxPoints = 80
+maxPoints = 60
 
 
 class MessageHandler():
@@ -61,7 +61,10 @@ class MessageHandler():
 			result = pd.DataFrame(response)
 			result.index += 1
 			result.columns = ["Id", "User", "Score"]
-			indexedResults = pd.Index(result["Id"])
+			try:
+				indexedResults = pd.Index(result["Id"])
+			except KeyError:
+				cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (user.id, str(user)[:-5]))
 			rank = indexedResults.get_loc(user.id)
 			if idx < 1:
 				idx = 1
@@ -122,7 +125,7 @@ class MessageHandler():
 			return
 		if not (message.channel.id in bot.config["scoreIgnore"]):
 			if (message.guild.id == bot.config["nijiCord"] or not(message.author.bot)):
-				score = await self.score(message.author, message.content.startswith('$'), message.guild)
+				score = await self.score(message.author, message.content.startswith('$'), message.guild, message)
 				if str(message.guild.id) in bot.config["antispam"].keys():
 					await self.antiSpam(message, score)
 
@@ -145,8 +148,6 @@ class MessageHandler():
 	async def checkNijiRanks(self, message, score):
 		thresh = self.config["threshold"]
 		givenRole = ""
-		if score == 69 or score == 6969:
-			await message.channel.send("nice")
 		if score >= thresh["exec"]:
 			if not(self.roles["exec"] in message.author.roles):
 				givenRole = "exec"
@@ -277,7 +278,7 @@ class MessageHandler():
 		await asyncio.sleep(cdTime)
 		self.cooldown = False
 
-	async def score(self, author, isCommand, guild):
+	async def score(self, author, isCommand, guild, message):
 		async with aiosqlite.connect("memberScores.db") as conn:
 			score = -1
 			cursor = await conn.execute('SELECT Score,Name FROM "guild{0}" WHERE ID=?'.format(str(guild.id)), (author.id,))
@@ -285,13 +286,21 @@ class MessageHandler():
 			await cursor.close()
 			if not author.id in self.MRU:
 				if oldScore == None:
-					cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)[:-5]))
+					try:
+						cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)[:-5]))
+						await conn.commit()
+					except Exception as e:
+						print(f"Error adding user {author.id} to score database")
+						print(e)
+						raise
 				else:
 					if isCommand:
 						return oldScore[0]
 					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (oldScore[0] + 1, str(author)[:-5], author.id))
 					score = oldScore[0] + 1
 					await conn.commit()
+					if guild.id == self.bot.config["nijiCord"] and (score == 69 or score == 6969):
+						await message.channel.send("nice")
 				self.MRU.insert(0, author.id)
 				if len(self.MRU) > cache:
 					self.MRU.pop()
