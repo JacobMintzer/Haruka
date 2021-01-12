@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import pprint
+import re
 
 import discord
 import pandas as pd
@@ -382,7 +383,54 @@ class Fun(commands.Cog):
 		"""Gets the most recent version of the r/ll discord masterpost."""
 		await ctx.send(ctx.bot.config["masterpost"])
 
+	@commands.command(aliases=["isNijiS2Confirmed?"], hidden=True)
+	async def isNijiS2Confirmed(self, ctx):
+		await ctx.send("Not Yet")
 
+	@commands.command(aliases=["temperature"])
+	async def temp(self, ctx, *, msg):
+		"""Convert temperatures between F and C. Remember to include your given unit as F or C. ex. `$temp 30C`"""
+		tempRegex = re.compile(r"""(-?)(\d{1,3})(C|F|c|f)(?![^\s.,;?!`':>"])""")
+		if tempMatch := tempRegex.search(msg):
+			temperature = tempMatch.group(0)
+			unit = temperature[-1]
+			if temperature[0] == '-':
+				magnitude = 0 - (int(temperature[1:-1]))
+			else:
+				magnitude = int(temperature[:-1])
+			if unit.lower() == 'c':
+				res = "{0}​C is {1:.1f}​F".format(magnitude, magnitude * 9 / 5 + 32)
+			else:
+				res = "{0}​F is {1:.1f}​C".format(magnitude, (magnitude - 32) * 5 / 9)
+			await ctx.send(res)
+
+	@commands.command(aliases=["distance","dist"])
+	async def length(self, ctx, *, msg):
+		"""Convert lengths between feet and inches and centimeters. Ex. `$length 110cm` `$dist 5'7"` `$distance 3 feet 7 inches`"""
+		msg=msg.lower().replace('inches','\"').replace('in','\"').replace("feet","\'").replace("ft","\'").replace(" ","")
+		distRegex = re.compile(
+			r"^(?!$|.*\'[^\x22]+$)(?:([0-9]+)\')?(?:([0-9]+)\x22?)?$")
+		if "cm" in msg.lower():
+			cmDist = float(msg.replace("cm", "").strip())
+			totalDist = 0.39370 * cmDist
+			if totalDist > 12:
+				inDist = totalDist % 12
+				ftDist = int(totalDist)/12
+				await ctx.send("{:.2f} cm is {:.0f} feet {:.2f} inches".format(cmDist,ftDist,inDist))
+			else:
+				await ctx.send(f"{cmDist} cm is {round(totalDist,2)} inches")
+			return
+		elif distMatch := distRegex.search(msg):
+			feet = int(distMatch.group(1) if distMatch.group(1) else 0)
+			inches = int(distMatch.group(2) if distMatch.group(2) else 0)
+			totalInches = 12 * feet + inches
+			totalCM = totalInches / 0.39370
+			if feet>0:
+				await ctx.send(f"{feet} feet {inches} inches is {round(totalCM,2)}cm")
+			else:
+				await ctx.send(f"{inches} inches is {round(totalCM,2)}cm")
+		else:
+			await ctx.send("please put your conversion in the format of `30cm` or `5'7\"`")
 
 
 def setup(bot):

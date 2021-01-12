@@ -80,7 +80,7 @@ class MessageHandler():
 
 	async def handleMessage(self, message, bot):
 		if message.content == "<@!{0}>".format(self.bot.user.id):
-			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`. I hope we can become great friends ❤️")
+			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or DM `Junior Mints#2525`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
 			try:
 				await self.log(message)
@@ -93,7 +93,7 @@ class MessageHandler():
 				await message.delete()
 				return
 			if not (message.author.bot):
-				if tempMatch:=self.tempRegex.search(message.content):
+				if (tempMatch:=self.tempRegex.search(message.content)) and not(message.content.lower().startswith("$temp")):
 					temperature = tempMatch.group(0)
 					unit = temperature[-1]
 					if temperature[0] == '-':
