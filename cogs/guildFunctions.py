@@ -209,7 +209,7 @@ class GuildFunctions(commands.Cog):
 				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
-			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
+			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are `{0}`".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
 
 	@ commands.command(name="iamn")
 	async def Iamn(self, ctx, *, arole=''):
@@ -224,7 +224,7 @@ class GuildFunctions(commands.Cog):
 				rxn = utils.getRandEmoji(ctx.bot.emojis, "harukahug")
 			await ctx.message.add_reaction(rxn)
 		else:
-			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are {0}".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
+			await ctx.send("Please enter a valid assignable role. Assignable roles at the moment are `{0}`".format("`, `".join(self.bot.config["asar"][str(ctx.message.guild.id)])))
 
 	@ commands.group()
 	async def asar(self, ctx):
