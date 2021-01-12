@@ -25,8 +25,13 @@ handler = logging.FileHandler(
 handler.setFormatter(logging.Formatter(
 	'%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
+
 intents = discord.Intents.default()
 intents.members = True
+intents.typing = False
+intents.presences = False
+
+
 bot = commands.Bot(command_prefix=['$'],
                    description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",
                    case_insensitive=True, intents=intents)
@@ -82,6 +87,7 @@ async def on_command_error(ctx, error):
 	ignored = (commands.CommandNotFound, commands.UserInputError)
 	if hasattr(ctx.command, 'on_error'):
 		print(error)
+		print("Which occured in guild: {0}".format(str(ctx.guild)))
 		return
 	if isinstance(error, ignored):
 		return
@@ -117,7 +123,7 @@ async def shutdown(ctx):
 
 
 @checks.is_me()
-@bot.command(hidden=True)
+@bot.command(hidden=True, aliases=["SR"])
 async def softReset(ctx, *, selectedCogs=None):
 	await bot.change_presence(activity=discord.Game("Quickly doing a soft-reset for a minor update, will be back up soon!", type=1))
 	if selectedCogs is None:
