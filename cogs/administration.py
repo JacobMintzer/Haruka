@@ -88,6 +88,8 @@ class Administration(commands.Cog):
 			return
 		if not(str(message.author.guild.id) in self.bot.config["log"].keys()):
 			return
+		if message.guild.id in self.bot.config["roleChannel"].keys() and message.channel.id == self.bot.config["roleChannel"][message.guild.id]["channel"]:
+			return
 		att = None
 		try:
 			fileList = [discord.File(io.BytesIO(await x.read(use_cached=True)), filename=x.filename, spoiler=True) for x in message.attachments]
@@ -111,8 +113,14 @@ class Administration(commands.Cog):
 		embd.color = discord.Color.red()
 		embd = embd.add_field(name='Channel', value=message.channel.name)
 		if message.clean_content:
-			embd = embd.add_field(name='Message Content',
-                         value=message.clean_content, inline=False)
+			if len(message.clean_content)>1022:
+				embd = embd.add_field(name='Message Content (1)',
+		                        value=(message.clean_content[:1020]+"..."))
+				embd = embd.add_field(name='Message Content (2)',
+		                        value=("..."+message.clean_content[1020:]))
+			else:
+				embd = embd.add_field(name='Message Content',
+		                        value=message.clean_content)
 		else:
 			embd = embd.add_field(
 				name='Message Content', value="`contents of message was empty`", inline=False)
@@ -147,10 +155,22 @@ class Administration(commands.Cog):
 		embd.colour = discord.Color.gold()
 		embd = embd.add_field(
 			name='Jump Link', value="[Here](" + message.jump_url + ")")
-		embd = embd.add_field(name='Original Content',
-                        value=original.clean_content)
-		embd = embd.add_field(name='Changed Content',
-                        value=message.clean_content)
+		if len(original.clean_content)>1022:
+			embd = embd.add_field(name='Original Content (1)',
+	                        value=(original.clean_content[:1020]+"..."))
+			embd = embd.add_field(name='Original Content (2)',
+	                        value=("..."+original.clean_content[1020:]))
+		else:
+			embd = embd.add_field(name='Original Content',
+	                        value=original.clean_content)
+		if len(message.clean_content)>1022:
+			embd = embd.add_field(name='Changed Content (1)',
+	                        value=(message.clean_content[:1020]+"..."))
+			embd = embd.add_field(name='Changed Content (2)',
+	                        value=("..."+message.clean_content[1020:]))
+		else:
+			embd = embd.add_field(name='Changed Content',
+	                        value=message.clean_content)
 		await log.send(embed=embd)
 
 	@commands.command()
@@ -241,6 +261,69 @@ class Administration(commands.Cog):
 			else:
 				out += str(emote)
 		await ctx.send(out)
+
+	@commands.command()
+	@checks.is_me()
+	async def stk(self, ctx, *, id=None):
+		if id:
+			guild = self.bot.get_guild(int(id))
+			embd = discord.Embed()
+			embd.title = guild.name
+			embd.description = "Information on " + guild.name
+			embd = embd.set_thumbnail(url=guild.icon_url)
+			embd.type = "rich"
+			embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
+			dt = guild.created_at
+			embd = embd.add_field(name='Date Created', value=str(
+				dt.date()) + " at " + str(dt.time().isoformat('minutes')))
+			embd = embd.add_field(name='ID', value=guild.id)
+			embd = embd.add_field(name='Owner', value=str(guild.owner))
+			embd = embd.add_field(name='Total Boosters',
+			                      value=guild.premium_subscription_count)
+			embd = embd.add_field(name='Total Channels', value=len(guild.channels))
+			embd = embd.add_field(name='Total Members', value=guild.member_count)
+			msgs=[""]
+			for emote in guild.emojis:
+				if len(msgs[-1])>1800:
+					msgs+=[""]
+				msgs[-1] += f"{str(emote)} "
+			if msgs[0]:
+				await ctx.send(embed=embd, content=msgs[0])
+				for msg in msgs[1:]:
+					await ctx.send(msg)
+			else:
+				await ctx.send(embed=embd)
+			return
+
+		for guild in self.bot.guilds:
+
+			embd = discord.Embed()
+			embd.title = guild.name
+			embd.description = "Information on " + guild.name
+			embd = embd.set_thumbnail(url=guild.icon_url)
+			embd.type = "rich"
+			embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
+			dt = guild.created_at
+			embd = embd.add_field(name='Date Created', value=str(
+				dt.date()) + " at " + str(dt.time().isoformat('minutes')))
+			embd = embd.add_field(name='ID', value=guild.id)
+			embd = embd.add_field(name='Owner', value=str(guild.owner))
+			embd = embd.add_field(name='Total Boosters',
+			                      value=guild.premium_subscription_count)
+			embd = embd.add_field(name='Total Channels', value=len(guild.channels))
+			embd = embd.add_field(name='Total Members', value=guild.member_count)
+			msgs=[""]
+			for emote in guild.emojis:
+				if len(msgs[-1])>1800:
+					msgs+=[""]
+				msgs[-1] += f"{str(emote)} "
+			if msgs[0]:
+				await ctx.send(embed=embd, content=msgs[0])
+				for msg in msgs[1:]:
+					await ctx.send(msg)
+			else:
+				await ctx.send(embed=embd)
+			await asyncio.sleep(1)
 
 	@commands.command()
 	@checks.is_niji()
