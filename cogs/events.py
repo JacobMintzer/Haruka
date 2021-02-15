@@ -26,7 +26,7 @@ class Events(commands.Cog):
 		embd = discord.Embed()
 		embd = embd.set_thumbnail(url=message.author.avatar_url)
 		embd.type = "rich"
-		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
+		embd.timestamp = message.created_at
 		embd = embd.add_field(name='Author', value=message.author.mention)
 		embd = embd.add_field(name='Channel', value=message.channel.mention)
 		if message.clean_content:
@@ -52,7 +52,7 @@ class Events(commands.Cog):
 		if str(emoji) == self.bot.config["starboard"][payload.guild_id]["emote"]:
 			messageChannel = self.bot.get_channel(payload.channel_id)
 			message = await messageChannel.fetch_message(payload.message_id)
-			if message.created_at + datetime.timedelta(days=31) < datetime.datetime.now():
+			if message.created_at + datetime.timedelta(days=14) < datetime.datetime.now():
 				return
 			user = payload.member
 			if user.id == message.author.id or user.bot:
@@ -69,7 +69,7 @@ class Events(commands.Cog):
 				x.emoji) == self.bot.config["starboard"][message.guild.id]["emote"], message.reactions)))
 			if len(reactions) < 1:
 				return
-			if reactions[0].count == self.bot.config["starboard"][message.guild.id]["count"]:
+			if reactions[0].count >= self.bot.config["starboard"][message.guild.id]["count"]:
 				ch = message.guild.get_channel(
 					self.bot.config["starboard"][message.guild.id]["channel"])
 				embd = self.genStarboardPost(message)
