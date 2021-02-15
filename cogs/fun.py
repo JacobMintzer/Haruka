@@ -415,7 +415,7 @@ class Fun(commands.Cog):
 			totalDist = 0.39370 * cmDist
 			if totalDist > 12:
 				inDist = totalDist % 12
-				ftDist = int(totalDist)/12
+				ftDist = int(totalDist/12)
 				await ctx.send("{:.2f} cm is {:.0f} feet {:.2f} inches".format(cmDist,ftDist,inDist))
 			else:
 				await ctx.send(f"{cmDist} cm is {round(totalDist,2)} inches")
