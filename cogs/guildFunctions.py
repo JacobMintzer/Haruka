@@ -31,26 +31,37 @@ class GuildFunctions(commands.Cog):
 		return
 
 	async def banner_cycle(self, bot):
+		print("starting banner cycle loop")
 		while True:
-			await asyncio.sleep(3600)
-			if self.nijicord is None:
-				self.nijicord = bot.get_guild(bot.config["nijiCord"])
-			files = os.listdir("../Haruka/banners/")
-			file = open("../Haruka/banners/{0}".format(random.choice(files)), 'rb')
-			await self.nijicord.edit(banner=file.read())
-			file.close()
+			try:
+				await asyncio.sleep(1800)
+				if self.nijicord is None:
+					self.nijicord = bot.get_guild(bot.config["nijiCord"])
+				files = os.listdir("../Haruka/banners/")
+				file = open("../Haruka/banners/{0}".format(random.choice(files)), 'rb')
+				await self.nijicord.edit(banner=file.read())
+				file.close()
+			except Exception as e:
+				print(f"Error in banner cycle:\n{e}")
 
 	async def event_banner_cycle(self, bot):
 		if self.nijicord is None:
 			self.nijicord = bot.get_guild(bot.config["nijiCord"])
 		files = os.listdir("../Haruka/{0}/".format(self.event))
-		for fileName in files[1:]:
-			file = open("../Haruka/{0}/{1}".format(self.event, fileName), 'rb')
+		while len(files)>0:
+			curBanner=random.choice(files)
+			files.remove(curBanner)
+			file = open("../Haruka/{0}/{1}".format(self.event, curBanner), 'rb')
 			await self.nijicord.edit(banner=file.read())
 			file.close()
-			await asyncio.sleep(3600)
+			await asyncio.sleep(1800)
+		#for fileName in files:
+		#	file = open("../Haruka/{0}/{1}".format(self.event, fileName), 'rb')
+		#	await self.nijicord.edit(banner=file.read())
+		#	file.close()
+		#	await asyncio.sleep(1800)
 		while True:
-			await asyncio.sleep(3600)
+			await asyncio.sleep(1800)
 			if self.nijicord is None:
 				self.nijicord = bot.get_guild(bot.config["nijiCord"])
 			files = os.listdir("../Haruka/{0}/".format(self.event))
@@ -75,7 +86,7 @@ class GuildFunctions(commands.Cog):
 				self.loop.cancel()
 				self.bot.config["nijiBannerSwap"] = False
 				await ctx.send("Banner Swap disabled")
-		if status.lower() == "on":
+		elif status.lower() == "on":
 			if self.loop is None or self.loop.cancelled():
 				self.loop = self.bot.loop.create_task(self.banner_cycle(self.bot))
 			self.bot.config["nijiBannerSwap"] = True
@@ -91,7 +102,7 @@ class GuildFunctions(commands.Cog):
 			await utils.yay(ctx)
 		else:
 			return
-		await utils.saveConfig(ctx)
+		utils.saveConfig(ctx)
 
 	@ commands.command()
 	async def info(self, ctx, member: discord.Member = None):
@@ -135,8 +146,7 @@ class GuildFunctions(commands.Cog):
 				if emote.lower() == "ignore":
 					await self.starboardIgnore(ctx, count)
 					return
-				pass
-				await ctx.send("please send a valid emote")
+				await ctx.send("Please send a valid emote, and make sure I can add reactions in this channel")
 				return
 			if ctx.message.guild.id in ctx.bot.config["starboard"].keys():
 				ctx.bot.config["starboard"][ctx.message.guild.id]["emote"] = str(emote)
@@ -195,6 +205,9 @@ class GuildFunctions(commands.Cog):
 		"""Use this command to give a self-assignable role.(usage: $iam groupwatch) For a list of assignable roles, type $asar."""
 		if not (str(ctx.message.guild.id) in self.bot.config["asar"].keys()):
 			await ctx.send("This server has no self-assignable roles. Please have an admin use `$asar add rolename` to make roles self-assignable.")
+		if ctx.message.channel.id==613535108846321665:
+			await ctx.send("Please only do role assignments in <#798731659318394890>")
+			return
 		guild = ctx.message.guild
 		if arole.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			role = discord.utils.find(lambda x: x.name.lower()
@@ -214,6 +227,9 @@ class GuildFunctions(commands.Cog):
 	@ commands.command(name="iamn")
 	async def Iamn(self, ctx, *, arole=''):
 		"""Use this command to remove a self-assignable role.(usage: $iamn groupwatch) For a list of assignable roles, type $asar."""
+		if ctx.message.channel.id==613535108846321665:
+			await ctx.send("Please only do role assignments in <#798731659318394890>")
+			return
 		guild = ctx.message.guild
 		if arole.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			role = discord.utils.find(lambda x: x.name.lower()
@@ -272,6 +288,36 @@ class GuildFunctions(commands.Cog):
 		else:
 			await ctx.send("Role `{0}` not found in self assignable list.".format(role))
 
+	@asar.command()
+	@checks.is_admin()
+	async def describe(self, ctx, *, msg):
+		role, description = msg.split(";", 1)
+		if role.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
+			role = discord.utils.find(lambda x: x.name.lower()
+			                          == role.lower(), ctx.guild.roles)
+		else:
+			await ctx.send(f"role `{role}` not found")
+			return
+		if ctx.message.guild.id not in self.bot.config["roleDesc"].keys():
+			self.bot.config["roleDesc"][ctx.message.guild.id] = {
+			    role.name: description.strip()}
+		else:
+			self.bot.config["roleDesc"][ctx.message.guild.id][role.name] = description.strip()
+		utils.saveConfig(ctx)
+
+	@asar.command()
+	@checks.is_admin()
+	async def roleChannel(self, ctx):
+		message = await ctx.send("This message will become your role information message.")
+		message2 = await ctx.send("This message will become your second role information message.")
+		self.bot.config["roleChannel"][ctx.message.guild.id] = {
+		    "channel": ctx.message.channel.id, "message": [message.id, message2.id]}
+		utils.saveConfig(ctx)
+		rxn = utils.getRandEmoji(ctx.guild.emojis, "hug")
+		if rxn is None:
+			rxn = "👍"
+		await ctx.message.add_reaction(rxn)
+
 	@ commands.command(name="pronoun")
 	async def Pronoun(self, ctx, action='', pronoun=''):
 		"""Please say '$pronoun add ' or '$pronoun remove ' followed by 'he', 'she', or 'they'. If you want a different pronoun added, feel free to contact a mod."""
@@ -310,6 +356,9 @@ class GuildFunctions(commands.Cog):
 		"""Show your support for your best girl! Ex. '$best Kanata' will give you the kanata role. '$best clear' will clear your role."""
 		if not(str(ctx.message.guild.id) in ctx.bot.config["best"].keys()):
 			return
+		if ctx.message.channel.id==613535108846321665:
+			await ctx.send("Please only do role assignments in <#798731659318394890>")
+			return
 		roleNames = self.bot.config["best"][str(ctx.message.guild.id)]
 		if role is None:
 			await ctx.send("Best roles include {0}".format(", ".join(self.bot.config["best"][str(ctx.message.guild.id)])))
@@ -327,7 +376,13 @@ class GuildFunctions(commands.Cog):
 		if not(ctx.message.guild.id in ctx.bot.config["seiyuu"].keys()):
 			return
 
+		if ctx.message.channel.id==613535108846321665:
+			await ctx.send("Please only do role assignments in <#798731659318394890>")
+			return
 		roleNames = self.bot.config[self.bot.config["seiyuu"][ctx.message.guild.id]]
+		if role is None:
+			await ctx.send("Seiyuu roles include {0}".format(", ".join(self.bot.config[self.bot.config["seiyuu"][ctx.message.guild.id]])))
+			return
 		if role.lower() == "clear":
 			role = "clear"
 		elif role.title() not in roleNames:
@@ -340,6 +395,9 @@ class GuildFunctions(commands.Cog):
 	async def sub(self, ctx, *, role):
 		"""Show your support for your favorite subunit! Ex. '$sub QU4RTZ' will give you the QU4RTZ role. '$sub clear' will clear your role."""
 		roleNames = self.bot.config["sub"]
+		if ctx.message.channel.id==613535108846321665:
+			await ctx.send("Please only do role assignments in <#798731659318394890>")
+			return
 		if role.lower() == "diverdiva" or role.lower() == "diver diva":
 			roleName = "DiverDiva"
 			rxnChoice = random.choice(["karin", "ai"]) + "yay"
@@ -422,6 +480,39 @@ class GuildFunctions(commands.Cog):
 					emoji = utils.getRandEmoji(self.bot.emojis, "harukayay")
 			await ctx.message.add_reaction(emoji)
 		return
+
+	async def _update_role_message(self, message):
+		ch = self.bot.get_channel(self.bot.config["roleChannel"][message.guild.id]["channel"])
+		girlRoles=list(filter(lambda x: x.name.title() in self.bot.config["best"][str(message.guild.id)], message.guild.roles))
+		girls=""
+		for girl in girlRoles:
+			girls+=f"{girl.mention}, "
+		girls=girls[:-2]
+		seiyuuRoles = list(filter(lambda x: x.name.title() in self.bot.config[self.bot.config["seiyuu"][message.guild.id]], message.guild.roles))
+		seiyuus = ""
+		for seiyuu in seiyuuRoles:
+			seiyuus+=f"{seiyuu.mention}, "
+		seiyuus=seiyuus[:-2]
+
+		roleDesc="\n"
+		for role, desc in self.bot.config["roleDesc"][message.guild.id].items():
+			roleDesc+=f"・**{role}**: *{desc}*\n"
+		content1 = self.bot.config["roleMsg"][message.guild.id][0].format(
+			girls,
+			seiyuus
+			)
+		content2 = self.bot.config["roleMsg"][message.guild.id][1].format(roleDesc)
+		msg1 = await ch.fetch_message(self.bot.config["roleChannel"][message.guild.id]["message"][0])
+		msg2 = await ch.fetch_message(self.bot.config["roleChannel"][message.guild.id]["message"][1])
+		await msg1.edit(content=content1)
+		await msg2.edit(content=content2)
+
+	@commands.command()
+	@checks.is_admin()
+	async def upd8(self,ctx):
+		await self._update_role_message(ctx.message)
+
+
 
 
 def setup(bot):

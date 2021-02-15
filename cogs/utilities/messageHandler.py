@@ -14,6 +14,9 @@ cache = 3
 spamCacheSize = 3
 maxPoints = 60
 
+async def scheduleDelete(message):
+	await asyncio.sleep(10)
+	await message.delete()
 
 class MessageHandler():
 	def __init__(self, config, bot):
@@ -79,6 +82,13 @@ class MessageHandler():
 			await conn.commit()
 
 	async def handleMessage(self, message, bot):
+		if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id == bot.config["roleChannel"][message.guild.id]["channel"]:
+			if not(message.content.startswith("$") or message.author.id == bot.user.id):
+				await message.delete()
+				return
+			elif message.author.id == bot.user.id and (message.id not in bot.config["roleChannel"][message.guild.id]["message"]):
+				bot.loop.create_task(scheduleDelete(message))
+				return
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or DM `Junior Mints#2525`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
@@ -112,10 +122,13 @@ class MessageHandler():
 					except Exception as e:
 						print(f"error while parsing insta embed:\n {str(e)}")
 						pass
+
 		if not (message.author.bot):
 			if not self.isEnabled and message.content.startswith("$"):
 				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
 				return
+			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:
+				bot.loop.create_task(scheduleDelete(message))
 			await bot.process_commands(message)
 		try:
 			if message.guild is None or not (message.guild.id in bot.config["scoreEnabled"]):
@@ -139,6 +152,9 @@ class MessageHandler():
 		for role in roles:
 			if score >= role["score"]:
 				foundRole = message.guild.get_role(role["role"])
+				if not foundRole:
+					print(f"Rank {role['role']} acheived at score {role['score']}doesn't exist in {message.guild.name}")
+					break
 				if not(foundRole in message.author.roles):
 					await message.author.add_roles(foundRole)
 					await message.channel.send("{0} has been promoted to the role {1}".format(str(message.author), str(foundRole)))
