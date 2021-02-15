@@ -53,9 +53,17 @@ def genLog(member, what):
 
 
 def saveConfig(ctx):
+	print("creating backup")
+	with open('Resources.yaml', "r") as file:
+		backup = yaml.full_load(file)
 	print("saving")
-	with open('Resources.yaml', 'w') as outfile:
-		yaml.dump(ctx.bot.config, outfile)
+	try:
+		with open('Resources.yaml', 'w') as outfile:
+			yaml.dump(ctx.bot.config, outfile)
+	except:
+		with open('Resources.yaml', 'w') as outfile:
+			yaml.dump(backup, outfile)
+		raise
 
 
 def getInstaEmbed(token, url):
