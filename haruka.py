@@ -36,8 +36,8 @@ bot = commands.Bot(command_prefix=['$'],
                    description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",
                    case_insensitive=True, intents=intents)
 
-cogList = ['cogs.music', 'cogs.administration', 'cogs.fun',
-           'cogs.guildFunctions', 'cogs.events', 'cogs.setup', 'cogs.scheduler']
+cogList = ['cogs.administration', 'cogs.fun', 'cogs.guildFunctions',
+           'cogs.events', 'cogs.setup', 'cogs.music', 'cogs.scheduler']
 cogNames = ['Music', 'Administration', 'Fun',
             'GuildFunctions', 'Events', 'Setup', 'Scheduler']
 with open('Resources.yaml', "r") as file:
@@ -64,19 +64,21 @@ def is_me():
 
 @bot.event
 async def on_ready():
+	x=[bot.messageHandler.initRoles(bot)]
 	for cog in cogList:
 		bot.load_extension(cog)
-	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
-	await bot.messageHandler.initRoles(bot)
+	x.append( bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1)))
 	guild = bot.get_guild(bot.config["nijiCord"])
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
 	totalUsers = 0
+
 	for guild in bot.guilds:
 		guildList = guildList + guild.name + ", "
 		totalUsers += guild.member_count
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers, len(bot.guilds)))
+	await asyncio.gather(x[0],x[1])
 
 
 @bot.event
