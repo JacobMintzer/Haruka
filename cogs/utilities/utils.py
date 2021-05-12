@@ -18,12 +18,18 @@ def getRandEmoji(emojis, query="", ctx=None):
 		if ctx.message.guild:
 			if ctx.message.guild.id in banned:
 				banned.remove(ctx.message.guild.id)
-		emojis = list(filter(lambda x: not(x.guild.id in banned), emojis))
+		emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, emojis))
 	if query == "":
 		return random.choice(emojis)
 	choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 	if len(choices) < 1:
-		return None
+		if ctx:
+			emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, ctx.bot.emojis))
+			choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
+			if len(choices) < 1:
+				return None
+		else:
+			return None
 	choice = random.choice(choices)
 	return choice
 
