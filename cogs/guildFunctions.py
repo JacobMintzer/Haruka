@@ -26,7 +26,8 @@ class GuildFunctions(commands.Cog):
 			self.loop = self.bot.loop.create_task(self.event_banner_cycle(self.bot))
 
 	async def shutdown(self, ctx):
-		self.loop.cancel()
+		if self.loop:
+			self.loop.cancel()
 		await asyncio.sleep(1)
 		return
 
@@ -370,6 +371,7 @@ class GuildFunctions(commands.Cog):
 			return
 		await self.setRole(ctx, roleNames, role, role.lower() + "yay")
 
+
 	@ commands.command(aliases=["seiyu"])
 	async def seiyuu(self, ctx, *, role=None):
 		"""Show your support for your favorite seiyuu! Ex. '$seiyuu Miyu' will give you the Miyu role. '$seiyuu clear' will clear your role."""
@@ -488,7 +490,7 @@ class GuildFunctions(commands.Cog):
 		for girl in girlRoles:
 			girls+=f"{girl.mention}, "
 		girls=girls[:-2]
-		seiyuuRoles = list(filter(lambda x: x.name.title() in self.bot.config[self.bot.config["seiyuu"][message.guild.id]], message.guild.roles))
+		seiyuuRoles = list(filter(lambda x: x.name.title() in self.bot.config[self.bot.config["seiyuu"][message.guild.id]], message.guild.roles)) if message.guild.id in self.bot.config["seiyuu"] else []
 		seiyuus = ""
 		for seiyuu in seiyuuRoles:
 			seiyuus+=f"{seiyuu.mention}, "
@@ -511,9 +513,7 @@ class GuildFunctions(commands.Cog):
 	@checks.is_admin()
 	async def upd8(self,ctx):
 		await self._update_role_message(ctx.message)
-
-
-
+		
 
 def setup(bot):
 	bot.add_cog(GuildFunctions(bot))
