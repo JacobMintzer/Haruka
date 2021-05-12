@@ -101,7 +101,7 @@ class Deprecated(commands.Cog):
 		testContent=content.lower().replace("again","")
 		testContent=testContent.replace("wait","")
 		testContent=testContent.replace("senpai","")
-		if bool([ele for ele in self.girls if(ele in testContent)]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
+		if bool([ele for ele in self.girls if(ele in testContent.split(" "))]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
 			msg=content
 			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
 			msg=regex.sub('PDP',msg)
@@ -237,5 +237,114 @@ class Deprecated(commands.Cog):
 				return role.name
 		return None
 
-def setup(bot):
-	bot.add_cog(Deprecated(bot))
+
+
+
+
+
+
+
+# AF 2021
+
+
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command()
+	async def rate(self, ctx, *, rates=None):
+		if rates is None:
+			await ctx.send(reference=ctx.message.to_reference(),content=f"Currents rates are {self.rates*100}% or {self.bot.config['rates']} ")
+			return
+		rate=rates.split("/")
+		if rate[0] >= rate[1]: 
+			await ctx.send(reference=ctx.message.to_reference(),content="no")
+			return
+		self.rates = float(rate[0]) / float(rate[1])
+		self.bot.config['rates'] = rates
+		utils.saveConfig(ctx)
+		await ctx.message.add_reaction(utils.getRandEmoji(self.bot.emojis, "harukahug"))
+	
+	#@commands.Cog.listener()
+	async def on_typing(self, channel, user, when):
+		if not channel.guild.id == self.bot.config['nijiCord']:
+			return
+		if channel.id in self.ignoreCH:
+			return
+		if random.random() < self.rates:
+			files = os.listdir("../Haruka/af2021/")
+			file = discord.File(open("../Haruka/af2021/{0}".format(random.choice(files)), 'rb'))
+			await channel.send(file=file)
+
+
+	async def pdpIfy(self, message):
+		"""April fools day replacements"""
+		if len(message.content)<1:
+			return False
+		if(message.author.bot):
+			return False
+		if (message.content[0]=='|'):
+			return False
+		if (message.content[0]=="$"):
+			return False
+		content=message.content
+		content=re.sub(r'<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>','',content)
+		testContent=content.lower().replace("again","")
+		testContent=testContent.replace("wait","")
+		testContent=testContent.replace("senpai","")
+
+
+		if bool([ele for ele in self.girls if(ele.lower() in testContent.split())]): #"niji" in content.lower() or "ayumu" in content.lower() or "karin" in content.lower():
+			msg=content
+			regex=re.compile(re.escape('nijigasaki'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['practice Liella', 'PDP']),msg)
+			regex=re.compile(re.escape('nijigaku'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['The Liella Warmup School', 'The PDP School']),msg)
+			regex=re.compile(re.escape('niji'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['practice Liella', 'PDP']),msg)
+			regex=re.compile(re.escape('setsuna'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['The self-insert weeb idol', 'My secret student council president can\'t possibly be a pyromaniac?!']),msg)
+			regex=re.compile(re.escape('ayumu'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Setsuna\'s Girlfriend\'s Childhood Friend','Walking attachment issues','Honoka 3']),msg)
+			regex=re.compile(re.escape('karin'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['The girl who got lost in a straight hallway','Kanan with tiddy moles']),msg)
+			regex=re.compile(re.escape('kasumin'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['bababooey','Nijigasaki\'s pet rat', 'kasukasu']),msg)
+			regex=re.compile(re.escape('kasumi'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['bababooey','Nijigasaki\'s pet rat', 'kasukasu']),msg)
+			regex=re.compile(re.escape('shizuku'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Kasumin\'s bread dispenser','Volleyball target practice']),msg)
+			regex=re.compile(re.escape('kanata'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['fucking piece of shit that doesn\'t sleep and now i need to learn to cook','zzzzzzzzzzzzzz']),msg)
+			regex=re.compile(re.escape('emma'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Emma, blocker of canals', 'Emma, consumer of smaller idols']),msg)
+			regex=re.compile(re.escape('rina'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Overlord Board-sama and her loyal flesh-slave', 'idol that says poggers irl']),msg)
+			if 'ai' in testContent.split():
+				aiRepl = random.choice(['The safest gyaru design of all time','Sasuke\'s food', 'Rina\'s babysitter'])
+				deconMSG=msg.split()
+				newMSG=[]
+				for token in deconMSG:
+					if token.lower() == 'ai':
+						newMSG.append(aiRepl)
+					else:
+						newMSG.append(token)
+				msg=" ".join(newMSG)
+			regex=re.compile(re.escape('haruka'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['benevolent goddess and all knowing mind reader', 'boneless Ruby']),msg)
+			regex=re.compile(re.escape('yu'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Me, but if i were cuter and always talking to other cute girls', 'queen of the hump and dump']),msg)
+			regex=re.compile(re.escape('shioriko'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['A sentient fang with a girl attached', 'the girl you\'re into just because you like vampires']),msg)
+			regex=re.compile(re.escape('shio'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['A sentient fang with a girl attached', 'the girl you\'re into just because you like vampires']),msg)
+			regex=re.compile(re.escape('lanzhu'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Commie Dommy Mommy']),msg)
+			regex=re.compile(re.escape('mia'),re.IGNORECASE)
+			msg=regex.sub(random.choice(['Taylor Swift']),msg)
+			await message.channel.send(reference=message.to_reference(), content='You mean `{0}`'.format(msg))
+			return True
+		else:
+			return False
+
+
+
+
