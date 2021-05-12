@@ -1,9 +1,12 @@
 import asyncio
 from datetime import datetime, timedelta
 import json
+import yaml
 import os
 import pprint
 import re
+import random
+import uuid
 
 import discord
 import pandas as pd
@@ -19,8 +22,17 @@ class Fun(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		self.cooldown = []
-		with open('sauce.txt', 'r') as file_object:
-			self.SNKey = file_object.read().strip()
+		with open('secrets.yaml', "r") as file:
+			secrets = yaml.full_load(file)
+		self.SNKey = secrets["snkey"]
+		self.tlUrl = secrets['tlurl']
+		self.tlKey = secrets['tlkey']
+		#with open('sauce.txt', 'r') as file_object:
+		#	self.SNKey = file_object.read().strip()
+		rates = self.bot.config['rates'].split('/')
+		self.rates = float(rates[0]) / float(rates[1])
+		self.ignoreCH = [611375108056940555, 798731659318394890, 696402682168082453, 804447722684809276]
+		
 
 	async def shutdown(self, ctx):
 		pass
@@ -250,6 +262,8 @@ class Fun(commands.Cog):
 	@commands.command()
 	async def llasID(self, ctx, id: int, lb="0"):
 		"""Search for a LLAS card by ID. Optionally give limit break level (defaults to 0). ex. '$llasID 146 2'"""
+		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
+		return
 		async with ctx.typing():
 			if lb.lower() == "mlb":
 				lb = 5
@@ -266,6 +280,8 @@ class Fun(commands.Cog):
 	@commands.command()
 	async def llas(self, ctx, *, query):
 		"""Search for a LLAS card. ex. $llas Bowling Eli"""
+		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
+		return
 		async with ctx.typing():
 			lb = 0
 			if query[-3:].lower() == "mlb":
@@ -385,7 +401,11 @@ class Fun(commands.Cog):
 
 	@commands.command(aliases=["isNijiS2Confirmed?"], hidden=True)
 	async def isNijiS2Confirmed(self, ctx):
-		await ctx.send("Not Yet")
+		await ctx.send("YES")
+
+	@commands.command(aliases=["isNijiMovieConfirmed?","isNijiMovieConfirmed", "isNijiS3Confirmed?"], hidden=True)
+	async def isNijiS3Confirmed(self, ctx):
+		await ctx.send("Not yet")
 
 	@commands.command(aliases=["temperature"])
 	async def temp(self, ctx, *, msg):
@@ -431,6 +451,26 @@ class Fun(commands.Cog):
 				await ctx.send(f"{inches} inches is {round(totalCM,2)}cm")
 		else:
 			await ctx.send("please put your conversion in the format of `30cm` or `5'7\"`")
+
+
+	@commands.command(aliases=["tl"])
+	async def translate(self, ctx, *, msg):
+		from_language = 'ja'
+		url = f'{self.tlUrl}/translate?api-version=3.0&from={from_language}&to=en'
+		location = 'eastus'
+		headers = {
+			'Ocp-Apim-Subscription-Key': self.tlKey,
+			'Ocp-Apim-Subscription-Region': location,
+			'Content-type': 'application/json',
+			'X-ClientTraceId': str(uuid.uuid4())
+
+		}
+		body = [{
+			'text' : msg
+		}]
+		request = requests.post(url, headers=headers, json=body)
+		response = request.json()
+		await ctx.send(response[0]["translations"][0]["text"])
 
 
 def setup(bot):
