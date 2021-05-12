@@ -37,6 +37,7 @@ class MessageHandler():
 		self.antispamLoop.cancel()
 
 	async def initRoles(self, bot):
+		self.roles = {}
 		self.isEnabled = True
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
 		self.niji = discord.utils.get(bot.guilds, id=self.config["nijiCord"])
@@ -56,8 +57,6 @@ class MessageHandler():
 			self.roles = roles
 
 	async def getPB(self, user, guild, idx=1):
-		if not self.isEnabled:
-			return "Sorry, I can't do that at the moment, can you try again in a few seconds?"
 		async with aiosqlite.connect("memberScores.db") as conn:
 			cursor = await conn.execute('SELECT ID, Name, Score FROM "guild{0}" ORDER BY Score DESC'.format((str(guild.id))))
 			response = await cursor.fetchall()
@@ -124,9 +123,6 @@ class MessageHandler():
 						pass
 
 		if not (message.author.bot):
-			if not self.isEnabled and message.content.startswith("$"):
-				await message.channel.send("Sorry, I can't do that at the moment, can you try again in a few seconds?")
-				return
 			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:
 				bot.loop.create_task(scheduleDelete(message))
 			await bot.process_commands(message)
@@ -143,6 +139,8 @@ class MessageHandler():
 					await self.antiSpam(message, score)
 
 				if not (score is None) and message.guild.id == bot.config["nijiCord"]:
+					if not self.isEnabled:
+						return
 					await self.checkNijiRanks(message, score)
 				elif not (score is None) and str(message.guild.id) in self.config["roleRanks"].keys() and not(message.author.bot):
 					await self.checkRanks(message, score)
@@ -264,6 +262,11 @@ class MessageHandler():
 			rxn = discord.utils.get(self.bot.emojis, name="EmmaHelp")
 			await message.add_reaction(rxn)
 		if "kasukasu" in content or ("kasu kasu" in content and not("nakasu kasumi" in content or "nakasukasumi")):
+			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
+			await message.add_reaction(rxn)
+			self.cooldown = True
+			await message.channel.send("KA! SU! MIN! DESU!!!")
+		elif "pooper" in content and "scooper" in content:
 			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
 			await message.add_reaction(rxn)
 			self.cooldown = True
