@@ -192,21 +192,21 @@ class Music(commands.Cog):
 				msg.lower(), song.replace(".mp3", "").lower()) > 95, self.songList))
 			if len(potential) == 1:
 				player.queue.append(Song(potential[0]))
-				await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+				await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay", ctx))
 				return
 			if len(potential) < 1:
 				potential = list(filter(lambda song: fuzz.partial_ratio(
                                     msg.lower(), song.replace(".mp3", "").lower()) >= 95, self.songList))
 				if len(potential) == 1:
 					player.queue.append(Song(potential[0]))
-					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay", ctx))
 					return
 			if len(potential) < 1:
 				potential = list(filter(lambda song: fuzz.partial_ratio(
                                     msg.lower(), song.replace(".mp3", "").lower()) >= 85, self.songList))
 				if len(potential) == 1:
 					player.queue.append(Song(potential[0]))
-					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+					await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay", ctx))
 					return
 			if len(potential) == 0:
 				await ctx.send("Song not found, check your spelling or dm junior mints to add the song.")
