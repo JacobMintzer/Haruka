@@ -439,6 +439,8 @@ class GuildFunctions(commands.Cog):
 					msg_suppressed = utils.suppress_links(msg.content)
 					await ctx.send(msg_suppressed)
 					return
+			await ctx.send("Message not found! Maybe the user hasn't posted an introduction yet?")
+			return
 
 
 	@ commands.command()
