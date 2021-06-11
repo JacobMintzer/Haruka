@@ -1,6 +1,8 @@
 import asyncio
+import yaml
 
 import discord
+import io
 from discord.ext import commands
 
 from .utilities import checks, utils
@@ -101,6 +103,12 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 					str(user), str(e)))
 		await ctx.send(message)
 		await ctx.message.delete()
+
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def reload(self,ctx):
+		with open('Resources.yaml', "r") as file:
+			self.bot.config = yaml.full_load(file)
 
 	@checks.is_me()
 	@commands.command(hidden=True)
