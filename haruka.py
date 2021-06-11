@@ -18,6 +18,7 @@ from discord.ext import commands
 
 from cogs.utilities import checks, messageHandler, utils
 
+print("starting up")
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
@@ -64,8 +65,10 @@ def is_me():
 
 @bot.event
 async def on_ready():
+	print("on ready")
 	x=[bot.messageHandler.initRoles(bot)]
 	for cog in cogList:
+		print(f"Loading {cog}")
 		bot.load_extension(cog)
 	x.append( bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1)))
 	guild = bot.get_guild(bot.config["nijiCord"])
@@ -79,6 +82,7 @@ async def on_ready():
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers, len(bot.guilds)))
 	await asyncio.gather(x[0],x[1])
+	print("Ready!")
 
 
 @bot.event

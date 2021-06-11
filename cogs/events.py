@@ -85,6 +85,15 @@ class Events(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
+		try:
+			if member.guild.id in self.bot.config["urlKick"]:
+				cleaned_name = member.name.lower()
+				if "twitter.com" in cleaned_name or "h0nde" in cleaned_name:
+					await member.kick(reason=f"url found in name {member.name=}")
+					return
+		except Exception as e:
+			print("error in urlkick ")
+			print (e)
 		if member.guild.id == self.bot.config["nijiCord"]:
 			welcomeCh = self.bot.get_channel(
 				self.bot.config["welcomeCh"][str(member.guild.id)])
@@ -110,4 +119,5 @@ class Events(commands.Cog):
 
 
 def setup(bot):
+	print("adding events cog")
 	bot.add_cog(Events(bot))

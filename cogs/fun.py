@@ -16,7 +16,8 @@ import yaml
 from discord.ext import commands
 
 from .utilities import checks, messageHandler, utils
-
+import cogs.utilities.constants as consts
+from .models.idol_st.allstar_card import AllstarCard
 
 class Fun(commands.Cog):
 	def __init__(self, bot):
@@ -27,20 +28,12 @@ class Fun(commands.Cog):
 		self.SNKey = secrets["snkey"]
 		self.tlUrl = secrets['tlurl']
 		self.tlKey = secrets['tlkey']
-		#with open('sauce.txt', 'r') as file_object:
-		#	self.SNKey = file_object.read().strip()
-		rates = self.bot.config['rates'].split('/')
-		self.rates = float(rates[0]) / float(rates[1])
-		self.ignoreCH = [611375108056940555, 798731659318394890, 696402682168082453, 804447722684809276]
+		self.base_uri='https://idol.st/api/allstars/cards'
 		
 
 	async def shutdown(self, ctx):
 		pass
 
-	# @commands.command()
-	# @checks.is_me()
-	# async def owo(self, ctx):
-	#	await ctx.send(str(self.scheduler.queue))
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -108,15 +101,15 @@ class Fun(commands.Cog):
 	@re.command()
 	async def slowmode(self, ctx, mode=""):
 		"""ADMIN ONLY!! Adds cooldown per user of 15 seconds please say '$re slowmode' to toggle $re cooldown, or '$re slowmode on' or '$re slowmode off' to turn it on or off respectively."""
-		if mode is "":
+		if mode == "":
 			if ctx.message.guild.id in self.bot.config["reSlow"]:
 				self.bot.config["reSlow"].remove(ctx.message.guild.id)
 			else:
 				self.bot.config["reSlow"].append(ctx.message.guild.id)
-		elif mode.lower() is "on":
+		elif mode.lower() == "on":
 			if not(ctx.message.guild.id in self.bot.config["reSlow"]):
 				self.bot.config["reSlow"].remove(ctx.message.guild.id)
-		elif mode.lower() is "off":
+		elif mode.lower() == "off":
 			if ctx.message.guild.id in self.bot.config["reSlow"]:
 				self.bot.config["reSlow"].remove(ctx.message.guild.id)
 		else:
@@ -260,52 +253,42 @@ class Fun(commands.Cog):
 		utils.saveConfig(ctx)
 
 	@commands.command()
-	async def llasID(self, ctx, id: int, lb="0"):
-		"""Search for a LLAS card by ID. Optionally give limit break level (defaults to 0). ex. '$llasID 146 2'"""
-		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
-		return
-		async with ctx.typing():
-			if lb.lower() == "mlb":
-				lb = 5
-			elif len(str(lb)) > 1:
-				lb = int(str(lb)[-1])
-			else:
-				lb = int(lb)
-			response = requests.get(
-				"http://all-stars-api.uc.r.appspot.com/cards/id/{0}".format(str(id)))
-			data = (response.json())
-			embd = self.embedCard(data, lb)
-			await ctx.send(embed=embd)
+	async def llasID(self, ctx, id: int):
+		response = requests.get(self.base_uri, params = {"id":id})
+		data = response.json()["results"]
+		card = AllstarCard(**data[0])
+		await ctx.send(embed=card.get_embed())
+
 
 	@commands.command()
 	async def llas(self, ctx, *, query):
-		"""Search for a LLAS card. ex. $llas Bowling Eli"""
-		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
-		return
 		async with ctx.typing():
-			lb = 0
-			if query[-3:].lower() == "mlb":
-				lb = 5
-				query = query[:-3]
-			if query[-3:-1].lower() == "lb":
-				lb = int(query[-1])
-				query = query[:-3]
-			query = query.strip()
-			response = requests.get(
-				"http://all-stars-api.uc.r.appspot.com/cards/search?query={0}".format(str(query)))
-			data = (response.json())
-			if len(data) > 15:
-				await ctx.send("Too many potential cards, please send a more specific query.")
-				return
-			if len(data) > 1:
-				await ctx.send(self.listCards(data))
-				return
-			if len(data) < 1:
+			tokens = query.lower().split(" ")
+			version = None
+			params = {}
+			for token in tokens:
+				if token.title() in consts.idols:
+					params["idol"] = token
+				elif token.upper() in consts.rarities:
+					params["rarity"] = token
+				elif token.lower() in consts.attributes:
+					params["attribute"] = token
+				elif token == "new":
+					version = 0
+				elif token.isdigit():
+					version = -1 * int(token) 
+			response = requests.get(self.base_uri, params = params)
+			data = response.json()["results"]
+			if version != None:
+				card = AllstarCard(**data[version])
+				await ctx.send(embed=card.get_embed())
+			elif len(data)==1:
+				card = AllstarCard(**data[0])
+				await ctx.send(embed=card.get_embed())
+			elif len(data)==0:
 				await ctx.send("No card found with given query.")
-				return
-			data = data[0]
-			embd = self.embedCard(data, lb)
-			await ctx.send(embed=embd)
+			else:
+				await ctx.send(self.listCards(data))
 
 	def embedCard(self, data, lb=0):
 		embd = discord.Embed(title=data["idolizedTitle"], description=data["title"], colour=discord.Colour(
@@ -338,10 +321,11 @@ class Fun(commands.Cog):
 		return embd
 
 	def listCards(self, data):
+		cards = [AllstarCard(**x) for x in data]
 		cardList = "Multiple cards found, please pick the card you want with `$llasID <id>` with <id> replaced with the ID you want.```\nID  Rarity    Idol   Title      Idolized Title\n"
-		for card in data:
-			cardList += "{0}.  {1} {2} {3}: {4} / {5}\n".format(
-				card["id"], card["rarity"]["abbreviation"], card["idol"]["firstName"], card["idol"]["lastName"], card["title"], card["idolizedTitle"])
+		for card in cards:
+			cardList += "{0}.  {1} {2}: {3} / {4}\n".format(
+				card.id, card.rarity, card.idol_name, card.name, card.name_idolized)
 		return cardList + "```"
 
 	@commands.command(hidden=True)

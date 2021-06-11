@@ -493,6 +493,24 @@ class Administration(commands.Cog):
 				target.remove(ctx.message.author.id)
 			return
 
+	@commands.command()
+	@checks.is_admin()
+	async def urlBan(self, ctx, *, status="on"):
+		if status.lower() == "on":
+			if ctx.message.guild.id not in ctx.bot.config["urlKick"]:
+				self.bot.config["urlKick"].append(ctx.message.guild.id)
+				utils.saveConfig(ctx)
+				await utils.yay(ctx)
+		elif status.lower() == "off":
+			if ctx.message.guild.id in ctx.bot.config["urlKick"]:
+				self.bot.config["urlKick"].remove(ctx.message.guild.id)
+				utils.saveConfig(ctx)
+				await utils.yay(ctx)
+		else:
+			await ctx.send("Please send either `$urlBan on` or `$urlBan off`")
+
+
+
 
 def setup(bot):
 	bot.add_cog(Administration(bot))
