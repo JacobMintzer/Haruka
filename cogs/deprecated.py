@@ -347,4 +347,53 @@ class Deprecated(commands.Cog):
 
 
 
+	# old llas commands for bock's database
 
+	@commands.command()
+	async def llas(self, ctx, *, query):
+		"""Search for a LLAS card. ex. $llas Bowling Eli"""
+		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
+		return
+		async with ctx.typing():
+			lb = 0
+			if query[-3:].lower() == "mlb":
+				lb = 5
+				query = query[:-3]
+			if query[-3:-1].lower() == "lb":
+				lb = int(query[-1])
+				query = query[:-3]
+			query = query.strip()
+			response = requests.get(
+				"http://all-stars-api.uc.r.appspot.com/cards/search?query={0}".format(str(query)))
+			data = (response.json())
+			if len(data) > 15:
+				await ctx.send("Too many potential cards, please send a more specific query.")
+				return
+			if len(data) > 1:
+				await ctx.send(self.listCards(data))
+				return
+			if len(data) < 1:
+				await ctx.send("No card found with given query.")
+				return
+			data = data[0]
+			embd = self.embedCard(data, lb)
+			await ctx.send(embed=embd)
+
+
+	@commands.command()
+	async def llasID(self, ctx, id: int, lb="0"):
+		"""Search for a LLAS card by ID. Optionally give limit break level (defaults to 0). ex. '$llasID 146 2'"""
+		await ctx.send("I am currently in the process of migrating to a new cards database, so my card lookup feature is currently disabled. Thank you for waiting patiently, and keep an eye on my status for when it launches!")
+		return
+		async with ctx.typing():
+			if lb.lower() == "mlb":
+				lb = 5
+			elif len(str(lb)) > 1:
+				lb = int(str(lb)[-1])
+			else:
+				lb = int(lb)
+			response = requests.get(
+				"http://all-stars-api.uc.r.appspot.com/cards/id/{0}".format(str(id)))
+			data = (response.json())
+			embd = self.embedCard(data, lb)
+			await ctx.send(embed=embd)
