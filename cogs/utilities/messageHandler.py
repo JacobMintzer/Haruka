@@ -97,10 +97,6 @@ class MessageHandler():
 				print(f"error logging nijiMsg {e}")
 			if not (self.cooldown or message.author.bot):
 				await self.meme(message)
-			if (("gilfa" in message.content.lower()) or ("pregario" in message.content.lower()) or ("pregigi" in message.content.lower())) and message.channel.id != 611375108056940555:
-				await message.channel.send("No")
-				await message.delete()
-				return
 			if not (message.author.bot):
 				if (tempMatch:=self.tempRegex.search(message.content)) and not(message.content.lower().startswith("$temp")):
 					temperature = tempMatch.group(0)
