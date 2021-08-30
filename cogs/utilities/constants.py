@@ -38,12 +38,6 @@ idols = [
 	"Nico"
 	]
 
-rarities = [
-	"UR",
-	"SR",
-	"R"
-]
-
 idol_association = {
 "Karin": "Asaka Karin",
 "Emma": "Verde Emma",
