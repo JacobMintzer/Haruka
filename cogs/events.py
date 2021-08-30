@@ -21,7 +21,7 @@ class Events(commands.Cog):
 
 	def genStarboardPost(self, message):
 		embd = discord.Embed()
-		embd = embd.set_thumbnail(url=message.author.avatar_url)
+		embd = embd.set_thumbnail(url=message.author.display_avatar)
 		embd.type = "rich"
 		embd.timestamp = message.created_at
 		embd = embd.add_field(name='Author', value=message.author.mention)

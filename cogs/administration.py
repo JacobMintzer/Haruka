@@ -103,7 +103,7 @@ class Administration(commands.Cog):
 		embd.title = message.author.display_name
 		embd.description = "{0}'s Message was deleted from {1}".format(
 			message.author, message.channel)
-		embd = embd.set_thumbnail(url=message.author.avatar_url)
+		embd = embd.set_thumbnail(url=message.author.display_avatar)
 		embd.type = "rich"
 		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
 		embd = embd.add_field(name='Discord Username',
@@ -149,7 +149,7 @@ class Administration(commands.Cog):
 		embd.title = message.author.display_name
 		embd.description = "{0}'s message was edited in {1}".format(
 			message.author, message.channel)
-		embd = embd.set_thumbnail(url=message.author.avatar_url)
+		embd = embd.set_thumbnail(url=message.author.display_avatar)
 		embd.type = "rich"
 		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
 		embd.colour = discord.Color.gold()

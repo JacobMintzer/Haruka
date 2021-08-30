@@ -48,7 +48,7 @@ bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
 
 async def is_admin(ctx):
 	try:
-		if ctx.author.permissions_in(ctx.message.channel).administrator:
+		if ctx.message.channel.permissions_for(ctx.author).administrator:
 			return True
 		print("You do not have permission to do this. This incident will be reported.")
 		return False
