@@ -37,7 +37,7 @@ class Fun(commands.Cog):
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
 		"""Searches for a random emote by search term. Servers with NSFW emotes will be removed from the global emote pool. ex. '$re yay' will return a random 'yay' emote."""
-		if ctx.message.author.permissions_in(ctx.message.channel).administrator or ctx.message.guild is None:
+		if ctx.message.channel.permissions_for(ctx.message.author).administrator or ctx.message.guild is None:
 			if emote.lower() == "disable":
 				await self.disable(ctx, msg)
 				return
@@ -142,12 +142,12 @@ class Fun(commands.Cog):
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
 			await self.best(ctx)
 		elif idx.lower() == 'ignore':
-			if(ctx.author.permissions_in(ctx.message.channel).administrator):
+			if(ctx.message.channel.permissions_for(ctx.author).administrator):
 				await self.ignore(ctx)
 			else:
 				await ctx.send("This command is only available to an Administrator.")
 		elif idx.lower().startswith("add"):
-			if(ctx.author.permissions_in(ctx.message.channel).administrator):
+			if(ctx.message.channel.permissions_for(ctx.author).administrator):
 				await self.rankAdd(ctx, idx)
 			else:
 				await ctx.send("This command is only available to an Administrator.")

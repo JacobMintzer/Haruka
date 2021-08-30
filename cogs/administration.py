@@ -41,7 +41,7 @@ def adminRxn(rxn, user):
 	global target
 	if not rxn.message.author.id == 613501680469803045:
 		return False
-	if user.permissions_in(rxn.message.channel).administrator and not user.bot and user.id in target:
+	if rxn.message.channel.permissions_for(user).administrator and not user.bot and user.id in target:
 		if str(rxn.emoji) in [u"\U0001F5D1", "🔨", "🚫"]:
 			return True
 		return False

@@ -17,7 +17,7 @@ def is_niji():
 def is_admin():
 	async def predicate(ctx):
 		try:
-			if ctx.author.permissions_in(ctx.message.channel).administrator:
+			if ctx.message.channel.permissions_for(ctx.author).administrator:
 				return True
 			else:
 				return False
