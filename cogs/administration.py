@@ -235,7 +235,7 @@ class Administration(commands.Cog):
 			lambda emoji: (emoji.id == emote), self.bot.emojis)
 		if foundEmote:
 			self.bot.config["emoteBanned"].append(foundEmote.guild.id)
-			await ctx.send(f"server is {foundEmote.guild}")
+			await ctx.send(f"server is {foundEmote.guild}", embed = self.genGuildEmbed(foundEmote.guild))
 			utils.saveConfig(ctx)
 
 	@commands.command()
@@ -267,21 +267,7 @@ class Administration(commands.Cog):
 	async def stk(self, ctx, *, id=None):
 		if id:
 			guild = self.bot.get_guild(int(id))
-			embd = discord.Embed()
-			embd.title = guild.name
-			embd.description = "Information on " + guild.name
-			embd = embd.set_thumbnail(url=guild.icon_url)
-			embd.type = "rich"
-			embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
-			dt = guild.created_at
-			embd = embd.add_field(name='Date Created', value=str(
-				dt.date()) + " at " + str(dt.time().isoformat('minutes')))
-			embd = embd.add_field(name='ID', value=guild.id)
-			embd = embd.add_field(name='Owner', value=str(guild.owner))
-			embd = embd.add_field(name='Total Boosters',
-			                      value=guild.premium_subscription_count)
-			embd = embd.add_field(name='Total Channels', value=len(guild.channels))
-			embd = embd.add_field(name='Total Members', value=guild.member_count)
+			embd = self.genGuildEmbed(guild)
 			msgs=[""]
 			for emote in guild.emojis:
 				if len(msgs[-1])>1800:
@@ -297,21 +283,7 @@ class Administration(commands.Cog):
 
 		for guild in self.bot.guilds:
 
-			embd = discord.Embed()
-			embd.title = guild.name
-			embd.description = "Information on " + guild.name
-			embd = embd.set_thumbnail(url=guild.icon_url)
-			embd.type = "rich"
-			embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
-			dt = guild.created_at
-			embd = embd.add_field(name='Date Created', value=str(
-				dt.date()) + " at " + str(dt.time().isoformat('minutes')))
-			embd = embd.add_field(name='ID', value=guild.id)
-			embd = embd.add_field(name='Owner', value=str(guild.owner))
-			embd = embd.add_field(name='Total Boosters',
-			                      value=guild.premium_subscription_count)
-			embd = embd.add_field(name='Total Channels', value=len(guild.channels))
-			embd = embd.add_field(name='Total Members', value=guild.member_count)
+			embd = self.genGuildEmbed(guild)
 			msgs=[""]
 			for emote in guild.emojis:
 				if len(msgs[-1])>1800:
@@ -324,6 +296,60 @@ class Administration(commands.Cog):
 			else:
 				await ctx.send(embed=embd)
 			await asyncio.sleep(1)
+
+	def genGuildEmbed(self, guild):
+		embd = discord.Embed()
+		embd.title = guild.name
+		embd.description = "Information on " + guild.name
+		embd = embd.set_thumbnail(url=guild.icon_url)
+		embd.type = "rich"
+		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
+		dt = guild.created_at
+		embd = embd.add_field(name='Date Created', value=str(
+			dt.date()) + " at " + str(dt.time().isoformat('minutes')))
+		embd = embd.add_field(name='ID', value=guild.id)
+		embd = embd.add_field(name='Owner', value=str(guild.owner))
+		embd = embd.add_field(name='Total Boosters',
+		                      value=guild.premium_subscription_count)
+		embd = embd.add_field(name='Total Channels', value=len(guild.channels))
+		embd = embd.add_field(name='Total Members', value=guild.member_count)
+		return embd
+
+	@commands.Cog.listener()
+	async def on_guild_join(self, guild):
+		ch = self.bot.get_channel(self.bot.config["harukaLogs"])
+		await ch.send("I joined the guild: {0}".format(str(guild)))
+		embd = self.genGuildEmbed(guild)
+		msgs=[""]
+		for emote in guild.emojis:
+			if len(msgs[-1])>1800:
+				msgs+=[""]
+			msgs[-1] += f"{str(emote)} "
+		if msgs[0]:
+			await ch.send(embed=embd, content=msgs[0])
+			for msg in msgs[1:]:
+				await ch.send(msg)
+		else:
+			await ch.send(embed=embd)
+		return
+
+	@commands.command()
+	@checks.is_me()
+	async def reall(self, ctx, *, query=""):
+		banned = ctx.bot.config["emoteBanned"].copy()
+		if ctx.message.guild:
+			if ctx.message.guild.id in banned:
+				banned.remove(ctx.message.guild.id)
+		emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, self.bot.emojis))
+		choices = [str(emoji) for emoji in emojis if query.lower() in emoji.name.lower()]
+		if len(choices)==0:
+			await ctx.send("none")
+			return
+		try:
+			await ctx.send(" ".join(choices))
+		except Exception as e:
+			await ctx.send(f"Failed because {e}")
+
 
 	@commands.command()
 	@checks.is_niji()

@@ -18,9 +18,6 @@ class Events(commands.Cog):
 	async def shutdown(self, ctx):
 		pass
 
-	@commands.Cog.listener()
-	async def on_guild_join(self, guild):
-		print("I joined the guild: {0}".format(str(guild)))
 
 	def genStarboardPost(self, message):
 		embd = discord.Embed()
