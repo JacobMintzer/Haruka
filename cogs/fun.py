@@ -34,7 +34,6 @@ class Fun(commands.Cog):
 	async def shutdown(self, ctx):
 		pass
 
-
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
 		"""Searches for a random emote by search term. Servers with NSFW emotes will be removed from the global emote pool. ex. '$re yay' will return a random 'yay' emote."""

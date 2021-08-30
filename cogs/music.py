@@ -187,6 +187,10 @@ class Music(commands.Cog):
 			player.queue.append(Song("Zurui yo Magnetic today.mp3"))
 			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
 			return
+		elif "fireworks by katy perry" in msg.lower():
+			player.queue.append(Song("Tiny Stars.mp3"))
+			await ctx.message.add_reaction(utils.getRandEmoji(ctx.guild.emojis, "yay"))
+			return
 		else:
 			potential = list(filter(lambda song: fuzz.ratio(
 				msg.lower(), song.replace(".mp3", "").lower()) > 95, self.songList))
