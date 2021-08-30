@@ -397,3 +397,33 @@ class Deprecated(commands.Cog):
 			data = (response.json())
 			embd = self.embedCard(data, lb)
 			await ctx.send(embed=embd)
+
+def embedCard(self, data, lb=0):
+		embd = discord.Embed(title=data["idolizedTitle"], description=data["title"], colour=discord.Colour(
+			int(data["idol"]["color"].replace("#", "0x"), 16)))
+		embd.set_image(
+			url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconI.jpg".format(data["id"]))
+		embd.set_thumbnail(
+			url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconN.jpg".format(data["id"]))
+		rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
+			data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
+		embd.set_author(name=data["idol"]["firstName"] +
+                  " " + data["idol"]["lastName"], icon_url=rarity.url)
+		if lb < 0 or lb > 5:
+			lb = 0
+		embd.add_field(name="Appeal (LB{0})".format(
+			str(lb)), value=data["appeal"]["lb{0}".format(lb)])
+		embd.add_field(name="Stamina (LB{0})".format(
+			str(lb)), value=data["stamina"]["lb{0}".format(lb)])
+		embd.add_field(name="Technique (LB{0})".format(
+			str(lb)), value=data["technique"]["lb{0}".format(lb)])
+		embd.add_field(
+			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["appliesTo"]}', inline=False)
+		embd.add_field(
+			name="Passive Ability",
+                				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
+		embd.add_field(
+			name="Active Ability",
+                				value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
+		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
+		return embd
