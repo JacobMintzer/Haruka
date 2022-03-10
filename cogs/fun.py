@@ -36,7 +36,7 @@ class Fun(commands.Cog):
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
-		"""Searches for a random emote by search term. Servers with NSFW emotes will be removed from the global emote pool. ex. '$re yay' will return a random 'yay' emote."""
+		"""Searches for a random emote by search term. Servers with inappropriate emotes will be removed from the global emote pool. ex. '$re yay' will return a random 'yay' emote."""
 		if ctx.message.channel.permissions_for(ctx.message.author).administrator or ctx.message.guild is None:
 			if emote.lower() == "disable":
 				await self.disable(ctx, msg)
@@ -207,7 +207,7 @@ class Fun(commands.Cog):
 
 	@score.command()
 	@checks.isScoreEnabled()
-	async def ignore(self, ctx, ch: discord.channel = None):
+	async def ignore(self, ctx, ch: discord.TextChannel = None):
 		"""Use `$score ignore` to have Haruka ignore a channel"""
 		if ch is None:
 			ch = ctx.message.channel
@@ -221,7 +221,7 @@ class Fun(commands.Cog):
 
 	@score.command()
 	@checks.isScoreEnabled()
-	async def unignore(self, ctx, ch: discord.channel = None):
+	async def unignore(self, ctx, ch: discord.TextChannel = None):
 		if ch is None:
 			ch = ctx.message.channel
 		try:
@@ -249,6 +249,19 @@ class Fun(commands.Cog):
 				pass
 			self.bot.config["scoreEnabled"].append(ctx.message.guild.id)
 			await utils.yay(ctx)
+		utils.saveConfig(ctx)
+
+	
+	@score.command(name="wipe")
+	@checks.is_admin()
+	async def scoreWipe(self, ctx):
+		"""use `$score wipe` to wipe all scores from your server. Must be admin. Warning; this cannot be undone, use with care."""
+		if not ctx.message.guild.id in self.bot.config["scoreEnabled"]:
+			await ctx.send("scoring isn't enabled")
+			return
+		
+		await self.bot.messageHandler.wipeGuildScore(ctx.message.guild)
+		await utils.yay(ctx)
 		utils.saveConfig(ctx)
 
 	@commands.command()

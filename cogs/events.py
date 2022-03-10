@@ -1,11 +1,12 @@
 import asyncio
-import datetime
+from datetime import datetime, timedelta, timezone
 import io
 
 import discord
 import pytz
 import yaml
 from discord.ext import commands
+import random
 
 from .utilities import checks, utils
 
@@ -49,7 +50,7 @@ class Events(commands.Cog):
 		if str(emoji) == self.bot.config["starboard"][payload.guild_id]["emote"]:
 			messageChannel = self.bot.get_channel(payload.channel_id)
 			message = await messageChannel.fetch_message(payload.message_id)
-			if message.created_at + datetime.timedelta(days=14) < datetime.datetime.now():
+			if message.created_at + timedelta(days=13) < datetime.now(timezone.utc):
 				return
 			user = payload.member
 			if user.id == message.author.id or user.bot:
@@ -74,7 +75,7 @@ class Events(commands.Cog):
 					embd.set_image(url=message.attachments[0].url)
 				await ch.send(embed=embd)
 				self.starboardQueue.append(message.id)
-				if len(self.starboardQueue) > 100:
+				if len(self.starboardQueue) > 130:
 					self.starboardQueue.pop(0)
 				self.bot.config["sbq"] = self.starboardQueue
 				with open('Resources.yaml', 'w') as outfile:
@@ -114,6 +115,13 @@ class Events(commands.Cog):
 				await ch.send("user {2} with `thinkpad` in their name joined {0} with id {1}.".format(member.guild.name, member.id, member.name))
 		
 
+	@commands.Cog.listener()
+	async def on_member_remove(self, member):
+		if str(member.guild.id) in self.bot.config["farewellCh"].keys():
+			farewellCh = self.bot.get_channel(
+				self.bot.config["farewellCh"][str(member.guild.id)])
+			farewellMsg = self.bot.config["farewellMsg"][str(member.guild.id)]
+			await farewellCh.send(farewellMsg.format(member.display_name))
 
 def setup(bot):
 	print("adding events cog")

@@ -26,6 +26,18 @@ def is_admin():
 			return False
 	return commands.check(predicate)
 
+def can_ban():
+	async def predicate(ctx):
+		try:
+			if ctx.message.channel.permissions_for(ctx.author).ban_members:
+				return True
+			else:
+				return False
+		except Exception as e:
+			print(e)
+			return False
+	return commands.check(predicate)
+
 
 def isScoreEnabled():
 	async def predicate(ctx):

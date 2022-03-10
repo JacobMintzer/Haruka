@@ -79,6 +79,12 @@ class MessageHandler():
 		async with aiosqlite.connect("memberScores.db") as conn:
 			await conn.execute('CREATE TABLE "guild{0}" (ID integer PRIMARY KEY, Score integer DEFAULT 0, Name text)'.format(str(guild.id)))
 			await conn.commit()
+	
+	async def wipeGuildScore(self, guild):
+		async with aiosqlite.connect("memberScores.db") as conn:
+			await conn.execute('DELETE FROM "guild{0}"'.format(str(guild.id)))
+			await conn.commit()
+
 
 	async def handleMessage(self, message, bot):
 		if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id == bot.config["roleChannel"][message.guild.id]["channel"]:
@@ -88,6 +94,8 @@ class MessageHandler():
 			elif message.author.id == bot.user.id and (message.id not in bot.config["roleChannel"][message.guild.id]["message"]):
 				bot.loop.create_task(scheduleDelete(message))
 				return
+		if message.guild and message.guild.id in self.bot.config["nitroSpamMute"]:
+			await self.checkForNitroSpam(message,self.bot.config["nitroSpamMute"][message.guild.id])
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or DM `Junior Mints#2525`. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
@@ -111,12 +119,15 @@ class MessageHandler():
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
 				elif instaURL:=re.search("(?P<url>https?://[^\s]+instagram\.com[^\s]+)", message.content, re.IGNORECASE):
-					try:
-						embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL.group(0))
-						await message.channel.send(embed=embd)
-					except Exception as e:
-						print(f"error while parsing insta embed:\n {str(e)}")
-						pass
+					if  len(message.attachments)>0:
+						try:
+							embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL.group(0))
+							await message.channel.send(embed=embd)
+						except Exception as e:
+							print(f"error while parsing insta embed:\n {str(e)}")
+							pass
+					else:
+						print("didn't post embed because there's an attachment")
 
 		if not (message.author.bot):
 			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:
@@ -220,6 +231,8 @@ class MessageHandler():
 		points = 1
 		if '@everyone' in message.content:
 			points += modifier
+		if "nitro" in message.content.lower():
+			points += modifier
 		if len(message.content) > 100:
 			points += modifier
 		if len(message.mentions) > 0:
@@ -284,7 +297,7 @@ class MessageHandler():
 			self.cooldown = True
 			rxn = discord.utils.get(message.guild.emojis, name="RinaBonk")
 			await message.add_reaction(rxn)
-			await message.channel.send("Hey, April Fools Day is over, they're Nijigasaki!")
+			await message.channel.send("Bruh, what is it, 2017? Get with the times, boomer.")
 		else:
 			return
 		self.bot.loop.create_task(self.memeCooldown(cdTime))
@@ -329,3 +342,32 @@ class MessageHandler():
 		async with aiosqlite.connect("NijiMessages.db") as conn:
 			await conn.execute('INSERT INTO "Messages" (user_id,content,clean_content,channel,datetime,attachments,jump,msg_id) VALUES (?,?,?,?,?,?,?,?)', (message.author.id, message.content, message.clean_content,message.channel.id,message.created_at.timestamp(),len(message.attachments),message.jump_url,message.id))
 			await conn.commit()
+	
+	async def checkForNitroSpam(self, message, channel_id):
+		fake_discord_names = ["diiscord", "dlscord", "discocd"]
+		content = message.content.lower()
+		points = 0
+		if len(message.mentions) + len(message.role_mentions)>2:
+			points += 1
+		if '@everyone' in content:
+			points += 1
+		if any([x in content for x in fake_discord_names]):
+			points += 1
+		if 'nitro' in content and ("free" in content or "gift" in content):
+			points += 1
+		if points >= 2:
+			role = discord.utils.find(lambda x: x.name.lower() == "muted", message.guild.roles)
+			await message.author.add_roles(role)
+			ch = message.guild.get_channel(channel_id)
+			clean = message.clean_content.replace("@", "@​").replace("`","")
+			message_ch = message.channel
+			try:
+				await message.delete()
+				success="has been deleted."
+			except Exception:
+				success = "has not been deleted. Please check my permissions if you want me to automatically delete messages."
+
+			await ch.send(f"user {str(message.author)} was muted for the following message in {message_ch.mention}, which { success }\nmessage content:")
+			await ch.send(f"`{clean}`")
+
+

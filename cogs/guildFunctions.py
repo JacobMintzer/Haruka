@@ -46,6 +46,7 @@ class GuildFunctions(commands.Cog):
 				print(f"Error in banner cycle:\n{e}")
 
 	async def event_banner_cycle(self, bot):
+		print("starting event cycle")
 		if self.nijicord is None:
 			self.nijicord = bot.get_guild(bot.config["nijiCord"])
 		files = os.listdir("../Haruka/{0}/".format(self.event))
@@ -55,14 +56,14 @@ class GuildFunctions(commands.Cog):
 			file = open("../Haruka/{0}/{1}".format(self.event, curBanner), 'rb')
 			await self.nijicord.edit(banner=file.read())
 			file.close()
-			await asyncio.sleep(1800)
+			await asyncio.sleep(1000)
 		#for fileName in files:
 		#	file = open("../Haruka/{0}/{1}".format(self.event, fileName), 'rb')
 		#	await self.nijicord.edit(banner=file.read())
 		#	file.close()
 		#	await asyncio.sleep(1800)
 		while True:
-			await asyncio.sleep(1800)
+			await asyncio.sleep(1000)
 			if self.nijicord is None:
 				self.nijicord = bot.get_guild(bot.config["nijiCord"])
 			files = os.listdir("../Haruka/{0}/".format(self.event))
@@ -136,6 +137,25 @@ class GuildFunctions(commands.Cog):
 			utils.saveConfig(ctx)
 			await utils.yay(ctx)
 
+	@ commands.command()
+	@ checks.is_admin()
+	async def farewell(self, ctx, *, msg=""):
+		"""ADMIN ONLY! Use this command in your farewell channel to enable farewell messages. For your message, use {0} to say the user's name. To disable logging type $farewell stop"""
+		async with ctx.message.channel.typing():
+			if msg.lower() == "stop":
+				if str(ctx.message.guild.id) in self.bot.config["farewellCh"].keys():
+					del self.bot.config["farewellCh"][str(ctx.message.guild.id)]
+					del self.bot.config["farewellMsg"][str(ctx.message.guild.id)]
+			elif not msg:
+				await ctx.send("You cannot have an empty welcome message. For your message, use `{0}` to say the user's name")
+			else:
+				self.bot.config["farewellCh"][str(
+					ctx.message.guild.id)] = ctx.message.channel.id
+				self.bot.config["farewellMsg"][str(ctx.message.guild.id)] = msg
+			utils.saveConfig(ctx)
+			await utils.yay(ctx)
+
+
 	@ commands.group()
 	@ checks.is_admin()
 	async def starboard(self, ctx, emote: Union[discord.Emoji, str] = "⭐", count: Union[int, discord.TextChannel] = 1):
@@ -146,6 +166,9 @@ class GuildFunctions(commands.Cog):
 			except Exception:
 				if emote.lower() == "ignore":
 					await self.starboardIgnore(ctx, count)
+					return
+				elif emote.lower() == "unignore":
+					await self.starboardUnignore(ctx, count)
 					return
 				await ctx.send("Please send a valid emote, and make sure I can add reactions in this channel")
 				return
@@ -171,6 +194,8 @@ class GuildFunctions(commands.Cog):
 
 	@ starboard.command(name="unignore")
 	async def starboardUnignore(self, ctx, channel: discord.TextChannel):
+		if channel == 1:
+			channel = ctx.message.channel
 		ctx.bot.config["starboard"][ctx.message.guild.id]["ignore"].remove(
 			channel.id)
 		utils.saveConfig(ctx)
@@ -182,7 +207,8 @@ class GuildFunctions(commands.Cog):
 		embd = discord.Embed()
 		embd.title = ctx.guild.name
 		embd.description = "Information on " + ctx.guild.name
-		embd = embd.set_thumbnail(url=ctx.guild.icon_url)
+		if ctx.guild.icon:
+			embd = embd.set_thumbnail(url=ctx.guild.icon)
 		embd.type = "rich"
 		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
 		dt = ctx.guild.created_at
@@ -460,6 +486,9 @@ class GuildFunctions(commands.Cog):
 		elif role.lower() == "qu4rtz" or role.lower() == "quartz":
 			roleName = "QU4RTZ"
 			rxnChoice = random.choice(["rina", "emma", "kasu", "kanata"]) + "yay"
+		elif role.lower() == "r3birth" or role.lower() == "rebirth":
+			roleName = "R3BIRTH"
+			rxnChoice = random.choice(["lanzhu", "shio", "mia"]) + "yay"
 		elif role.lower() == "clear":
 			rxnChoice = None
 			roleName = "clear"

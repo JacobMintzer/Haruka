@@ -35,7 +35,9 @@ idols = [
 	"Maki",
 	"Umi",
 	"Nozomi",
-	"Nico"
+	"Nico",
+	"Lanzhu",
+	"Mia"
 	]
 
 idol_association = {
@@ -75,7 +77,10 @@ idol_association = {
 "Maki": "Nishikino Maki",
 "Umi": "Sonoda Umi",
 "Nozomi": "Tojo Nozomi",
-"Nico": "Yazawa Nico"
+"Nico": "Yazawa Nico",
+"Lanzhu": "Lanzhu Zhong",
+"Ranju": "Lanzhu Zhong",
+"Mia": "Mia Taylor"
 }
 
 rarities={

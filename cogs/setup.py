@@ -77,7 +77,12 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 			self.bot.config[key]=[]
 		elif value == "dict":
 			self.bot.config[key]={}
+		else:
+			await ctx.send("do a better data type")
+			return
 		utils.saveConfig(ctx)
+		await ctx.message.add_reaction(utils.getRandEmoji(self.bot.emojis, "harukahug"))
+
 
 
 	@checks.is_admin()

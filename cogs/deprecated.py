@@ -146,6 +146,7 @@ class Deprecated(commands.Cog):
 		self.xmas[id]["last_present"] = 0
 		self.save_xmas
 
+	
 	@checks.is_niji()
 	@commands.command()
 	async def present(self, ctx):
@@ -165,7 +166,7 @@ class Deprecated(commands.Cog):
 		embd = discord.Embed()
 		embd.color = discord.Color.red()
 		embd.type = "rich"
-		embd.set_image(url="https://kachagain.com/images/llsif/boxes/box_05.png")
+		embd.set_image(url="https://i.imgur.com/u7Qfe3s.png")
 		embd.description = "Click the reaction to open your present"
 		embd.title = f"{ctx.message.author.display_name} has received a present!"
 		present = await ctx.send(embed=embd)
@@ -182,10 +183,10 @@ class Deprecated(commands.Cog):
 			await present.delete()
 			return
 		else:
-			if isChristmas and self.find_best(ctx.message.author) and (self.find_best(ctx.message.author) not in self.xmas[ctx.message.author.id]["girls"]):
+			if self.isChristmas and self.find_best(ctx.message.author) and (self.find_best(ctx.message.author) not in self.xmas[ctx.message.author.id]["girls"]):
 				girl = self.find_best(ctx.message.author)
-			elif (len(self.greetings["Image"].keys())==len(self.xmas[ctx.message.author.id]["girls"])):
-				girl = random.choice(self.greetings["Image"])
+			elif (len(self.greetings["Image"].keys())<=len(self.xmas[ctx.message.author.id]["girls"])):
+				girl = random.choice([x for x in self.greetings["Image"].keys()])
 			else:
 				girl = random.choice([x for x in self.greetings["Image"].keys(
 				) if x not in self.xmas[ctx.message.author.id]["girls"]])
@@ -204,12 +205,12 @@ class Deprecated(commands.Cog):
 				self.save_xmas()
 				return
 			embd = self.gen_present(ctx, girl)
-			gift = random.choice([x for x in self.greetings["Gifts"] if x not in self.xmas[ctx.message.author.id]["girls"]])
+			gift = random.choice([x for x in self.greetings["Gifts"] if x not in self.xmas[ctx.message.author.id]["gifts"]])
 			greeting = f"I got you {gift} for Christmas!"
 			embd.add_field(name=f"{girl}:", value=greeting, inline=True)
 			self.xmas[ctx.message.author.id]["girls"].append(girl)
 			self.xmas[ctx.message.author.id]["last_present"] = datetime.now().timestamp()
-			self.xmas[ctx.message.author.id]["gifts"] .append(gift)
+			self.xmas[ctx.message.author.id]["gifts"].append(gift)
 			self.save_xmas()
 			await present.edit(embed=embd)
 
@@ -219,7 +220,7 @@ class Deprecated(commands.Cog):
 		embd.type = "rich"
 		image = self.greetings["Image"][girl]
 		if girl == "Haruka":
-			embd.set_author(name="Link to original image", url="https://www.pixiv.net/en/artworks/85591672")
+			embd.set_author(name="Link to Ivory Ice's image", url="https://twitter.com/IvoryyIce/status/1467968801744384000")
 		elif girl == "Yu":
 			embd.set_author(name="Link to Sei's tweet", url="https://twitter.com/seion_alter/status/1341419302939975680")
 		embd.set_image(url=image)
@@ -227,8 +228,17 @@ class Deprecated(commands.Cog):
 		return embd
 
 	def save_xmas(self):
-		with open('xmas.yaml', 'w') as outfile:
-			yaml.dump(self.xmas, outfile)
+		
+		with open('xmas.yaml', "r") as file:
+			backup = yaml.full_load(file)
+		print("saving")
+		try:
+			with open('xmas.yaml', 'w') as outfile:
+				yaml.dump(self.xmas, outfile)
+		except:
+			with open('xmas.yaml', 'w') as outfile:
+				yaml.dump(backup, outfile)
+			raise
 
 	def find_best(self, member):
 		bestRoles = self.bot.config["best"]['610931193516392472']
@@ -236,12 +246,6 @@ class Deprecated(commands.Cog):
 			if role.name in bestRoles:
 				return role.name
 		return None
-
-
-
-
-
-
 
 
 # AF 2021

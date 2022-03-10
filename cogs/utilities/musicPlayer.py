@@ -57,10 +57,11 @@ class MusicPlayer:
 			else:
 				return
 			if self.np:
-				if (self.np.created_at + datetime.timedelta(hours=2)) > datetime.datetime.utcnow():
+				if (self.np.created_at + datetime.timedelta(hours=2)) > datetime.datetime.now(datetime.timezone.utc):
 					await self.np.edit(content=self.getPlaying())
 				else:
 					self.np = None
+
 			await self.next.wait()
 
 			# Make sure the FFmpeg process is cleaned up.
@@ -150,6 +151,7 @@ class Song:
 
 	def getPlaying(self):
 		songInfo = self.getInfo()
+		artist = ""
 		if "title-jp" in songInfo.keys():
 			title = "EN:{0}\n\t\tJP:{1}".format(
 				self.name, songInfo["title-jp"])
@@ -179,9 +181,10 @@ class Song:
 	def getQueueInfo(self):
 		title = self.name
 		info = self.getInfo()
+		artist = ""
 		if "artist-en" in info.keys():
 			artist = info["artist-en"]
-		else:
+		elif "artist" in info:
 			artist = info["artist"]
 		return title, artist
 

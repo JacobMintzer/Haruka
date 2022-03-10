@@ -110,7 +110,13 @@ class Scheduler(commands.Cog):
 			self.events.remove(events[reminder])
 			self.saveEvents()
 			await utils.yay(ctx)
-
+	
+	@commands.command(aliases=["toUnixTime","toTimeStamp"])
+	async def toEpochTime(self, ctx, *, timeStr:str):
+		"""Converts a date to a timestamp, and shows that time in your own local time"""
+		_, time = (search_dates(
+			timeStr.upper(), settings={'RETURN_AS_TIMEZONE_AWARE': True})[0])
+		await ctx.send(f"`{int(time.timestamp())}` is the timestamp for `{time.strftime('%c in timezone %Z')}`\nThe basic timestamp would look like this: <t:{int(time.timestamp())}:F>")
 
 def setup(bot):
 	bot.add_cog(Scheduler(bot))

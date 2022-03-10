@@ -297,11 +297,25 @@ class Administration(commands.Cog):
 				await ctx.send(embed=embd)
 			await asyncio.sleep(1)
 
+	@commands.command()
+	@checks.is_me()
+	async def haruka_overview(self, ctx):
+		msgs = [""]
+		for guild in self.bot.guilds:
+			info = f"{guild.name}: {guild.id}\n"
+			if len(msgs[-1])+len(info) > 1800:
+				msgs+=[""]
+			msgs[-1] += info
+		for msg in msgs:
+			await ctx.send(msg)
+			
+
 	def genGuildEmbed(self, guild):
 		embd = discord.Embed()
 		embd.title = guild.name
 		embd.description = "Information on " + guild.name
-		embd = embd.set_thumbnail(url=guild.icon_url)
+		if guild.icon:
+			embd = embd.set_thumbnail(url=guild.icon)
 		embd.type = "rich"
 		embd.timestamp = datetime.datetime.now(pytz.timezone('US/Eastern'))
 		dt = guild.created_at
@@ -318,7 +332,7 @@ class Administration(commands.Cog):
 	@commands.Cog.listener()
 	async def on_guild_join(self, guild):
 		ch = self.bot.get_channel(self.bot.config["harukaLogs"])
-		await ch.send("I joined the guild: {0}".format(str(guild)))
+		await ch.send("I joined the guild: {0} {1}".format(str(guild), guild.id))
 		embd = self.genGuildEmbed(guild)
 		msgs=[""]
 		for emote in guild.emojis:
@@ -392,7 +406,7 @@ class Administration(commands.Cog):
 		await ctx.message.add_reaction(emoji)
 
 	@commands.command()
-	@checks.is_admin()
+	@checks.can_ban()
 	async def blacklist(self, ctx, *users):
 		"""This blacklists a user joining this server even if they aren't in the server currently."""
 		log = None
@@ -458,7 +472,7 @@ class Administration(commands.Cog):
 			utils.saveConfig(ctx)
 
 	@commands.command()
-	@checks.is_admin()
+	@checks.can_ban()
 	async def ban(self, ctx, *, person: discord.Member):
 		"""ADMIN ONLY! Bans a user that is mentioned. Haruka will ask for confirmation. Either @ing them or getting their user ID works. 
 		ex. '$ban 613501680469803045'"""
@@ -536,6 +550,22 @@ class Administration(commands.Cog):
 			await ctx.send("Please send either `$urlBan on` or `$urlBan off`")
 
 
+	
+	@commands.command(no_pm=True)
+	@checks.is_admin()
+	async def muteNitroSpam(self, ctx, channel:discord.TextChannel = None):
+		"""Enables/disables auto-mute for nitro spam. Be sure to have a role named `muted` with the proper permissions. Mention a channel for mute notifications, and be sure I have permission to post there. `ex. $muteNitroSpam #mod-chat.`"""
+		print (channel)
+		guild = ctx.message.guild
+		if guild.id in self.bot.config["nitroSpamMute"] and channel == None:
+			del self.bot.config["nitroSpamMute"][guild.id]
+			await ctx.send("Nitro spam mute disabled.")
+		else:
+			if channel is None:
+				channel = ctx.message.channel
+			self.bot.config["nitroSpamMute"][guild.id] = channel.id
+			await ctx.send(f"Nitro spam mute enabled. Notifications will be posted in {channel.mention}. Be sure to have a role named muted or this will not work.")
+		utils.saveConfig(ctx)
 
 
 def setup(bot):
