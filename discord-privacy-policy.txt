@@ -2,3 +2,6 @@ By adding Haruka to your guild, you are agreeing to have read and agreed to the 
 Haruka does not store personal data on users by default, the only data stored is opt in when enabling scoring, in which only the score and user's usernames on discord.
 Haruka keeps track of messages sent in Nijicord(guild id: 610931193516392472) for data analytic reasons, and is not shared with anyone outside guild staff, and will never be sold or used by anyone else.
 If you would like to opt out of your data being stored, please contact the developer through discord in the bot support guild (https://discord.gg/6qKHSfjeqw)
+If a guild you are in has logging or automod enabled, message data may be temporarily stored, but only for the sake of showing edited/deleted messages and is automatically deleted within a few hours. 
+-   Data may be stored in the guild's logging channel, but this data is not stored on Haruka. For any issue with this data being stored, feel free to contact me to have it deleted before than, 
+    and if you have an issue with the data being stored in a logging channel, please contact an administrator or mod of the guild in question.
