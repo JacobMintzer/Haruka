@@ -31,6 +31,8 @@ intents = discord.Intents.default()
 intents.members = True
 intents.typing = False
 intents.presences = False
+intents.messages = True
+intents
 
 
 bot = commands.Bot(command_prefix=['$'],
@@ -196,7 +198,7 @@ async def softReset(ctx, *, selectedCogs=None):
 @bot.command(hidden=True)
 async def kill(ctx):
 	print("shutting down messagehandler")
-	bot.messageHandler.disconnect()
+	await bot.messageHandler.disconnect()
 	print("shutting down music cog")
 	music = bot.get_cog("music")
 	await music.kill()
@@ -228,8 +230,10 @@ async def s(ctx, *, msg=""):
 @bot.command()
 async def git(ctx):
 	"""Link to Haruka's source code, and information related to the development"""
-	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions about it, feel free to message Junior Mints, or submit a pull request if you have any improvements you can make.")
+	await ctx.send("Haruka was developed by Junior Mints#2525 and you can deliver any questions or comments to him. You can find the source code at https://github.com/JacobMintzer/Haruka \nIf you have any questions or suggestions, feel free to message Junior Mints or open a PR.")
 
 
 with open("token.txt", "r") as file_object:
 	bot.run(file_object.read().strip())
+
+

@@ -132,11 +132,40 @@ class Fun(commands.Cog):
 		else:
 			await ctx.send(str(emoji))
 
+	@commands.command(hidden=True, no_pm=True)
+	async def rs(self, ctx, *, stickerName=""):
+		"""Searches for a random sticker by search term. Only local server stickers work for now. ex. '$re yay' will return a random 'yay' sticker."""
+		
+		stickers = ctx.message.guild.stickers
+		if stickerName == "":
+			await ctx.send(stickers=[random.choice(stickers)])
+			return
+		choices = [sticker for sticker in stickers if stickerName.lower() in sticker.name.lower()]
+		
+		sticker = random.choice(choices)
+		if not (ctx.message.guild is None):
+			userHash = (str(ctx.message.guild.id) + str(ctx.message.author.id))
+			if ctx.message.channel.id in self.bot.config["reDisabled"]:
+				await ctx.message.add_reaction("❌")
+				return
+			if ctx.message.guild.id in self.bot.config["reSlow"]:
+				if userHash in self.cooldown:
+					await ctx.send("Please wait a little while before using this command again")
+					return
+		if sticker is None:
+			await ctx.send("sticker not found")
+		await ctx.send(stickers=[sticker])
+		if ctx.message.guild.id in self.bot.config["reSlow"]:
+			self.bot.loop.create_task(self.reCool(userHash))
+
 	@commands.group()
 	@checks.isScoreEnabled()
 	async def rank(self, ctx, *, idx="1"):
 		"""Gets message activity leaderboard. Optional page number. ex. '$rank 7' gets page 7 (ranks 61-70)"""
 		if str(idx).isdigit():
+			if ctx.message.guild.id in self.bot.config["rankHide"]:
+				await ctx.message.add_reaction("🚫")
+				return
 			idx = int(idx)
 			await ctx.send(await self.bot.messageHandler.getPB(ctx.message.author, ctx.message.guild, idx))
 		elif idx.lower() == 'best' or idx.lower() == 'best girl':
@@ -151,6 +180,10 @@ class Fun(commands.Cog):
 				await self.rankAdd(ctx, idx)
 			else:
 				await ctx.send("This command is only available to an Administrator.")
+		elif idx.lower().startswith("hide"):
+			if(ctx.message.channel.permissions_for(ctx.author).administrator):
+				await self.rankHide(ctx)
+
 
 	@rank.command(name="add")
 	@checks.is_admin()
@@ -198,6 +231,21 @@ class Fun(commands.Cog):
 		series.columns = ["Best", "Users"]
 		await ctx.send("```fortran\n{0}```".format(series.to_string()))
 
+	@rank.command(name="hide")
+	@checks.is_admin()
+	async def rankHide(self, ctx):
+		"""ADMIN ONLY! Use this command to toggle visibility of leaderboard in the current server."""
+		if ctx.message.guild.id in self.bot.config["rankHide"]:
+			self.bot.config["rankHide"].remove(ctx.message.guild.id)
+			await ctx.send("Leaderboard no longer hidden.")
+		else:
+			self.bot.config["rankHide"].append(ctx.message.guild.id)
+			await ctx.send("Leaderboard is now hidden.")
+		utils.saveConfig(ctx)
+		await utils.yay(ctx)
+
+
+
 	@commands.group()
 	@checks.is_admin()
 	async def score(self, ctx):
@@ -212,7 +260,7 @@ class Fun(commands.Cog):
 		if ch is None:
 			ch = ctx.message.channel
 		try:
-			await ctx.send("ignoring {ch.mention}")
+			await ctx.send(f"ignoring {ch.mention}")
 		except:
 			await utils.yay(ctx)
 			pass
@@ -332,6 +380,7 @@ class Fun(commands.Cog):
 			self.SNKey)
 		files = {'file': ('image.png', open(file, 'rb'))}
 		response = requests.post(endpoint, files=files)
+		os.remove(file)
 		if response.status_code != 200:
 			print("status code is {0}".format(response.status_code))
 		output = json.loads(response.content.decode("utf-8"))
@@ -345,7 +394,7 @@ class Fun(commands.Cog):
 			await ctx.send("I believe the source is: {0}".format(result[0]["data"]["ext_urls"][0]))
 		elif len(result[0]["data"]["ext_urls"]) > 0:
 			await ctx.send("I couldn't find the exact link, but this might help you find it:\n" + "\n".join(result[0]["data"]["ext_urls"]))
-		os.remove(file)
+		
 
 	@commands.command(aliases=["announcement"], hidden=True)
 	async def announcements(self, ctx):
@@ -355,7 +404,7 @@ class Fun(commands.Cog):
 	async def noinfo(self, ctx):
 		await ctx.send("https://imgur.com/a/sGooJcB")
 
-	@commands.command(hidden=True)
+	#@commands.command(hidden=True)
 	async def ig(self, ctx, *, url):
 		embd = utils.getInstaEmbed(ctx.bot.config["instagramAccessToken"], url)
 		await ctx.send(embed=embd)
@@ -437,7 +486,470 @@ class Fun(commands.Cog):
 		request = requests.post(url, headers=headers, json=body)
 		response = request.json()
 		await ctx.send(response[0]["translations"][0]["text"])
+			
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def yeetEmAll(self, ctx):
+		usernames = ["Kagumi",
+			"TvoyaWaifu",
+			"J3ns3n",
+			"nazagram",
+			"DADIBRE",
+			"heubiiii",
+			"imbocsgo",
+			"vDuty",
+			"019275637391010102937",
+			"Salaminas",
+			"llamas",
+			"abdulll",
+			"Lix",
+			"hitler",
+			"KingSpartan117",
+			"TripLowG",
+			"Chema",
+			"Cvsmic.Roses",
+			"mjkiller7",
+			"paltin",
+			"Lands",
+			"Nachorw",
+			"killuaѪ灯",
+			"Nacreous",
+			"luffy34",
+			"ytmegattv",
+			"meThod_Man",
+			"Linoxxx",
+			"cult",
+			"dedek pakistan",
+			"~Nikola~",
+			"haostwz",
+			"KIT$",
+			"zodiac00101",
+			"jamel",
+			"jxsu",
+			"JorgeMV",
+			"headbandkhardi",
+			"renaa",
+			"iiusiion",
+			"litele-jacob89",
+			"TheArtist2410",
+			"키키",
+			"NBA YOUNGBOY",
+			"Gunserker",
+			"55thdude",
+			"matt5520",
+			"Vision zlu",
+			"Xnin (aliff)",
+			"crazyaxe",
+			"𝓖𝓪𝓶𝓮𝓻𝓽𝓸𝓹𝓼",
+			"Stranger959785",
+			"josefa",
+			"its sum random",
+			"elliot",
+			"salchipapas29",
+			"xJustFatmanx",
+			"inofox",
+			"kutooo",
+			"Calsetin TactiCo😋😋",
+			"Chastizedboy-a.k.a.-Karlos83",
+			"Dedo",
+			"Vl0ne_Stack$$$",
+			"ac",
+			"Lms   blont06x",
+			"yougood1234",
+			"Forgetfull_4kt",
+			"Jude",
+			"catt",
+			"Meduzka",
+			"sporting84004",
+			"Nippster",
+			"MajinRose",
+			"CAPTAINS",
+			"taz",
+			"aka179",
+			"david33610",
+			"TrailBlazer",
+			"mat-mat",
+			"u-cruz",
+			"ДруГ",
+			"sZuzu",
+			"mike335  🇩🇪",
+			"RorBux",
+			"ummshivam",
+			"geT To The poinT - LDN, UK",
+			"nad",
+			"Yahali12f",
+			"ERD",
+			"LA HngryBttmDude",
+			"OLIVERS2",
+			"AnteGiaYpno",
+			"CLONE",
+			"YourLocalTank",
+			"KingG",
+			"davi343",
+			"kun",
+			"𝚖𝚒𝚕𝚔",
+			"the Friend army member",
+			"زاديرا ديفون",
+			"derp",
+			"ТвойСБУАгент",
+			"rjsonly",
+			"BLEEDOUT205",
+			"LoganE195",
+			"aposented",
+			"1Sebastian5",
+			"GTL  | KAIDO",
+			"CihanK",
+			"IamRamac",
+			"nikopcas",
+			"intoku",
+			"Frdic",
+			"VMIZ19",
+			"Jarjarfranc",
+			"goodtymes1993",
+			"adidas",
+			"AkshaYYYYY",
+			"been hacked",
+			"alezx51",
+			"スANTEX ʕoᴥoʔ",
+			"Mert",
+			"klaerwerktaucher8i",
+			"Hacks1212",
+			"GoDoRWhaTT",
+			"marcsamuel",
+			"itsayaboi84123",
+			"comp_anxiety",
+			"Crazymessi21",
+			"mike89",
+			"V1C3N1T00",
+			"menoska",
+			"AngelSickos",
+			"Pikochu",
+			"BrittonEzAqt",
+			"bigbodybenz",
+			"seeker2.0",
+			"TheHakeem",
+			"hanss",
+			"🍩Kyojuro Rengoku🔥",
+			"rleqqx",
+			"8285799149",
+			"Josueee $",
+			"Hornymale1231",
+			"schniazz",
+			"MonkeyMan",
+			"aar",
+			"caioct123",
+			"Milly",
+			"der Boss",
+			"prayingtothesky",
+			"StorminFr",
+			"skoulfex",
+			"claxzy1",
+			"Deichzocker",
+			"tianheile",
+			"S.G64",
+			"nxkxnfdn",
+			"Owejs",
+			"Karan pawar",
+			"ZELDOTH",
+			"NEO",
+			"Raunchdog",
+			"Leos",
+			"o-YHATZEE-o",
+			"7.arbona",
+			"malaka-tutu",
+			"Tuki",
+			"Mr.★S𝒊𝒍𝒆𝒏𝒕ܔ𝒌𝒊𝒍𝒍𝒆𝒓࿐",
+			"masson98",
+			"xanz",
+			"शिकारी",
+			"brajn",
+			"MrSweetBlood",
+			"dood",
+			"dudeeeeee40",
+			"꧁ᴾᴿᴼ ᭄ ᴮᴼˢˢ✞༒꧂",
+			"family_friendly_name",
+			"Josh.SG",
+			"ra1n0x",
+			"Nightwalker",
+			"BossElLoco",
+			"tannant89",
+			"master bater",
+			"Spooderman",
+			"Kingallsus",
+			"abhipanchal09",
+			"lcock",
+			"Hillary",
+			"stonerrick27",
+			"Ahegao",
+			"crazybear",
+			"redseth1989",
+			"gotiti04",
+			"Danc246",
+			"Ash Vito",
+			"Lost",
+			"michaelbf109",
+			"𝘼𝙣𝙜𝙚𝙡𝙖",
+			"kelechi",
+			"lionbolanz",
+			"onoe",
+			"plugger",
+			"Mats",
+			"Nicoolidonni",
+			"jayant1222",
+			"best renekton",
+			"E.J.",
+			"fckhun8",
+			"fendtpro",
+			"Dan Istrate",
+			"mk182",
+			"𝐖 𝖗 𝖆 𝖙 𝖍",
+			"jjjjjjj",
+			"GigaKashi",
+			"nickgur123",
+			"Maurik1ng ☠",
+			"OWA OWA",
+			"Kaalia",
+			"andre ismael",
+			"InTracks",
+			"OogaBooga",
+			"Ahmet43",
+			"Edward Newgate",
+			"Sledg",
+			"Bruno Bender",
+			"vonn0body",
+			"N0name inc",
+			"Kequ",
+			"cal_central",
+			"THE SLUMP GOD",
+			"Mar.-",
+			"Duque",
+			"GhoulツRobber",
+			"elPato",
+			"R9",
+			"Birulee",
+			"Luan.",
+			"twdophin",
+			"Retro",
+			"Grizzy",
+			"DRAM4X",
+			"jjd_jamdagni",
+			"ShaqScratchedHisCrack",
+			"gagagaga",
+			"helkpdoo",
+			"Benja",
+			"WoAiNi_J",
+			"Tony Mahowney",
+			"nazi bro",
+			"el chiquito suiiiiiiiiiiiiiiiiii",
+			"Bhinava",
+			"mario ištvanić",
+			"idodididi",
+			"iamtp",
+			"ghjjkktt",
+			"Mushrambo",
+			"djalil2810",
+			"RunningMantheCoin",
+			"artii",
+			"tase",
+			"BaranMnstr01",
+			"cnsrewind",
+			"le_benj",
+			"chepa",
+			"chicharrón",
+			"Beastmode928",
+			"YEAHBOY",
+			"Ali baba 123",
+			"ninjagase",
+			"noRAGrets",
+			"AKdrillxxx",
+			"noik15",
+			"Levi001",
+			"tree",
+			"𝐠𝐨𝐧𝐜𝐡𝐨",
+			"T0Ny",
+			"Romano(Pille)",
+			"kitty cheshire",
+			"AbowrdhS2",
+			"Stingybee",
+			"Hahaha",
+			"ismas….07",
+			"Scriiibe",
+			"Miroo",
+			"onoe",
+			"Opaidus",
+			"akash",
+			"Jam4r",
+			"Dimitrios",
+			"danielp.",
+			"Slugish",
+			"kmarkbenjamin",
+			"✷∆~𝙰𝚛𝚝𝙸𝚗𝚃𝚑𝚎𝙷𝚊𝚛𝚍~∆✷",
+			"NERO",
+			"I AM XIPICU",
+			"GH0U53",
+			"Fistcrunch",
+			"MangoChina",
+			"malyo_24",
+			"Jaba.daba.du",
+			"pickledpepper",
+			"ElMarquito",
+			"Ducky_Enough",
+			"hatem",
+			"steveschmidt11",
+			"tibe",
+			"no braincells",
+			"DextheKiller",
+			"TheAnimeKid",
+			"Jxxz_30",
+			"Jayp",
+			"blake51",
+			"tempra",
+			"the mashkiv",
+			"shanX",
+			"salsik",
+			"ＰＣＲ_ＪＯＮＫＩＥ〆503",
+			"P00Shiesty",
+			"lilcapa",
+			"jsnsisns",
+			"ruined yup",
+			"ZĘŒ",
+			"Ricsroofit",
+			"yarin",
+			"makis",
+			"tom.henx",
+			"rookydragoon",
+			"just me",
+			"ssm112",
+			"JeFfJeFrSoN",
+			"nicescheiß",
+			"Admin123",
+			"Teachy77",
+			"Chaz0n",
+			"Ciastek_12_v2",
+			"OPPA_Gaza",
+			"Simba",
+			"MrVinnyC",
+			"antriana❤",
+			"ALEYou",
+			"KapitänzurSee",
+			"Zz",
+			"jefe",
+			"sgtboos821",
+			"DonnieDarko",
+			"maddy",
+			"Vlăduț",
+			"!san.k",
+			"Flaxen",
+			"camelo",
+			"OTG XEN",
+			"Am Saleh | LOCO",
+			"YesIamtheone",
+			"lol07",
+			"Hunter07",
+			"Jhani",
+			"sam123123",
+			"LOGJess!!!",
+			"LehriBaba",
+			"iashdb2uuwwi",
+			"Fredi Rost",
+			"∆º",
+			"me, Juan",
+			"я абемка",
+			"Mr.Mile",
+			"cybersholt",
+			"A  C  H  E  E",
+			"xvryzs",
+			"yVicToR so2",
+			"Jyims06",
+			"DigitalExpandables",
+			"Breezyy",
+			"activesuun",
+			"ash35",
+			"elaldora",
+			"Simoonbob",
+			"impostor",
+			"YT_juggernaut247",
+			"Randomgirlie",
+			"Mez",
+			"draco",
+			".vxrtex",
+			"IdoShmuel43",
+			"Zaham",
+			"franta",
+			"jimjim",
+			"LawDaddy4Lyfe",
+			"Herokovidz",
+			"Dilan G",
+			"manny",
+			"santa1738999",
+			"hidgbxdg",
+			"EL MOY",
+			"𝙐𝙋𝙊𝙎́",
+			"RealBoca",
+			"WavedHasLigma",
+			"Carlirr",
+			"☦RussianGopnik🪆",
+			"lilboy",
+			"edvin",
+			"bayuanggara",
+			"kurama",
+			"The Reinster",
+			"Osakabe",
+			"mitoofn_",
+			"HEARINGLEMON",
+			"paris",
+			"Dogman3009",
+			"pedersenr",
+			"PETATIXD",
+			"pbj",
+			"rubidib",
+			"khesraw",
+			"EpicPlayz",
+			"nobodyhere",
+			"Soofru",
+			"i_play_to_much69",
+			"Maciek Soszyński",
+			"Henrik",
+			"rj444",
+			"cano",
+			"ImGCR",
+			"GOD |•shadow",
+			"ballstein30",
+			"Alone...",
+			"Morendi_Oops",
+			"PoXxii",
+			"Texas Infidel",
+			"BigSteppa",
+			"unkown223",
+			"user169270",
+			"N.Nikolaides",
+			"!    ☇ DHOM",
+			"elknito",
+			"MN9OORI",
+			"faiz.shaikh6",
+			"wes",
+			"Jorg3",
+			"951NakedBarber",
+			"Goblin",
+			"LividHem",
+			"BMWMERCEdES racing",
+			"LowKaneki",
+			"Sal",
+			"trix"]
+		for username in usernames:
+			try:
+				member = discord.utils.get(ctx.guild.members, name=username)
+				await member.kick()
+				print(f"Kicked {member.name}#{member.discriminator}")
+			except Exception as e:
+				print("Error kicking ")
+				print(e)
 
+	@commands.command()
+	@checks.is_me()
+	async def uwu(self,ctx):
+		member = discord.utils.get(ctx.guild.members, name="BMWMERCEdES racing")
+		await ctx.send(f"found user {member.name}#{member.discriminator}")
 
 def setup(bot):
 	bot.add_cog(Fun(bot))

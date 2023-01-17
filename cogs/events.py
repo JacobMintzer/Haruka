@@ -7,6 +7,7 @@ import pytz
 import yaml
 from discord.ext import commands
 import random
+from unidecode import unidecode
 
 from .utilities import checks, utils
 
@@ -15,6 +16,7 @@ class Events(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 		self.starboardQueue = self.bot.config["sbq"]
+		self.file_regex  = r"(https?:\/\/)?(media\.|cdn\.)?(discordapp\.com\/attachments)\/[0-9]+\/[0-9]+\/[A-z]+.\.(jpg|mp4|png|gif)"
 
 	async def shutdown(self, ctx):
 		pass
@@ -43,14 +45,20 @@ class Events(commands.Cog):
 		emoji = payload.emoji
 		if not(payload.guild_id in self.bot.config["starboard"].keys()):
 			return
+		ch = payload.member.guild.get_channel_or_thread(payload.channel_id)
+		if type(ch) is discord.Thread:
+			channel_id = ch.parent_id
+		else:
+			channel_id = ch.id
 		if payload.channel_id == self.bot.config["starboard"][payload.guild_id]["channel"]:
 			return
-		if payload.channel_id in self.bot.config["starboard"][payload.guild_id]["ignore"]:
+		if channel_id in self.bot.config["starboard"][payload.guild_id]["ignore"]:
+			return
+		if ch.id in self.bot.config["starboard"][payload.guild_id]["ignore"]:
 			return
 		if str(emoji) == self.bot.config["starboard"][payload.guild_id]["emote"]:
-			messageChannel = self.bot.get_channel(payload.channel_id)
-			message = await messageChannel.fetch_message(payload.message_id)
-			if message.created_at + timedelta(days=13) < datetime.now(timezone.utc):
+			message = await ch.fetch_message(payload.message_id)
+			if message.created_at + timedelta(days=10) < datetime.now(timezone.utc):
 				return
 			user = payload.member
 			if user.id == message.author.id or user.bot:
@@ -71,11 +79,30 @@ class Events(commands.Cog):
 				ch = message.guild.get_channel(
 					self.bot.config["starboard"][message.guild.id]["channel"])
 				embd = self.genStarboardPost(message)
-				if len(message.attachments) > 0:
+				files = []
+				overflow_files = []
+				if message.guild.premium_tier < 2:
+					max_size = 8000000
+				elif message.guild.premium_tier == 2:
+					max_size = 50000000
+				else:
+					max_size = 100000000
+				size = 0
+				if len(message.attachments) == 1 and message.attachments[0].content_type.startswith("image/"):
 					embd.set_image(url=message.attachments[0].url)
-				await ch.send(embed=embd)
+				elif len(message.attachments)>0:
+					for attachment in message.attachments:
+						if attachment.size + size <= max_size:
+							size += attachment.size
+							files.append(await attachment.to_file())
+						else:
+							overflow_files.append(attachment)
+				if overflow_files:
+					for file in overflow_files:
+						embd.add_field(name='Attachment', value=f'[{file.filename}]({file.url})', inline=False)
+				await ch.send(embed=embd, files=files)
 				self.starboardQueue.append(message.id)
-				if len(self.starboardQueue) > 130:
+				if len(self.starboardQueue) > 200:
 					self.starboardQueue.pop(0)
 				self.bot.config["sbq"] = self.starboardQueue
 				with open('Resources.yaml', 'w') as outfile:
@@ -92,6 +119,18 @@ class Events(commands.Cog):
 		except Exception as e:
 			print("error in urlkick ")
 			print (e)
+		try:
+			if member.guild.id in self.bot.config["scamYeet"]:
+				banned_names = self.bot.config["scamNames"]
+				cleaned_name = unidecode(member.name).replace("0",'o').replace(" ","").lower()
+				for name in banned_names:
+					if name in cleaned_name:
+						await member.kick(reason=f"suspricious name found: {member.name=}")
+						return
+		except Exception as e:
+			print ("error in scamyeet")
+			print (e)
+
 		if member.guild.id == self.bot.config["nijiCord"]:
 			welcomeCh = self.bot.get_channel(
 				self.bot.config["welcomeCh"][str(member.guild.id)])

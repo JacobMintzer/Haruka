@@ -230,6 +230,17 @@ class Music(commands.Cog):
 			await ctx.message.author.send(songName)
 		await ctx.message.author.send("If there are any songs that should be here, please DM Junior Mints#2525")
 
+	@commands.command(hidden=True)
+	@checks.is_me()
+	async def vcstatus(self,ctx):
+		await ctx.send(f"currently active in the following {len(self.players.items())} guilds:")
+		msg = ""
+		for guild_id, musicplayer in self.players.items():
+			msg += f"{guild_id} {musicplayer._guild.name}\n"
+		if msg:
+			await ctx.send (msg)
+
+
 
 def setup(bot):
 	bot.add_cog(Music(bot))

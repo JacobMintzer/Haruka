@@ -20,6 +20,7 @@ async def scheduleDelete(message):
 
 class MessageHandler():
 	def __init__(self, config, bot):
+		self.antispamLoop = None
 		self.isEnabled = False
 		self.bot = bot
 		self.config = config
@@ -32,15 +33,17 @@ class MessageHandler():
 		self.badWords = [x.strip() for x in content if x.strip()]
 		self.tempRegex = re.compile(r"""(-?)(\d{1,3})(C|F|c|f)(?![^\s.,;?!`':>"])""")
 
-	def disconnect(self):
+	async def disconnect(self):
 		self.isEnabled = False
 		self.antispamLoop.cancel()
+		await asyncio.sleep(1)
 
 	async def initRoles(self, bot):
 		self.roles = {}
 		self.isEnabled = True
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
 		self.niji = discord.utils.get(bot.guilds, id=self.config["nijiCord"])
+		
 		# this prevents failure when not in nijicord, such as my test environment
 		if self.niji in bot.guilds:
 			roles = {}
@@ -118,7 +121,7 @@ class MessageHandler():
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
-				elif instaURL:=re.search("(?P<url>https?://[^\s]+instagram\.com[^\s]+)", message.content, re.IGNORECASE):
+				"""elif instaURL:=re.search("(?P<url>https?://[^\s]+instagram\.com[^\s]+)", message.content, re.IGNORECASE):
 					if  len(message.attachments)>0:
 						try:
 							embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL.group(0))
@@ -127,7 +130,7 @@ class MessageHandler():
 							print(f"error while parsing insta embed:\n {str(e)}")
 							pass
 					else:
-						print("didn't post embed because there's an attachment")
+						print("didn't post embed because there's an attachment")"""
 
 		if not (message.author.bot):
 			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:

@@ -36,6 +36,8 @@ class Scheduler(commands.Cog):
 		self.scheduler.start()
 
 	async def shutdown(self, ctx):
+		self.saveEvents()
+		self.scheduler.shutdown(False)
 		pass
 
 	async def reminder(self, event):

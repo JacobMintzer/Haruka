@@ -115,10 +115,6 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 		with open('Resources.yaml', "r") as file:
 			self.bot.config = yaml.full_load(file)
 
-	@checks.is_me()
-	@commands.command(hidden=True)
-	async def uwu(self,ctx):
-		print("uwu")
 
 		
 	@checks.is_me()

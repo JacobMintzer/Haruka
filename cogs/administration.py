@@ -549,6 +549,24 @@ class Administration(commands.Cog):
 		else:
 			await ctx.send("Please send either `$urlBan on` or `$urlBan off`")
 
+	
+	@commands.command()
+	@checks.is_admin()
+	async def scamYeet(self, ctx, *, status="on"):
+		"""Automatically kicks users with suspicious names; i.e. Mod Mail, Hype Mail, will be added over time. Disable with $scamYeet off"""
+		if status.lower() == "on":
+			if ctx.message.guild.id not in ctx.bot.config["scamYeet"]:
+				self.bot.config["scamYeet"].append(ctx.message.guild.id)
+				utils.saveConfig(ctx)
+				await utils.yay(ctx)
+		elif status.lower() == "off":
+			if ctx.message.guild.id in ctx.bot.config["scamYeet"]:
+				self.bot.config["scamYeet"].remove(ctx.message.guild.id)
+				utils.saveConfig(ctx)
+				await utils.yay(ctx)
+		else:
+			await ctx.send("Please send either `$scamYeet on` or `$scamYeet off`")
+
 
 	
 	@commands.command(no_pm=True)
@@ -566,6 +584,11 @@ class Administration(commands.Cog):
 			self.bot.config["nitroSpamMute"][guild.id] = channel.id
 			await ctx.send(f"Nitro spam mute enabled. Notifications will be posted in {channel.mention}. Be sure to have a role named muted or this will not work.")
 		utils.saveConfig(ctx)
+
+	@commands.command(aliases=["privacypolicy"])
+	async def privacy_policy(self, ctx):
+		"""For info on haruka's privacy policy."""
+		await ctx.send("Hello! My privacy policy can be found at <https://github.com/JacobMintzer/Haruka/blob/master/discord-privacy-policy.txt>. For any questions or information on data, feel free to reach out at <https://discord.gg/6qKHSfjeqw>.")
 
 
 def setup(bot):

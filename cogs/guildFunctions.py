@@ -35,7 +35,7 @@ class GuildFunctions(commands.Cog):
 		print("starting banner cycle loop")
 		while True:
 			try:
-				await asyncio.sleep(1800)
+				await asyncio.sleep(600)
 				if self.nijicord is None:
 					self.nijicord = bot.get_guild(bot.config["nijiCord"])
 				files = os.listdir("../Haruka/banners/")
@@ -56,14 +56,14 @@ class GuildFunctions(commands.Cog):
 			file = open("../Haruka/{0}/{1}".format(self.event, curBanner), 'rb')
 			await self.nijicord.edit(banner=file.read())
 			file.close()
-			await asyncio.sleep(1000)
+			await asyncio.sleep(300)
 		#for fileName in files:
 		#	file = open("../Haruka/{0}/{1}".format(self.event, fileName), 'rb')
 		#	await self.nijicord.edit(banner=file.read())
 		#	file.close()
 		#	await asyncio.sleep(1800)
 		while True:
-			await asyncio.sleep(1000)
+			await asyncio.sleep(100)
 			if self.nijicord is None:
 				self.nijicord = bot.get_guild(bot.config["nijiCord"])
 			files = os.listdir("../Haruka/{0}/".format(self.event))
@@ -175,6 +175,7 @@ class GuildFunctions(commands.Cog):
 			if ctx.message.guild.id in ctx.bot.config["starboard"].keys():
 				ctx.bot.config["starboard"][ctx.message.guild.id]["emote"] = str(emote)
 				ctx.bot.config["starboard"][ctx.message.guild.id]["count"] = count
+				ctx.bot.config["starboard"][ctx.message.guild.id]["channel"] = ctx.message.channel.id
 			else:
 				ctx.bot.config["starboard"][ctx.message.guild.id] = {"emote": str(
 					emote), "count": count, "channel": ctx.message.channel.id, "ignore": []}

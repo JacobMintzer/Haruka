@@ -6,6 +6,7 @@ from .utilities import utils, checks
 import aiosqlite
 import re
 from datetime import datetime
+import yaml
 
 class Deprecated(commands.Cog):
 	"""This class is for commands that either were designed for a single use for setting things up, or are no longer used, and are here for future use"""
@@ -15,6 +16,17 @@ class Deprecated(commands.Cog):
 			self.greetings = yaml.full_load(file)
 		with open('xmas.yaml', "r") as file:
 			self.xmas = yaml.full_load(file)
+
+		with open('gacha.yaml', "r") as file:
+			gacha = yaml.full_load(file)
+
+		self.nijicord = bot.get_guild(self.bot.config['nijiCord'])
+		self.vtuber = self.nijicord.get_role(819376067319169034)
+		self.genshin = self.nijicord.get_role(762798057850273793)
+		self.honse = self.nijicord.get_role(827572649412395039)
+		self.rates = [10, 25, 65]
+		self.recharge_minutes = 3
+		self.default_stamina = int(30)
 
 
 	@commands.command()
@@ -402,32 +414,254 @@ class Deprecated(commands.Cog):
 			embd = self.embedCard(data, lb)
 			await ctx.send(embed=embd)
 
-def embedCard(self, data, lb=0):
-		embd = discord.Embed(title=data["idolizedTitle"], description=data["title"], colour=discord.Colour(
-			int(data["idol"]["color"].replace("#", "0x"), 16)))
-		embd.set_image(
-			url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconI.jpg".format(data["id"]))
-		embd.set_thumbnail(
-			url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconN.jpg".format(data["id"]))
-		rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
-			data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
-		embd.set_author(name=data["idol"]["firstName"] +
-                  " " + data["idol"]["lastName"], icon_url=rarity.url)
-		if lb < 0 or lb > 5:
-			lb = 0
-		embd.add_field(name="Appeal (LB{0})".format(
-			str(lb)), value=data["appeal"]["lb{0}".format(lb)])
-		embd.add_field(name="Stamina (LB{0})".format(
-			str(lb)), value=data["stamina"]["lb{0}".format(lb)])
-		embd.add_field(name="Technique (LB{0})".format(
-			str(lb)), value=data["technique"]["lb{0}".format(lb)])
-		embd.add_field(
-			name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["appliesTo"]}', inline=False)
-		embd.add_field(
-			name="Passive Ability",
-                				value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
-		embd.add_field(
-			name="Active Ability",
-                				value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
-		embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
+	def embedCard(self, data, lb=0):
+			embd = discord.Embed(title=data["idolizedTitle"], description=data["title"], colour=discord.Colour(
+				int(data["idol"]["color"].replace("#", "0x"), 16)))
+			embd.set_image(
+				url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconI.jpg".format(data["id"]))
+			embd.set_thumbnail(
+				url="https://all-stars-api.uc.r.appspot.com/img/cards/{0}/iconN.jpg".format(data["id"]))
+			rarity = discord.utils.find(lambda emoji: emoji.name.lower() == "LLAS{0}ICON".format(
+				data["rarity"]["abbreviation"]).lower(), self.bot.emojis)
+			embd.set_author(name=data["idol"]["firstName"] +
+					" " + data["idol"]["lastName"], icon_url=rarity.url)
+			if lb < 0 or lb > 5:
+				lb = 0
+			embd.add_field(name="Appeal (LB{0})".format(
+				str(lb)), value=data["appeal"]["lb{0}".format(lb)])
+			embd.add_field(name="Stamina (LB{0})".format(
+				str(lb)), value=data["stamina"]["lb{0}".format(lb)])
+			embd.add_field(name="Technique (LB{0})".format(
+				str(lb)), value=data["technique"]["lb{0}".format(lb)])
+			embd.add_field(
+				name="Skill", value=f'**Effect**: {data["primarySkill"]["effect"]}\n**Applies To**: {data["primarySkill"]["appliesTo"]}', inline=False)
+			embd.add_field(
+				name="Passive Ability",
+									value=f'**Effect**: {data["passiveAbility"]["effect"]}\n**Applies To**: {data["passiveAbility"]["appliesTo"]}', inline=False)
+			embd.add_field(
+				name="Active Ability",
+									value=f'**Effect**: {data["activeAbility"]["effect"]}\n**Applies To**: {data["activeAbility"]["appliesTo"]}', inline=False)
+			embd.set_footer(text="{0}: ID: {1}".format(data["title"], data["id"]))
+			return embd
+
+
+
+	@checks.is_niji()
+	@commands.command(hidden=True)
+	async def scout(self, ctx):
+		if ctx.message.channel.id != 957801302816079922:
+			return
+		stamina = int(self.check_stamina(ctx.message.author))
+		if stamina < 10:
+			await ctx.send(f"You only have {stamina} stamina, and you need 10 to scout. Maybe you should drink some Monster™ Energy Drink by saying `$drinkMonster`")
+			return
+		franchise = await self._determine_franchise(ctx)
+		franchise_pool = self.gacha['pool'][franchise]
+		rarity_roll = random.randrange(0,100)
+		if rarity_roll < self.rates[0]:
+			rarity = 'UR'
+		elif rarity_roll + self.rates[0] < self.rates[1]:
+			rarity = 'SR'
+		else:
+			rarity = 'R'
+		card = random.choice(franchise_pool[rarity])
+
+		card_log = f"{rarity} {card}"
+		if card_log in self.gacha["users"][ctx.message.author.id]["pulls"]:
+			self.gacha["users"][ctx.message.author.id]["pulls"][card_log] += 1
+		else:
+			self.gacha["users"][ctx.message.author.id]["pulls"][card_log] = 1
+		self.gacha["users"][ctx.message.author.id]["stamina"] = stamina - 10
+		i = random.randrange(0,3)
+		if i==2:
+			self.save_gacha()
+		embd = self.get_embed(card, rarity, franchise, int(stamina - 10), self.gacha["users"][ctx.message.author.id]["pulls"][card_log])
+		
+		await ctx.send(f"You got a {rarity} {card}", embed=embd, reference=ctx.message)
+
+		return
+
+	async def _determine_franchise(self, ctx):
+		
+		roles = ctx.author.roles
+		vtuber = 2 if self.vtuber in roles else 1
+		genshin = 2 if self.genshin in roles else 1
+		honse = 2 if self.honse in roles else 1
+		total = 4 + vtuber + genshin + honse
+		fr = random.randrange(0, total)
+		if fr < 2:
+			return "idols"
+		if fr < 4:
+			return "memes"
+		fr -= 4
+		if fr < vtuber:
+			return "vtuber"
+		fr -= vtuber
+		if fr < genshin:
+			return "genshin"
+		return "honse"
+
+	def check_stamina(self, user):
+		if user.id in self.gacha["users"]:
+			old_stamina = self.gacha["users"][user.id]["stamina"]
+			elapsed_time: timedelta = datetime.utcnow() - datetime.utcfromtimestamp(self.gacha["users"][user.id]["last_check"])
+			regened_stamina = ( elapsed_time.total_seconds() // 60 ) // self.recharge_minutes 
+			self.gacha["users"][user.id]["last_check"] = (datetime.utcfromtimestamp(self.gacha["users"][user.id]["last_check"]) + timedelta(minutes=regened_stamina*self.recharge_minutes)).timestamp()
+			stamina = old_stamina + regened_stamina
+			self.gacha["users"][user.id]["stamina"] = int(stamina)
+		else:
+			self.gacha["users"][user.id]={"stamina":self.default_stamina,"last_check":datetime.utcnow().timestamp(), "pulls":{}, 'has_raizin':False}
+			stamina = self.default_stamina
+			self.save_gacha()
+		return stamina
+
+	def save_gacha(self):
+		print("creating gacha backup")
+		with open('gacha.yaml', "r") as file:
+			backup = yaml.full_load(file)
+		print("saving gacha")
+		try:
+			with open('gacha.yaml', 'w') as outfile:
+				yaml.dump(self.gacha, outfile)
+		except:
+			with open('gacha.yaml', 'w') as outfile:
+				yaml.dump(backup, outfile)
+			raise
+
+	@commands.command()
+	@checks.is_niji()
+	async def bank(self, ctx, *, page=1):
+		pulls = list(self.gacha["users"][ctx.author.id]["pulls"].items())
+		max_page = (len(pulls)-1)//10 +1
+		completion = str(round(len(pulls)/(len(self.gacha["images"])-4)*100, 2))
+		if max_page < page or len(pulls) == 0:
+			await ctx.send("You don't have enough cards to get to that page! Maybe you should consider spending more money")
+			return
+		if page <= 1:
+			pulls = list(pulls[:10])
+		else:
+			pulls = list(pulls[10*(page - 1) : 10*(page)])
+		pulls_data = [f"{card} ({count} times)" for card, count in pulls]
+		data = "\n- ".join(pulls_data)
+		
+		message = f"```fortran\nShowing cards for page {page}:\n- {data}\nCurrently on page {page} of {max_page} ($bank 2 for page 2)\nYou have {completion}% of all cards!```"
+		await ctx.send(message)
+
+
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command()
+	async def setStamina(self,ctx, *, stamina: int):
+		self.gacha["users"][ctx.author.id]["stamina"] = stamina
+		self.save_gacha()
+		await utils.yay(ctx)
+
+
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def uwu(self,ctx):
+		with open('gacha.yaml', "r") as file:
+			self.gacha = yaml.full_load(file)
+		print(self.gacha["users"])
+
+
+	def get_embed(self, card, rarity, franchise, stamina:int, count:int):
+		if franchise=="idols":
+			color=discord.Color.from_rgb(213, 78, 141)
+		elif franchise == "honse":
+			color = discord.Color.green()
+		elif franchise == "genshin":
+			color = discord.Color.blue()
+		elif franchise == "vtuber":
+			color = discord.Color.magenta()
+		else:
+			color = discord.Color.orange()
+		image = self.gacha["images"][card] if card in self.gacha["images"] else self.gacha["images"][rarity]
+
+		embd = (
+			discord.Embed(title=card, colour=color)
+			.set_author(name=franchise, icon_url=consts.rarities[rarity])
+			.set_image(url=image)
+			.set_footer(text=f"Remaining Stamina: {stamina}")
+			)
+		if count == 1:
+			embd.description = "New Pull!!"
+		else:
+			embd.description = f"Current number of copies: {count}"
 		return embd
+
+
+	@checks.is_niji()
+	@commands.command()
+	async def drinkMonster(self,ctx):
+		if ctx.message.channel.id != 957801454284992553:
+			return
+		if not self.gacha["users"][ctx.author.id]["has_raizin"]:
+			await ctx.send("You don't have any Monster™ Energy Drink to drink! You have to `$buyMonster` first!!")
+			return
+		stamina = self.check_stamina(ctx.author)
+		self.gacha["users"][ctx.author.id]["stamina"] = stamina + 5
+		self.gacha["users"][ctx.author.id]["has_raizin"] = False
+		# emoji = utils.getRandEmoji(self.bot.emojis,"shizuchug")
+		# await ctx.message.add_reaction(emoji)
+
+	@checks.is_niji()
+	@commands.command()
+	async def buyMonster(self,ctx):
+		if ctx.message.channel.id != 957801454284992553:
+			return
+		stamina = self.check_stamina(ctx.author)
+		if self.gacha["users"][ctx.author.id]["has_raizin"]:
+			await ctx.send("You have to drink your current Monster™ Energy Drink before you buy more!")
+			return
+		
+		self.gacha["users"][ctx.author.id]["has_raizin"] = True
+		# emoji = utils.getRandEmoji(self.bot.emojis,"movingmonimari")
+		# await ctx.message.add_reaction(emoji)
+
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command()
+	async def shuffle_fes(self, ctx):
+		guild:discord.guild = ctx.message.guild
+		for category in guild.categories:
+			if category.id == 611472631475994624:
+				continue
+			print ("Doing a category")
+			locations = [x.position for x in category.text_channels]
+			random.shuffle(locations)
+			for position, channel in zip(locations, category.text_channels):
+				await channel.edit(position=position)
+				await asyncio.sleep(1)
+
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command()
+	async def add_gacha(self, ctx, card_name: str, card_franchise: str, card_rarity: str, card_image:str=""):
+		"""command is `$add_gacha "Buff Dugtrio" meme UR https://m.media-amazon.com/images/I/61nKKWaTedS._AC_SL1500_.jpg`, use carefully, make sure you have the franchise and card name correct"""
+		card_franchise = card_franchise.lower()
+		card_rarity = card_rarity.upper()
+		franchises = ["genshin", "honse", "idols", "meme", "vtuber"]
+		if card_rarity not in ["UR", "SR", "R"]:
+			await ctx.send("invalid rarity, must be UR, SR, or R")
+			return
+		if card_franchise not in franchises:
+			await ctx.send(f"invalid category, must be in {franchises}")
+			return
+		self.gacha["pool"][card_franchise][card_rarity].append(card_name)
+		if card_image:
+			if card_name not in self.gacha["images"]:
+				self.gacha["images"][card_name] = card_image
+			else:
+				await ctx.send("card already exists; a double may have been created")
+		self.save_gacha()
+		await utils.yay(ctx)
+		
+	@checks.is_niji()
+	@checks.is_admin()
+	@commands.command(aliases=["agi"])
+	async def add_gacha_image(self, ctx, card_name: str, card_image):
+		self.gacha["images"][card_name] = card_image
+		self.save_gacha()
+		await utils.yay(ctx)
+			
