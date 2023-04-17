@@ -32,7 +32,7 @@ intents.members = True
 intents.typing = False
 intents.presences = False
 intents.messages = True
-intents
+intents.message_content = True
 
 
 bot = commands.Bot(command_prefix=['$'],
