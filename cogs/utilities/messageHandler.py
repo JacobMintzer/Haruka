@@ -1,8 +1,5 @@
 import asyncio
-import os
 import re
-import threading
-import time
 
 import aiosqlite
 import discord
@@ -121,16 +118,7 @@ class MessageHandler():
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
 					await message.channel.send(res)
-				"""elif instaURL:=re.search("(?P<url>https?://[^\s]+instagram\.com[^\s]+)", message.content, re.IGNORECASE):
-					if  len(message.attachments)>0:
-						try:
-							embd = utils.getInstaEmbed(bot.config["instagramAccessToken"], instaURL.group(0))
-							await message.channel.send(embed=embd)
-						except Exception as e:
-							print(f"error while parsing insta embed:\n {str(e)}")
-							pass
-					else:
-						print("didn't post embed because there's an attachment")"""
+
 
 		if not (message.author.bot):
 			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:

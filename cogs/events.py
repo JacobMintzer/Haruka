@@ -1,12 +1,8 @@
-import asyncio
 from datetime import datetime, timedelta, timezone
-import io
 
 import discord
-import pytz
 import yaml
 from discord.ext import commands
-import random
 from unidecode import unidecode
 
 from .utilities import checks, utils

@@ -1,18 +1,9 @@
 import asyncio
-import atexit
-import datetime
 import importlib
 import io
 import logging
-import os
-import random
-import re
-import sys
-import time
 
 import discord
-import pytz
-import requests
 import yaml
 from discord.ext import commands
 

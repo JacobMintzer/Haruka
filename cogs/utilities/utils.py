@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import random
 import time
@@ -6,10 +5,7 @@ import re
 
 import discord
 import pytz
-import requests
 import yaml
-from bs4 import BeautifulSoup
-from dateparser.search import search_dates
 from discord.ext import commands
 
 
@@ -72,51 +68,6 @@ def saveConfig(ctx):
 			yaml.dump(backup, outfile)
 		raise
 
-
-def getInstaEmbed(token, url):
-	baseHtmlEmbed = requests.get(f"https://graph.facebook.com/v8.0/instagram_oembed?url={url}&access_token={token}").json()
-	if "author_name" in baseHtmlEmbed.keys():
-		authorUserName = baseHtmlEmbed["author_name"]
-	else:
-		authorUserName = ""
-	try:
-		imgUrl = baseHtmlEmbed["thumbnail_url"]
-	except:
-		print(baseHtmlEmbed)
-	soup = BeautifulSoup(baseHtmlEmbed["html"], features="html.parser")
-	try:
-		comment = soup.p.a.contents[0]
-	except:
-		comment = ""
-	try:
-		authorName = (soup.find_all("p")[-1]).contents[-1].contents[0].strip()
-		if comment == authorName:
-			comment = ""
-		if "A post shared by " in authorName:
-			authorName = authorName.replace("A post shared by ","")
-	except:
-		authorName = ""
-	try:
-		time = (soup.find_all("p")[1]).contents[3].contents[0]
-		timestamp = search_dates(
-			time, settings={'TIMEZONE': 'UTC', 'RETURN_AS_TIMEZONE_AWARE': True})[0]
-	except:
-		timestamp = None
-	profileUrl = f"https://www.instagram.com/{authorUserName}/"
-	#profileInfo = requests.get(f"{profileUrl}?__a=1").json()
-	#profilePicUrl = profileInfo["graphql"]["user"]["profile_pic_url"]
-	embd = discord.Embed()
-	embd.type = "rich"
-	embd.color = discord.Color.purple()
-	embd.title = f"Instagram Post by {authorName if authorName else authorUserName}"
-	embd = embd.set_author(name=f"{authorName} ({authorUserName})", url=profileUrl) if (not ("@" in authorName) and authorName) else embd.set_author(name=f"{authorName}", url=profileUrl)
-	#, icon_url=profilePicUrl)
-	embd = embd.set_image(url=imgUrl)
-	embd.url = url
-	embd.description = comment[:1023]
-	if timestamp:
-		embd.timestamp = timestamp[1] 
-	return embd
 
 def suppress_links(msg):
 	"""Given a message, will find links using regex and surround them with <>"""

@@ -1,15 +1,10 @@
 import asyncio
-import itertools
 import os
-import sys
-import traceback
-from functools import partial
 from random import shuffle
 import datetime
 
 import discord
 import mutagen
-from async_timeout import timeout
 from discord.ext import commands
 
 
