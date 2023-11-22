@@ -596,5 +596,5 @@ class GuildFunctions(commands.Cog):
 		await self._update_role_message(ctx.message)
 		
 
-def setup(bot):
-	bot.add_cog(GuildFunctions(bot))
+async def setup(bot):
+	await bot.add_cog(GuildFunctions(bot))

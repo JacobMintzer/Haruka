@@ -36,6 +36,7 @@ class MessageHandler():
 		await asyncio.sleep(1)
 
 	async def initRoles(self, bot):
+		print("initting roles")
 		self.roles = {}
 		self.isEnabled = True
 		self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
@@ -55,6 +56,9 @@ class MessageHandler():
 			roles["app"] = discord.utils.get(
 				self.niji.roles, name="Idol Club Applicant")
 			self.roles = roles
+		else:
+			print("no nijicord")
+		print("done initing roles")
 
 	async def getPB(self, user, guild, idx=1):
 		async with aiosqlite.connect("memberScores.db") as conn:

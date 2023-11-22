@@ -488,5 +488,5 @@ class Fun(commands.Cog):
 		member = discord.utils.get(ctx.guild.members, name="BMWMERCEdES racing")
 		await ctx.send(f"found user {member.name}#{member.discriminator}")
 
-def setup(bot):
-	bot.add_cog(Fun(bot))
+async def setup(bot):
+	await bot.add_cog(Fun(bot))

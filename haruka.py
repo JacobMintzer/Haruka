@@ -1,9 +1,18 @@
 import asyncio
+import atexit
+import datetime
 import importlib
 import io
 import logging
+import os
+import random
+import re
+import sys
+import time
 
 import discord
+import pytz
+import requests
 import yaml
 from discord.ext import commands
 
@@ -59,11 +68,12 @@ def is_me():
 @bot.event
 async def on_ready():
 	print("on ready")
-	x=[bot.messageHandler.initRoles(bot)]
+	initr=bot.messageHandler.initRoles(bot)
 	for cog in cogList:
 		print(f"Loading {cog}")
-		bot.load_extension(cog)
-	x.append( bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1)))
+		if cog:
+			await bot.load_extension(cog)
+	status= bot.change_presence(activity=discord.Game("Sorry to make you worry, I'm not ready to give up on being an Idol!", type=1))
 	guild = bot.get_guild(bot.config["nijiCord"])
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
@@ -74,7 +84,8 @@ async def on_ready():
 		totalUsers += guild.member_count
 	print("Currently in the current {2} guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers, len(bot.guilds)))
-	await asyncio.gather(x[0],x[1])
+	await initr
+	await status
 	print("Ready!")
 
 

@@ -122,5 +122,5 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 	async def umu(self,ctx):
 		pass
 
-def setup(bot):
-	bot.add_cog(Setup(bot))
+async def setup(bot):
+	await bot.add_cog(Setup(bot))

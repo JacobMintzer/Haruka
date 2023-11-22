@@ -590,5 +590,5 @@ class Administration(commands.Cog):
 		await ctx.send("Hello! My privacy policy can be found at <https://github.com/JacobMintzer/Haruka/blob/master/discord-privacy-policy.txt>. For any questions or information on data, feel free to reach out at <https://discord.gg/6qKHSfjeqw>.")
 
 
-def setup(bot):
-	bot.add_cog(Administration(bot))
+async def setup(bot):
+	await bot.add_cog(Administration(bot))

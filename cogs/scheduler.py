@@ -120,5 +120,5 @@ class Scheduler(commands.Cog):
 			timeStr.upper(), settings={'RETURN_AS_TIMEZONE_AWARE': True})[0])
 		await ctx.send(f"`{int(time.timestamp())}` is the timestamp for `{time.strftime('%c in timezone %Z')}`\nThe basic timestamp would look like this: <t:{int(time.timestamp())}:F>")
 
-def setup(bot):
-	bot.add_cog(Scheduler(bot))
+async def setup(bot):
+	await bot.add_cog(Scheduler(bot))

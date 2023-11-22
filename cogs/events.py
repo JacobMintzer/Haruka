@@ -158,6 +158,6 @@ class Events(commands.Cog):
 			farewellMsg = self.bot.config["farewellMsg"][str(member.guild.id)]
 			await farewellCh.send(farewellMsg.format(member.display_name))
 
-def setup(bot):
+async def setup(bot):
 	print("adding events cog")
-	bot.add_cog(Events(bot))
+	await bot.add_cog(Events(bot))
