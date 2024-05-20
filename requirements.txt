@@ -52,7 +52,7 @@ pyxdg==0.25
 PyYAML==5.3.1
 rapidfuzz==0.12.3
 regex==2020.10.15
-requests==2.24.0
+requests==2.32.0
 ruamel.yaml==0.16.12
 ruamel.yaml.clib==0.2.2
 SecretStorage==2.3.1
