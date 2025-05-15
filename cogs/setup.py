@@ -1,4 +1,6 @@
 import asyncio
+import aiosqlite
+import pandas as pd
 import yaml
 
 import discord
@@ -116,7 +118,26 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 			self.bot.config = yaml.full_load(file)
 
 
-		
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def analytics(self,ctx):
+		async with aiosqlite.connect("analytics.db") as conn:
+			cursor = await conn.execute("select server_name, count(server_name) as count from commands group by server_name order by count DESC;")
+			response = await cursor.fetchall()
+			cursor2 = await conn.execute("select command, count(command) as count from commands group by command order by count DESC;")
+			response2 = await cursor2.fetchall()
+			
+		result = pd.DataFrame(response)
+		result.index += 1
+		result.columns = [ "server_name","count"]
+
+		result2 = pd.DataFrame(response2)
+		result2.index += 1
+		result2.columns = [ "command","count"]
+		await ctx.send (f"```fortran\n{result[:20].to_string()}\n```")
+		await ctx.send (f"```fortran\n{result2[:20].to_string()}\n```")
+
+
 	@checks.is_me()
 	@commands.command(hidden=True)
 	async def umu(self,ctx):

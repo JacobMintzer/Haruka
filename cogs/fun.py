@@ -14,10 +14,17 @@ import pytz
 import requests
 import yaml
 from discord.ext import commands
+from discord import ActivityType, app_commands
 
 from .utilities import checks, messageHandler, utils
 import cogs.utilities.constants as consts
 from .models.idol_st.allstar_card import AllstarCard
+
+
+
+@app_commands.context_menu(name="sauce",)
+async def sauce2(interaction: discord.Interaction, message:discord.Message):
+	await message.add_reaction(utils.getRandEmoji(self.bot.emojis))
 
 class Fun(commands.Cog):
 	def __init__(self, bot):
@@ -29,10 +36,50 @@ class Fun(commands.Cog):
 		self.tlUrl = secrets['tlurl']
 		self.tlKey = secrets['tlkey']
 		self.base_uri='https://idol.st/api/allstars/cards'
-		
 
 	async def shutdown(self, ctx):
 		pass
+
+	@app_commands.command(name="hello")
+	async def hello(self,interaction: discord.Interaction):
+		"""Says hello!"""
+		await interaction.response.send_message(f'Hi, {interaction.user.mention}')
+
+	@app_commands.command(name="re",description="random emote")
+	@app_commands.describe(emote="emote you want to search for (optional)")
+	async def sre(self, interaction: discord.Interaction, emote:str=None):
+
+		def getReSlash(emojis,bot, query=None):
+			banned = bot.config["emoteBanned"].copy()
+			emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, emojis))
+			if not query:
+				return random.choice(emojis)
+			choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
+			return random.choice(choices)
+
+
+		emoji = getReSlash(self.bot.emojis, self.bot, emote)
+		if not (interaction.guild_id is None):
+			userHash = (str(interaction.guild.id) + str(interaction.user.id))
+			if interaction.channel.id in self.bot.config["reDisabled"]:
+				await interaction.response.send_message("re is disabled in this channel",ephemeral=True)
+				return
+			if interaction.guild.id in self.bot.config["reSlow"]:
+				if userHash in self.cooldown:
+					await interaction.response.send_message("Please wait a little while before using this command again",ephemeral=True)
+					return
+		if emoji is None:
+			await interaction.response.send_message("emoji not found")
+		elif not(interaction.guild_id is None):
+			await interaction.response.send_message(str(emoji))
+			if interaction.guild_id in self.bot.config["reSlow"]:
+				self.bot.loop.create_task(self.reCool(userHash))
+		else:
+			await interaction.response.send(str(emoji))
+
+
+	
+		
 
 	@commands.group()
 	async def re(self, ctx, emote="", msg=""):
@@ -116,6 +163,19 @@ class Fun(commands.Cog):
 			return
 		utils.saveConfig(ctx)
 		await utils.yay(ctx)
+
+	@checks.is_me()
+	@commands.command(hidden=True)
+	async def syncme(self, ctx):
+		if not self.bot.tree:
+			self.bot.tree = app_commands.CommandTree(self.bot)
+		try:
+			synced = await self.bot.tree.sync()
+			await self.bot.tree.sync(guild=ctx.message.guild.id)
+			await utils.yay(ctx)
+		except Exception as e:
+			await ctx.send(str(e))
+
 
 	@commands.command()
 	async def e(self, ctx, emote=""):
@@ -413,9 +473,9 @@ class Fun(commands.Cog):
 	async def isNijiS2Confirmed(self, ctx):
 		await ctx.send("YES")
 
-	@commands.command(aliases=["isNijiMovieConfirmed?","isNijiMovieConfirmed", "isNijiS3Confirmed?"], hidden=True)
+	@commands.command(aliases=["isNijiMovieConfirmed?","isNijiMovieConfirmed"], hidden=True)
 	async def isNijiS3Confirmed(self, ctx):
-		await ctx.send("Not yet")
+		await ctx.send("bruh its already out")
 
 	@commands.command(aliases=["temperature"])
 	async def temp(self, ctx, *, msg):
@@ -476,7 +536,7 @@ class Fun(commands.Cog):
 
 		}
 		body = [{
-			'text' : msg
+			'text' : msg.replace("@","@"+u"\u200B")
 		}]
 		request = requests.post(url, headers=headers, json=body)
 		response = request.json()
@@ -484,9 +544,31 @@ class Fun(commands.Cog):
 
 	@commands.command()
 	@checks.is_me()
-	async def uwu(self,ctx):
-		member = discord.utils.get(ctx.guild.members, name="BMWMERCEdES racing")
-		await ctx.send(f"found user {member.name}#{member.discriminator}")
+	async def uwu(self,ctx,id):
+		foundEmote = discord.utils.find(lambda emoji: (emoji.id == id), self.bot.emojis)
+		await ctx.send(foundEmote)
+		pass
+
+	@commands.command()
+	@checks.is_me()
+	async def status(self,ctx,*,msg=""):
+		if msg:
+			await ctx.bot.change_presence(
+				activity=discord.Activity(
+					name=msg, 
+					type=ActivityType.playing,
+					platform="PS5",
+					start=datetime(2019,9,26),
+					end=datetime(2030,1,1),
+					state="Gayming"
+				),
+				status=discord.Status.idle
+			)
+			self.bot.config["status"] = msg
+			utils.saveConfig(ctx)
+			await utils.yay(ctx)
+
+
 
 async def setup(bot):
 	await bot.add_cog(Fun(bot))

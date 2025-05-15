@@ -9,6 +9,14 @@ import yaml
 from discord.ext import commands
 
 
+def getReSlash(emojis,bot, query=""):
+	banned = bot.config["emoteBanned"].copy()
+	emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, emojis))
+	if query == "":
+		return random.choice(emojis)
+	choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
+	return random.choice(choices)
+
 def getRandEmoji(emojis, query="", ctx=None):
 	if ctx:
 		banned = ctx.bot.config["emoteBanned"].copy()
@@ -32,9 +40,12 @@ def getRandEmoji(emojis, query="", ctx=None):
 
 
 async def yay(ctx):
-	emoji = getRandEmoji(ctx.message.guild.emojis, "yay")
-	if emoji is None:
+	if ctx.message.guild is None or ctx.message.guild.emojis is None:
 		emoji = getRandEmoji(ctx.bot.emojis, "yay")
+	else:
+		emoji = getRandEmoji(ctx.message.guild.emojis, "yay")
+	if emoji is None:
+		emoji = getRandEmoji(ctx.bot.emojis, "yay")	
 	await ctx.message.add_reaction(emoji)
 
 

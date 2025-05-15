@@ -6,6 +6,7 @@ import discord
 import pandas as pd
 
 from cogs.utilities import utils
+from discord.ext import commands
 
 cache = 3
 spamCacheSize = 3
@@ -70,7 +71,7 @@ class MessageHandler():
 			try:
 				indexedResults = pd.Index(result["Id"])
 			except KeyError:
-				cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (user.id, str(user)[:-5]))
+				cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (user.id, str(user)))
 			rank = indexedResults.get_loc(user.id)
 			if idx < 1:
 				idx = 1
@@ -90,7 +91,7 @@ class MessageHandler():
 			await conn.commit()
 
 
-	async def handleMessage(self, message, bot):
+	async def handleMessage(self, message, bot:commands.Bot):
 		if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id == bot.config["roleChannel"][message.guild.id]["channel"]:
 			if not(message.content.startswith("$") or message.author.id == bot.user.id):
 				await message.delete()
@@ -101,7 +102,7 @@ class MessageHandler():
 		if message.guild and message.guild.id in self.bot.config["nitroSpamMute"]:
 			await self.checkForNitroSpam(message,self.bot.config["nitroSpamMute"][message.guild.id])
 		if message.content == "<@!{0}>".format(self.bot.user.id):
-			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or DM `Junior Mints#2525`. I hope we can become great friends ❤️")
+			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or join the support server linked in my bio. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
 			try:
 				await self.log(message)
@@ -128,6 +129,14 @@ class MessageHandler():
 			if message.guild and message.guild.id in bot.config["roleChannel"].keys() and message.channel.id==bot.config["roleChannel"][message.guild.id]["channel"]:
 				bot.loop.create_task(scheduleDelete(message))
 			await bot.process_commands(message)
+			try:
+				command=message.clean_content.lower().split(" ")[0].replace("$","")
+				if message.clean_content.startswith("$") and command in bot.all_commands.keys():
+					async with aiosqlite.connect("analytics.db") as conn:
+						await conn.execute('INSERT INTO "commands" (id,command,datetime,server_id,server_name,clean_text) VALUES (?,?,?,?,?,?)', (None, command, message.created_at.timestamp(),message.guild.id,message.guild.name,message.clean_content))
+						await conn.commit()
+			except Exception as e:
+				print(f"error saving analytics: {e}")
 		try:
 			if message.guild is None or not (message.guild.id in bot.config["scoreEnabled"]):
 				return
@@ -185,7 +194,10 @@ class MessageHandler():
 		rankUpMsg = self.config["msgs"][givenRole]
 		newRole = self.roles[givenRole]
 		hug = utils.getRandEmoji(self.bot.emojis, "suteki")
-		await message.author.remove_roles(old)
+		if(self.roles["app"] in message.author.roles):
+			await message.author.remove_roles(old, self.roles["app"])
+		else:
+			await message.author.remove_roles(old)
 		await message.author.add_roles(newRole)
 		await message.channel.send(rankUpMsg.format(message.author.mention, str(hug)))
 
@@ -310,7 +322,7 @@ class MessageHandler():
 			if not author.id in self.MRU:
 				if oldScore == None:
 					try:
-						cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)[:-5]))
+						cursor = await conn.execute('INSERT INTO "guild{0}" (ID,Name,Score) VALUES (?,?,1)'.format(str(guild.id)), (author.id, str(author)))
 						await conn.commit()
 					except Exception as e:
 						print(f"Error adding user {author.id} to score database")
@@ -319,7 +331,7 @@ class MessageHandler():
 				else:
 					if isCommand:
 						return oldScore[0]
-					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (oldScore[0] + 1, str(author)[:-5], author.id))
+					cursor = await conn.execute('UPDATE "guild{0}" SET Score=?,Name=? WHERE ID=?'.format(str(guild.id)), (oldScore[0] + 1, str(author), author.id))
 					score = oldScore[0] + 1
 					await conn.commit()
 					if guild.id == self.bot.config["nijiCord"] and (score == 69 or score == 6969):

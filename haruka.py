@@ -15,6 +15,7 @@ import pytz
 import requests
 import yaml
 from discord.ext import commands
+from discord import app_commands
 
 from cogs.utilities import checks, messageHandler, utils
 
@@ -35,9 +36,9 @@ intents.messages = True
 intents.message_content = True
 
 
-bot = commands.Bot(command_prefix=['$'],
-                   description="I may just be a bot, but I really do love my big sister Kanata! For questions about Haruka please visit 'https://discord​​.gg/qp7nuPC' or DM `Junior Mints#2525`",
-                   case_insensitive=True, intents=intents)
+bot:commands.Bot = commands.Bot(command_prefix=['$'],
+                   description="I may just be a bot, but I really do love my big sister Kanata! For questions, problems, or information about Haruka please visit 'https://discord​.gg/6qKHSfjeqw'",
+                   case_insensitive=True, intents=intents,)
 
 cogList = ['cogs.administration', 'cogs.fun', 'cogs.guildFunctions',
            'cogs.events', 'cogs.setup', 'cogs.music', 'cogs.scheduler']
@@ -46,7 +47,12 @@ cogNames = ['Music', 'Administration', 'Fun',
 with open('Resources.yaml', "r") as file:
 	bot.config = yaml.full_load(file)
 bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
-
+default_activity = discord.Game(
+					name=bot.config["status"], 
+					platform="NijIOS",
+					start=datetime.datetime(2019,9,26)
+					),
+discord.Game("Some Slash commands are now available! If you don't see them I don't have app command permissions.", type=1)
 
 async def is_admin(ctx):
 	try:
@@ -68,12 +74,16 @@ def is_me():
 @bot.event
 async def on_ready():
 	print("on ready")
+	if not bot.tree:
+		bot.tree = app_commands.CommandTree(bot)
 	initr=bot.messageHandler.initRoles(bot)
+	tasks = []
 	for cog in cogList:
 		print(f"Loading {cog}")
 		if cog:
-			await bot.load_extension(cog)
-	status= bot.change_presence(activity=discord.Game("Sorry to make you worry, I'm not ready to give up on being an Idol!", type=1))
+			tasks.append( bot.load_extension(cog))
+	await asyncio.gather(*tasks)
+	status= bot.change_presence(activity=default_activity)
 	guild = bot.get_guild(bot.config["nijiCord"])
 	print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
 	guildList = ""
@@ -130,7 +140,30 @@ async def shutdown(ctx):
 	print("logging out")
 	await x
 
+@checks.is_me()
+@bot.command(hidden=True)
+async def SSR(ctx, *, selectedCog=None):
+	await bot.reload_extension(selectedCog)
+	await utils.yay(ctx)
 
+@checks.is_me()
+@bot.command(hidden=True)
+async def sync(ctx):
+	if not bot.tree:
+		bot.tree = app_commands.CommandTree(bot)
+	try:
+		synced = await bot.tree.sync()
+		await ctx.send(f"synced {len(synced)} commands")
+	except Exception as e:
+		await ctx.send(str(e))
+
+async def reload_cog(bot,cog, ctx):
+	try:
+		await bot.reload_extension(cog)
+	except Exception as e:
+		await ctx.send("cannot reload cog {0} because of exception\n{1}".format(cog, e))
+		print("cannot reload cog {0} because of exception\n{1}".format(cog, e))
+	
 
 @checks.is_me()
 @bot.command(hidden=True, aliases=["SR"])
@@ -145,10 +178,10 @@ async def softReset(ctx, *, selectedCogs=None):
 		cogs.remove("messageHandler")
 		msg = True
 	else:
-		cogs = selectedCogs.split(" ")
+		cogs = [f"cogs.{x.replace('cogs.','')}" for x in selectedCogs.split(" ")]
 		msg = False
 	if msg:
-		bot.messageHandler.disconnect()
+		await bot.messageHandler.disconnect()
 	music = bot.get_cog("Music")
 	if "cogs.music" in selectedCogs or "music" in selectedCogs:
 		try:
@@ -156,15 +189,10 @@ async def softReset(ctx, *, selectedCogs=None):
 		except:
 			print("no music service active")
 	print("about to unload cogs")
+	tasks = []
 	for cog in cogs:
-		cogName = cog.replace("cogs.", "")
-		cogName = cogName[0].capitalize() + cogName[1:]
-		try:
-			await bot.get_cog(cogName).shutdown(ctx)
-			bot.unload_extension("cogs." + cog.replace("cogs.", ""))
-		except Exception as e:
-			print("cannot unload cog {0} because of exception\n{1}".format(cog, e))
-	print("cogs unloaded, reloading everything now")
+		tasks.append(reload_cog(bot, cog, ctx))
+	await asyncio.gather(*tasks)
 
 	with open('Resources.yaml', "r") as file:
 		bot.config = yaml.full_load(file)
@@ -172,11 +200,6 @@ async def softReset(ctx, *, selectedCogs=None):
 		importlib.reload(messageHandler)
 		bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
 
-	for cog in cogs:
-		try:
-			bot.load_extension("cogs." + cog.replace("cogs.", ""))
-		except Exception as e:
-			await ctx.send("WARNING: cog {0} was not successfully reloaded for reason:\n`{1}`".format(cog, str(e)))
 	if msg:
 		try:
 			await bot.messageHandler.initRoles(bot)
@@ -191,7 +214,7 @@ async def softReset(ctx, *, selectedCogs=None):
 		totalUsers += guild.member_count
 	print("Currently in the {2} guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers, len(bot.guilds)))
-	await bot.change_presence(activity=discord.Game("Making Kanata's bed!", type=1))
+	await bot.change_presence(activity=default_activity)
 	rxn = utils.getRandEmoji(bot.emojis, "hug")
 	await ctx.message.add_reaction(rxn)
 
