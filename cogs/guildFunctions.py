@@ -319,6 +319,7 @@ class GuildFunctions(commands.Cog):
 	@asar.command()
 	@checks.is_admin()
 	async def describe(self, ctx, *, msg):
+		"""Gives a description for self assignable roles. format is `$asar describe roleName;description of role`"""
 		role, description = msg.split(";", 1)
 		if role.lower() in self.bot.config["asar"][str(ctx.message.guild.id)]:
 			role = discord.utils.find(lambda x: x.name.lower()
@@ -336,7 +337,8 @@ class GuildFunctions(commands.Cog):
 	@asar.command()
 	@checks.is_admin()
 	async def roleChannel(self, ctx):
-		message = await ctx.send("This message will become your role information message.")
+		"""Designate channel as role channel"""
+		message = await ctx.send("This message will become your role information message. Type `$help asar roleChannelMessage` for info.")
 		message2 = await ctx.send("This message will become your second role information message.")
 		self.bot.config["roleChannel"][ctx.message.guild.id] = {
 		    "channel": ctx.message.channel.id, "message": [message.id, message2.id]}
@@ -345,6 +347,24 @@ class GuildFunctions(commands.Cog):
 		if rxn is None:
 			rxn = "👍"
 		await ctx.message.add_reaction(rxn)
+	
+	@asar.command()
+	@checks.is_admin()
+	async def roleChannelMessage(self,ctx, index:int=None, *, message:str=""):
+		"""Use this function to set the role channel message. Format to update first role channel message is:
+		$asar roleChannel 1 This is the role channel! available $best roles are {best}
+		{best} will be replaced with list of best roles, {seiyuu} will be replaced with seiyuu roles, and {asar} for 
+		self assignable roles along with descriptions. Anything else in {} will not allow the message to be posted"""
+		if index not in [1,2]:
+			await ctx.send("Invalid index, enter 1 or 2")
+		
+		self.bot.config["roleMsg"][message.guild.id][index-1]=message.replace("{best}","{0}").replace("{seiyuu}","{1}").replace("{asar}","{2}")
+		utils.saveConfig(ctx)
+		rxn = utils.getRandEmoji(ctx.guild.emojis, "hug")
+		if rxn is None:
+			rxn = "👍"
+		await ctx.message.add_reaction(rxn)
+
 
 	@ commands.command(name="pronoun")
 	async def Pronoun(self, ctx, action='', pronoun=''):
@@ -568,27 +588,40 @@ class GuildFunctions(commands.Cog):
 		ch = self.bot.get_channel(self.bot.config["roleChannel"][message.guild.id]["channel"])
 		girlRoles=list(filter(lambda x: x.name.title() in self.bot.config["best"][str(message.guild.id)], message.guild.roles))
 		girls=""
-		for girl in girlRoles:
-			girls+=f"{girl.mention}, "
-		girls=girls[:-2]
+		
+		girls = ", ".join ([str(girl.mention) for girl in girlRoles])
 		seiyuuRoles = list(filter(lambda x: x.name.title() in self.bot.config[self.bot.config["seiyuu"][message.guild.id]], message.guild.roles)) if message.guild.id in self.bot.config["seiyuu"] else []
 		seiyuus = ""
-		for seiyuu in seiyuuRoles:
-			seiyuus+=f"{seiyuu.mention}, "
-		seiyuus=seiyuus[:-2]
+		seiyuus = ",".join([seiyuu.mention for seiyuu in seiyuuRoles])
+		
+		seiyuus=seiyuus
 
 		roleDesc="\n"
 		for role, desc in self.bot.config["roleDesc"][message.guild.id].items():
 			roleDesc+=f"・**{role}**: *{desc}*\n"
-		content1 = self.bot.config["roleMsg"][message.guild.id][0].format(
-			girls,
-			seiyuus
-			)
-		content2 = self.bot.config["roleMsg"][message.guild.id][1].format(roleDesc)
 		msg1 = await ch.fetch_message(self.bot.config["roleChannel"][message.guild.id]["message"][0])
 		msg2 = await ch.fetch_message(self.bot.config["roleChannel"][message.guild.id]["message"][1])
-		await msg1.edit(content=content1)
-		await msg2.edit(content=content2)
+		try:
+			content1 = self.bot.config["roleMsg"][message.guild.id][0].format(
+				girls,
+				seiyuus,
+				roleDesc
+				)
+			await msg1.edit(content=content1)
+		except Exception as e:
+			print(f"error generating role channel message: {e.__dict__}")
+			content1="Error generating message, try creating again. type `$help asar roleChannelMessage` for info."
+			await msg1.edit(content=content1)
+		try:
+			content2 = self.bot.config["roleMsg"][message.guild.id][1].format(
+				girls,
+				seiyuus,
+				roleDesc)
+			await msg2.edit(content=content2)
+		except Exception as e:
+			print(f"error generating role channel message: {e.__dict__}")
+			content2="Error generating message, try creating again. type `$help asar roleChannelMessage` for info."
+			await msg2.edit(content=content2)
 
 	@commands.command()
 	@checks.is_admin()
