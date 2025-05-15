@@ -168,7 +168,7 @@ async def reload_cog(bot,cog, ctx):
 @checks.is_me()
 @bot.command(hidden=True, aliases=["SR"])
 async def softReset(ctx, *, selectedCogs=None):
-	await bot.change_presence(activity=discord.Game("Quickly doing a soft-reset for a minor update, will be back up soon!", type=1))
+	#await bot.change_presence(activity=discord.Game("Quickly doing a soft-reset for a minor update, will be back up soon!", type=1))
 	if selectedCogs is None:
 		msg = True
 		cogs = cogList
