@@ -357,7 +357,8 @@ class GuildFunctions(commands.Cog):
 		self assignable roles along with descriptions. Anything else in {} will not allow the message to be posted"""
 		if index not in [1,2]:
 			await ctx.send("Invalid index, enter 1 or 2")
-		
+		if message.guild.id not in self.bot.config["roleMsg"]:
+			self.bot.config["roleMsg"][message.guild.id] = ["",""]
 		self.bot.config["roleMsg"][message.guild.id][index-1]=message.replace("{best}","{0}").replace("{seiyuu}","{1}").replace("{asar}","{2}")
 		utils.saveConfig(ctx)
 		rxn = utils.getRandEmoji(ctx.guild.emojis, "hug")
