@@ -47,12 +47,13 @@ cogNames = ['Music', 'Administration', 'Fun',
 with open('Resources.yaml', "r") as file:
 	bot.config = yaml.full_load(file)
 bot.messageHandler = messageHandler.MessageHandler(bot.config, bot)
-default_activity = discord.Game(
-					name=bot.config["status"], 
-					platform="NijIOS",
-					start=datetime.datetime(2019,9,26)
-					),
-discord.Game("Some Slash commands are now available! If you don't see them I don't have app command permissions.", type=1)
+#default_activity = discord.Game(
+#					name=bot.config["status"], 
+#					platform="NijIOS",
+#					start=datetime.datetime(2019,9,26)
+#					),
+
+default_activity = discord.Game("My name is Haruka Konoe! Type $help for commands.", type=1)
 
 async def is_admin(ctx):
 	try:
@@ -214,7 +215,7 @@ async def softReset(ctx, *, selectedCogs=None):
 		totalUsers += guild.member_count
 	print("Currently in the {2} guilds: {0} with a total userbase of {1}".format(
 		guildList, totalUsers, len(bot.guilds)))
-	await bot.change_presence(activity=default_activity)
+	await bot.change_presence(activity=default_activity, type=1)
 	rxn = utils.getRandEmoji(bot.emojis, "hug")
 	await ctx.message.add_reaction(rxn)
 

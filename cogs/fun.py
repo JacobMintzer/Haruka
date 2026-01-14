@@ -195,13 +195,13 @@ class Fun(commands.Cog):
 	@commands.command(hidden=True, no_pm=True)
 	async def rs(self, ctx, *, stickerName=""):
 		"""Searches for a random sticker by search term. Only local server stickers work for now. ex. '$re yay' will return a random 'yay' sticker."""
-		
+
 		stickers = ctx.message.guild.stickers
 		if stickerName == "":
 			await ctx.send(stickers=[random.choice(stickers)])
 			return
 		choices = [sticker for sticker in stickers if stickerName.lower() in sticker.name.lower()]
-		
+
 		sticker = random.choice(choices)
 		if not (ctx.message.guild is None):
 			userHash = (str(ctx.message.guild.id) + str(ctx.message.author.id))

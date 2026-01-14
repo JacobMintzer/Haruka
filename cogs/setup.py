@@ -19,6 +19,16 @@ class Setup(commands.Cog):
 		pass
 
 	@commands.command()
+	async def icon(self,ctx):
+		"""Gives info on the creaters of my wonderful Icons"""
+		msg="""Christmas Icon created by https://bsky.app/profile/ivoryice.bsky.social
+School Icon created by <https://sampaisam.carrd.co/>
+Summer Icon by <https://x.com/Swylft>
+Halloween Icon by <https://x.com/bobunnart>
+Show them your support and give them a follow!"""
+		await ctx.send(msg)
+
+	@commands.command()
 	async def setup(self, ctx):
 		"""Gives information on helpful commands to get you started with Haruka"""
 		msg = """Important commands for setting haruka up in the server. Note that these can only be performed by someone with the Admin permission

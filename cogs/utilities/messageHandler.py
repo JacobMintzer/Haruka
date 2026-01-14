@@ -104,10 +104,6 @@ class MessageHandler():
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or join the support server linked in my bio. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
-			try:
-				await self.log(message)
-			except Exception as e:
-				print(f"error logging nijiMsg {e}")
 			if not (self.cooldown or message.author.bot):
 				await self.meme(message)
 			if not (message.author.bot):
@@ -345,11 +341,6 @@ class MessageHandler():
 				return None
 			return score
 
-	async def log(self, message):
-		async with aiosqlite.connect("NijiMessages.db") as conn:
-			await conn.execute('INSERT INTO "Messages" (user_id,content,clean_content,channel,datetime,attachments,jump,msg_id) VALUES (?,?,?,?,?,?,?,?)', (message.author.id, message.content, message.clean_content,message.channel.id,message.created_at.timestamp(),len(message.attachments),message.jump_url,message.id))
-			await conn.commit()
-	
 	async def checkForNitroSpam(self, message, channel_id):
 		fake_discord_names = ["diiscord", "dlscord", "discocd"]
 		content = message.content.lower()
