@@ -158,6 +158,63 @@ class Deprecated(commands.Cog):
 		self.xmas[id]["last_present"] = 0
 		self.save_xmas
 
+	@app_commands.command(name="af_tweet",description="secret april fools tweet")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.guilds(280954773346320386,712403758381793311,1372183903057739876)
+    async def afTweet(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(translation_config_modal.AFTweetConfigModal(interaction.guild_id, self.bot))
+	
+
+	@checks.is_me()
+	@commands.command()
+	async def manual_tweet(self, ctx, *, idx: int):
+		print(self.af_events)
+		event = self.af_events[idx]
+		await self.af_tweet(*event)
+
+
+	async def af_tweet(self, character, time, message, image):
+		print("posting af tweet")
+		profiles = {
+			"Akira":("https://pbs.twimg.com/profile_images/1921886488767442944/Jv0-T14d_400x400.png","Akira Goto@いきづらい部！ (@G_Akky304250) ✧","0xb5e6a2"),
+			"Aurora":("https://pbs.twimg.com/profile_images/1921887475561070593/Jf-AlnRm_400x400.png","Aurora Konohana@いきづらい部！ (@Rollie_twinkle) ✧","0xff5b9d"),
+			"Hanabi":("https://pbs.twimg.com/profile_images/1921886890002685952/WYCChlsQ_400x400.png","Hanabi Komagata@いきづらい部！ (@hanabistarmine) ✧","0xff4747"),
+			"Mai":("https://pbs.twimg.com/profile_images/1921886467275841537/vdo1D8GJ_400x400.png","Mai Azabu@いきづらい部！ (@My_Mai_Eld) ✧","0x4d93d9"),
+			"Miracle":("https://pbs.twimg.com/profile_images/1921886492869148672/0sNJKr2c_400x400.png","Miracle Kanazawa@いきづらい部！ (@MiracleGoldSP) ✧","0xffb6c1"),
+			"Noriko":("https://pbs.twimg.com/profile_images/1921886839516098560/ATN_ua0A_400x400.png","Noriko Chofu@いきづらい部！ (@Noricco_U) ✧","0xcc66ff"),
+			"Polka":("https://pbs.twimg.com/profile_images/1921886430265221121/uOWsSYJW_400x400.png","Polka Takahashi@いきづらい部！ (@polka_lion) ✧","0xfffe65"),
+			"Shion":("https://pbs.twimg.com/profile_images/1921887496477999104/_YQM5wOR_400x400.png","Shion Sasaki@いきづらい部！ (@ShaunTheBunny) ✧","0xf2f2f2"),
+			"Yukuri":("https://pbs.twimg.com/profile_images/1921887223185805312/YRTG0-G8_400x400.png","Yukuri Harumiya@いきづらい部！ (@Yukuri_talk) ✧","0xc0e6f5"),
+			"Midori":("https://pbs.twimg.com/profile_images/1921887756210540544/qODvEu78_400x400.png","Midori Yamada@いきづらい部！ (@LittlegreenCom) ✧","0x3fbf7f"),
+			"Chun Sensei":("https://i.imgur.com/zwP7s40.png","Kotori Minami (@OtonokiMinami1209) ✧","0xB0A49A"),
+		}
+		wh_ids=[]
+		[wh_ids.extend(item) for item in self.bot.config["af_wh"].values()]
+		(url,handle,color) = profiles[character]
+		username = handle.split("@")[0]
+		webhooks = [await self.bot.fetch_webhook(wh_id) for wh_id in wh_ids]
+		if image:
+			async with aiohttp.ClientSession() as session:
+				async with session.get(image) as response:
+					image_bytes = await response.read()
+			files=[discord.MediaGalleryItem(image)]
+		else:
+			files=[]
+		tweet = AFTranslationButtonView(
+			tweet_text=message, guild_id=0, author=handle, thumbnail=url, colour=discord.Colour(int(color, 16)), files=files
+		)
+		print("af tweet generated")
+				
+
+		for wh in webhooks:
+			if files:
+				await wh.send("",view=tweet, username=username, avatar_url=url, files = [discord.File(io.BytesIO(image_bytes))])
+			else:
+				await wh.send("",view=tweet, username=username, avatar_url=url)
+		print("af tweets sent")
+
+
 	
 	@checks.is_niji()
 	@commands.command()

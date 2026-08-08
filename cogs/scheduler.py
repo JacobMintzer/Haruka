@@ -2,18 +2,21 @@ import asyncio
 import re
 from datetime import datetime as dt
 from datetime import timedelta, timezone
+import io
 
 import discord
 import pytz
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dateparser.search import search_dates
+from zoneinfo import ZoneInfo
 from discord.ext import commands
 
+from .models.ui.translation_button_view import AFTranslationButtonView
 from .utilities import checks, messageHandler, utils
+import aiohttp
 
 gracePeriod = 600
-
 
 class Scheduler(commands.Cog):
 
@@ -38,6 +41,7 @@ class Scheduler(commands.Cog):
 	async def shutdown(self, ctx):
 		self.saveEvents()
 		self.scheduler.shutdown(False)
+		print("shut down scheduler")
 		pass
 
 	async def reminder(self, event):

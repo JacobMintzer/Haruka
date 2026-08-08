@@ -39,11 +39,25 @@ class GuildFunctions(commands.Cog):
 				if self.nijicord is None:
 					self.nijicord = bot.get_guild(bot.config["nijiCord"])
 				files = os.listdir("../Haruka/banners/")
-				file = open("../Haruka/banners/{0}".format(random.choice(files)), 'rb')
+				file_name = random.choice(files)
+				print(f"setting banner to {file_name}")
+				"""try:
+					logger = logging.getLogger('discord')
+					logger.setLevel(logging.INFO)
+					logger.error(f"setting banner to {file_name}")
+				except Exception as e:
+					print("error writing log, moving on")
+				try:
+					niji_log_ch = self.bot.get_channel(
+						self.bot.config["log"][str(self.nijicord.id)])
+					await niji_log_ch.send(f"Updating banner to file: {file_name if file_name else None}")
+				except Exception as e:
+					print(f"error posting log:\n{e}")"""
+				file = open("../Haruka/banners/{0}".format(file_name), 'rb')
 				await self.nijicord.edit(banner=file.read())
 				file.close()
 			except Exception as e:
-				print(f"Error in banner cycle:\n{e}")
+				print(f"Error in banner cycle for file with name {file_name if file_name else None}:\n{e}")
 
 	async def event_banner_cycle(self, bot):
 		print("starting event cycle")
@@ -75,6 +89,12 @@ class GuildFunctions(commands.Cog):
 	@checks.is_admin()
 	@checks.is_niji()
 	async def bannerCycle(self, ctx, status=None):
+		if status.lower() == "refresh":
+			files = os.listdir("../Haruka/banners/")
+			file = open("../Haruka/banners/{0}".format(random.choice(files)), 'rb')
+			await ctx.message.guild.edit(banner=file.read())
+			file.close()
+			return
 		if status is None:
 			if self.loop is None or self.loop.cancelled():
 				self.loop = self.bot.loop.create_task(self.banner_cycle(self.bot))

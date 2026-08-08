@@ -1,5 +1,6 @@
 import asyncio
 import re
+from datetime import timedelta, datetime
 
 import aiosqlite
 import discord
@@ -29,11 +30,15 @@ class MessageHandler():
 		with open("bad-words.txt") as f:
 			content = f.readlines()
 		self.badWords = [x.strip() for x in content if x.strip()]
-		self.tempRegex = re.compile(r"""(-?)(\d{1,3})(C|F|c|f)(?![^\s.,;?!`':>"])""")
+		self.tempRegex = re.compile( r"(?<!\w)(-?\d{1,3}(?:\.\d+)?)\s*°?\s*([cCfF])\b") #r"""(-?)(\d{1,3})(C|F|c|f)(?![^\s.,;?!`':>"])""")
+		self.heartbeat_time = datetime.now()
 
 	async def disconnect(self):
 		self.isEnabled = False
-		self.antispamLoop.cancel()
+		try:
+			self.antispamLoop.cancel()
+		except Exception as e:
+			print("Error disconnecting from message handler: ",e)
 		await asyncio.sleep(1)
 
 	async def initRoles(self, bot):
@@ -101,6 +106,36 @@ class MessageHandler():
 				return
 		if message.guild and message.guild.id in self.bot.config["nitroSpamMute"]:
 			await self.checkForNitroSpam(message,self.bot.config["nitroSpamMute"][message.guild.id])
+		try:
+			if message.webhook_id and  message.channel and message.channel.id in bot.config["bbChannels"].values():
+				# haruka posts
+				publish_tasks = []
+				for subbed_channel in bot.config["bluebirdSubscribers"].values():
+					try:
+						ch = self.bot.get_channel(subbed_channel)
+						(_,button_view,character) = await self.bot.translation_service.generate_tweet_embed(message, True)
+						msg = await ch.send("",view=dropdown_view)
+						publish_tasks.append(msg.publish())
+					except Exception as e:
+						print(f"Error posting BB tweet for channel in guild: {ch.guild.name} ", e)
+				# webhook posts
+				for wh_id in bot.config["bluebirdSubscribersWH"].values():
+					try:
+						wh = await self.bot.fetch_webhook(wh_id)
+						(embed, dropdown_view, character) = await self.bot.translation_service.generate_tweet_embed(message, True)
+						username = self.bot.translation_service.full_names[character.lower()]
+						try:
+							msg = await wh.send("",wait=True,view=dropdown_view, username=username, avatar_url=embed.thumbnail.url)
+						except Exception as e:
+							print("error with waiting")
+							msg = await wh.send("",view=dropdown_view, username=username, avatar_url=embed.thumbnail.url)
+						publish_tasks.append(msg.publish())
+					except Exception as e:
+						print(f"Error posting BB tweet for channel in guild: {ch.guild.name} ", e)
+				await asyncio.gather(*publish_tasks)
+		except Exception as e:
+			print(f"faced error while trying to see if message was a bb {message.id=}")
+			print(str(e))
 		if message.content == "<@!{0}>".format(self.bot.user.id):
 			await message.channel.send("Hello! My name is Haruka! My Commands can be accessed with the `$` prefix. If you want help setting up the server, try `$setup`. For general help try `$help`, or join the support server linked in my bio. I hope we can become great friends ❤️")
 		if (message.guild is not None) and (message.guild.id == self.bot.config["nijiCord"]):
@@ -108,16 +143,20 @@ class MessageHandler():
 				await self.meme(message)
 			if not (message.author.bot):
 				if (tempMatch:=self.tempRegex.search(message.content)) and not(message.content.lower().startswith("$temp")):
-					temperature = tempMatch.group(0)
-					unit = temperature[-1]
+					magnitude = float(tempMatch.group(1))
+					unit = tempMatch.group(2)
+					"""unit = temperature[-1]
 					if temperature[0] == '-':
 						magnitude = 0-(int(temperature[1:-1]))
 					else:
 						magnitude = int(temperature[:-1])
+					"""
 					if unit.lower() == 'c':
 						res = "{0}​C is {1:.1f}​F".format(magnitude,magnitude*9/5+32)
 					else:
 						res = "{0}​F is {1:.1f}​C".format(magnitude,(magnitude-32)*5/9)
+					
+					
 					await message.channel.send(res)
 
 
@@ -199,15 +238,24 @@ class MessageHandler():
 
 	async def antiSpamSrv(self):
 		print("starting service")
+		idx=0
 		while True:
-			keys = list(self.antiSpamScores)
-			for user in keys:
-				if self.antiSpamScores[user] <= 5:
-					del self.antiSpamScores[user]
-					del self.antiSpamCache[user]
-				else:
-					self.antiSpamScores[user] -= 5
-			await asyncio.sleep(5)
+			try:
+				if idx % 60*5 == 0:
+					self.heartbeat_time = datetime.now()
+					print(f"antispam service heartbeat: {idx}")
+					print(list(self.antiSpamScores))
+				keys = list(self.antiSpamScores)
+				for user in keys:
+					if self.antiSpamScores[user] <= 5:
+						del self.antiSpamScores[user]
+						del self.antiSpamCache[user]
+					else:
+						self.antiSpamScores[user] -= 5
+				await asyncio.sleep(5)
+			except Exception as e:
+				print(f"Error in antispam service: {e}")
+			idx +=1
 
 	async def antiSpam(self, message, score):
 		if score == -1:
@@ -220,14 +268,14 @@ class MessageHandler():
 			return True
 		for badWord in self.badWords:
 			if badWord in message.content.lower():
-				await self.mute(message.author, "banned word in {0}; check the logs".format( message.channel))
+				await self.mute(message.author, f"banned word in {message.channel.mention}; check the logs")
 				await message.delete()
 				return False
-		if score is None or score < 10:
+		if score is None or score < 20:
 			modifier = 8
-		elif score < 200:
+		elif score < 100:
 			modifier = 4
-		elif score < 500:
+		elif score < 200:
 			modifier = 1
 		else:
 			return True
@@ -251,18 +299,37 @@ class MessageHandler():
 			self.antiSpamCache[message.author.id] = message.content
 			self.antiSpamScores[message.author.id] = points
 			totalScore = points
+		if (datetime.now() - self.heartbeat_time) > datetime.timedelta(hours=1):
+			try:
+				self.antispamLoop.cancel()
+			except Exception as e:
+				print(f"Error cancelling antispam loop {e}")
+			self.antispamLoop = self.bot.loop.create_task(self.antiSpamSrv())
+			if score > 50:
+				return True
 		if totalScore > maxPoints:
-			await self.mute(message.author, "exceeded max points at {0} where max is {1}. last message gave them {2} points".format(totalScore, maxPoints, points))
+			await self.mute(message.author, f"exceeded max points at {totalScore} where max is {maxPoints}. last message in {message.channel.mention} gave them {points} points")
+			self.antiSpamScores[message.author.id]=0
 			return False
 		return True
 
-	async def mute(self, member, reason):
-		role = discord.utils.find(
-			lambda x: x.name.lower() == "muted", member.guild.roles)
-		await member.add_roles(role)
+	async def mute(self, member, reason, timeout=timedelta(hours=6)):
+		#role = discord.utils.find(
+		#	lambda x: x.name.lower() == "muted", member.guild.roles)
+		#await member.add_roles(role)
+		failed=False
+		try:
+			await member.timeout(timeout, reason=reason)
+		except Exception as e:
+			failed=True
+			print(f"Error: {e} with new timeout system")
+			role = discord.utils.find(
+				lambda x: x.name.lower() == "muted", member.guild.roles)
+			await member.add_roles(role)
 		antispamCh = self.bot.get_channel(
 			self.bot.config["antispam"][str(member.guild.id)]["ch"])
-		await antispamCh.send("{2}{0} was muted for {1}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"]))
+		alert_message = "{2}{0} was muted for {1}{3}".format(member.mention, reason, self.bot.config["antispam"][str(member.guild.id)]["mention"],"" if failed else " and their timeout will end automatically in 6 hours")
+		await antispamCh.send(alert_message)
 		await member.send("You have been muted by my auto-moderation; a mod is currently reviewing your case.")
 
 	async def meme(self, message):

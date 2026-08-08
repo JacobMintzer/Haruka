@@ -371,6 +371,7 @@ class Administration(commands.Cog):
 		"""NIJICORD ADMIN ONLY! This blacklists a user from all the servers Haruka is on. This is only used in exceedingly rare situations like gore-spammers."""
 		bans = ""
 		people = ""
+		num_bans = 0
 		async with ctx.message.channel.typing():
 			for guild in self.bot.guilds:
 
@@ -387,6 +388,7 @@ class Administration(commands.Cog):
 						await guild.ban(person, reason="""This user was banned by {0} through haruka's blacklist function from Nijicord;
 						this means you let haruka have ban permissions in your server.""".format(str(ctx.message.author)), delete_message_days=0)
 						bans += ("*{0}* was banned".format(person.display_name) + "\n")
+						num_bans += 1
 						if str(guild.id) in self.bot.config["log"].keys():
 							log = self.bot.get_channel(
 								self.bot.config["log"][str(guild.id)])
@@ -397,12 +399,54 @@ class Administration(commands.Cog):
 		try:
 			await ctx.send(bans)
 		except:
-			await ctx.send("message too long, check my console/my log channels individually")
+			await ctx.send(f"user banned in {num_bans} servers")
 			print("{0} were {1}".format(people, bans))
 		emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
 		if emoji is None:
 			emoji = utils.getRandEmoji(self.bot.emojis, "yay")
 		await ctx.message.add_reaction(emoji)
+
+		
+	@commands.command()
+	@checks.is_niji()
+	@checks.is_admin()
+	async def kickprop(self, ctx, *users):
+		"""NIJICORD ADMIN ONLY! This kick a user from all the servers Haruka is on. This is used for compromised accounts that may want to rejoin."""
+		bans = ""
+		people = ""
+		num_kicks = 0
+		async with ctx.message.channel.typing():
+			for guild in self.bot.guilds:
+
+				bans += "\n**{0}**:\n".format(guild.name)
+				if guild.id in self.bot.config["ignoreBL"]:
+					bans += "Guild does not take part in blacklist"
+					continue
+				for user in users:
+					person = self.bot.get_user(int(user))
+					if person is None:
+						person = await self.bot.fetch_user(int(user))
+
+					try:
+						await guild.kick(person, reason="""This user was kicked by {0} through haruka's blacklist-kick function from Nijicord;
+						this means you let haruka have kick permissions in your server. They will be able to rejoin in the future without being unbanned.""".format(str(ctx.message.author)))
+						bans += ("*{0}* was kicked".format(person.display_name) + "\n")
+						num_kicks += 1
+						if str(guild.id) in self.bot.config["log"].keys():
+							log = self.bot.get_channel(
+								self.bot.config["log"][str(guild.id)])
+							await log.send("{0} was kicked through Haruka's auto-blacklist-kick by {1} on Nijicord. They will be able to rejoin in the future without being unbanned.".format(str(person), str(ctx.message.author)))
+					except Exception as e:
+						bans += ("{2} not kicked from {0} because of {1}".format(guild.name,
+                                                               e, person.display_name) + "\n")
+	
+		await ctx.send(f"user kicked from {num_kicks} servers")
+		print("{0} were {1}".format(people, bans))
+		emoji = utils.getRandEmoji(ctx.guild.emojis, "yay")
+		if emoji is None:
+			emoji = utils.getRandEmoji(self.bot.emojis, "yay")
+		await ctx.message.add_reaction(emoji)
+
 
 	@commands.command()
 	@checks.can_ban()

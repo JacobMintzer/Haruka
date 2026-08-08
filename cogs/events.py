@@ -96,13 +96,22 @@ class Events(commands.Cog):
 				if overflow_files:
 					for file in overflow_files:
 						embd.add_field(name='Attachment', value=f'[{file.filename}]({file.url})', inline=False)
-				await ch.send(embed=embd, files=files)
-				self.starboardQueue.append(message.id)
-				if len(self.starboardQueue) > 200:
-					self.starboardQueue.pop(0)
-				self.bot.config["sbq"] = self.starboardQueue
-				with open('Resources.yaml', 'w') as outfile:
-					yaml.dump(self.bot.config, outfile)
+				try:
+					await ch.send(embed=embd, files=files)
+					self.starboardQueue.append(message.id)
+					if len(self.starboardQueue) > 200:
+						self.starboardQueue.pop(0)
+					self.bot.config["sbq"] = self.starboardQueue
+					with open('Resources.yaml', 'w') as outfile:
+						yaml.dump(self.bot.config, outfile)
+				except Exception as e:
+					print(e)
+					haruka = ch.guild.get_member(613501680469803045)
+					perms = ch.permissions_for(haruka)
+					print(f"failed to post starboard in guild {ch.guild.name}")
+					print(f"{perms.send_messages=} {perms.external_emojis=} {perms.attach_files=}")
+					print(f"{perms.value=}")
+
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member):
@@ -121,7 +130,7 @@ class Events(commands.Cog):
 				cleaned_name = unidecode(member.name).replace("0",'o').replace(" ","").lower()
 				for name in banned_names:
 					if name in cleaned_name:
-						await member.kick(reason=f"suspricious name found: {member.name=}")
+						await member.kick(reason=f"suspicious name found: {member.name=}")
 						return
 		except Exception as e:
 			print ("error in scamyeet")

@@ -70,6 +70,8 @@ class Music(commands.Cog):
 	@checks.isMusicEnabled()
 	async def music(self, ctx, *, channel: discord.VoiceChannel = None):
 		"""I'll join your channel and start playing music!"""
+		await ctx.send("Currently disabled, let junior know if you still want to use this")
+		return
 		if channel is None:
 			try:
 				channel = ctx.message.author.voice.channel

@@ -17,25 +17,28 @@ def getReSlash(emojis,bot, query=""):
 	choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 	return random.choice(choices)
 
-def getRandEmoji(emojis, query="", ctx=None):
+def getRandEmoji(emojis, query="", ctx=None, app_emojis=[]):
 	if ctx:
 		banned = ctx.bot.config["emoteBanned"].copy()
 		if ctx.message.guild:
 			if ctx.message.guild.id in banned:
 				banned.remove(ctx.message.guild.id)
-		emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, emojis))
+		emojis = list(filter(lambda x: (x.guild.id in banned) and x.available, emojis))
+		
 	if query == "":
-		return random.choice(emojis)
+		return random.choice(emojis+app_emojis)
 	choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
+	app_choices = [emoji for emoji in app_emojis if query.lower() in emoji.name.lower()]
 	if len(choices) < 1:
 		if ctx:
 			emojis = list(filter(lambda x: not(x.guild.id in banned) and x.available, ctx.bot.emojis))
+			emojis.extend(app_emojis)
 			choices = [emoji for emoji in emojis if query.lower() in emoji.name.lower()]
 			if len(choices) < 1:
 				return None
 		else:
 			return None
-	choice = random.choice(choices)
+	choice = random.choice(choices+app_choices)
 	return choice
 
 

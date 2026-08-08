@@ -21,7 +21,7 @@ class Setup(commands.Cog):
 	@commands.command()
 	async def icon(self,ctx):
 		"""Gives info on the creaters of my wonderful Icons"""
-		msg="""Christmas Icon created by https://bsky.app/profile/ivoryice.bsky.social
+		msg="""Christmas Icon created by <https://bsky.app/profile/ivoryice.bsky.social>
 School Icon created by <https://sampaisam.carrd.co/>
 Summer Icon by <https://x.com/Swylft>
 Halloween Icon by <https://x.com/bobunnart>
@@ -126,6 +126,7 @@ If you have any more questions please feel free to message `Junior Mints#2525`""
 	async def reload(self,ctx):
 		with open('Resources.yaml', "r") as file:
 			self.bot.config = yaml.full_load(file)
+		await ctx.message.add_reaction(utils.getRandEmoji(self.bot.emojis, "harukahug"))
 
 
 	@checks.is_me()
